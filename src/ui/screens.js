@@ -22,7 +22,6 @@ import {
 import { formatApproxDistance } from "../geo.js";
 import { notebookAllowed } from "../state.js";
 
-const safetyIcons = ["🛑", "🚦", "🚫", "🛍️", "📖", "📍", "📷", "🙅", "🌧️"];
 const suspectIcons = {
   "kang-min-jae": "☂️",
   "seo-yu-na": "🟨",
@@ -167,9 +166,7 @@ function safetyView() {
   return `
     <main id="main" class="screen card-screen">
       <h1>${safety.title}</h1>
-      <ul class="safety">${safety.items
-        .map((item, index) => `<li>${ico(safetyIcons[index] || "•", item)}</li>`)
-        .join("")}</ul>
+      <ul class="safety">${safety.items.map((item) => `<li>${item}</li>`).join("")}</ul>
       ${btn("accept-safety", safety.accept)}
     </main>
   `;
@@ -197,7 +194,7 @@ function briefingView(state) {
           )
           .join("")}
       </div>
-      ${btn("continue", "경로 보기")}
+      ${btn("continue", "🗺️ 경로 보기")}
     </main>
   `;
 }
@@ -236,7 +233,7 @@ function overviewView(state) {
       ${state.mapStatus === "tiles" ? `<p class="warn">${routeMeta.tilesFailed}</p>` : ""}
       ${locationPanel(state)}
       ${!state.locationPermissionAsked ? btn("find-location", `📍 ${gps.findMe}`) : btn("retry-location", `🔄 ${gps.retryLocation}`, "btn--ghost")}
-      ${btn("continue", "첫 장소로 이동")}
+      ${btn("continue", "🚶 첫 장소로 이동")}
     </main>
   `;
 }
@@ -316,11 +313,11 @@ function clueView(state) {
     <main id="main" class="screen card-screen">
       ${chrome(state, { showExit: true, showNotebook: true })}
       <h1>${stop.title}</h1>
-      ${!state.stoppedWalking ? `<p class="warn">길을 멈춘 뒤에 단서를 읽으세요.</p>${btn("stopped", "멈췄어요")}` : `
+      ${!state.stoppedWalking ? `<p class="warn">${ico("🛑", "길을 멈춘 뒤에 단서를 읽으세요.")}</p>${btn("stopped", "🛑 멈췄어요")}` : `
         <p>${stop.scene}</p>
         <article class="paper"><p>${stop.witnessCard}</p></article>
         <article class="paper"><p>${stop.evidenceCard}</p></article>
-        ${btn("to-puzzle", "퍼즐 열기")}
+        ${btn("to-puzzle", "🧩 퍼즐 열기")}
       `}
     </main>
   `;
@@ -334,7 +331,7 @@ function duoClue(state, stop, roles) {
         ${chrome(state, { showExit: true, showNotebook: true })}
         <p class="kicker">${duoCopy.holdPhone} · 수사관 ${roles.witness} · ${duoCopy.witness}</p>
         <h1>${stop.title}</h1>
-        ${!state.stoppedWalking ? `<p class="warn">길을 멈춘 뒤에 읽으세요.</p>${btn("stopped", "멈췄어요")}` : `
+        ${!state.stoppedWalking ? `<p class="warn">${ico("🛑", "길을 멈춘 뒤에 읽으세요.")}</p>${btn("stopped", "🛑 멈췄어요")}` : `
           <article class="paper"><p>${stop.witnessCard}</p></article>
           ${btn("duo-pass-evidence", duoCopy.pass)}
         `}
@@ -345,7 +342,7 @@ function duoClue(state, stop, roles) {
     return `
       <main id="main" class="screen card-screen">
         <h1>${duoCopy.pass}</h1>
-        <p>수사관 ${roles.evidence}에게 휴대폰을 건네 증거 카드를 확인하세요.</p>
+        <p>📱 수사관 ${roles.evidence}에게 휴대폰을 건네 증거 카드를 확인하세요.</p>
         ${btn("duo-evidence", duoCopy.passed)}
         ${btn("duo-alone", duoCopy.continueAlone, "btn--ghost")}
       </main>
@@ -385,7 +382,7 @@ function duoClue(state, stop, roles) {
 function puzzleView(state) {
   const stop = stopByOrder(state.currentStop);
   const puzzle = stop.puzzle;
-  const hint = state.hintsUsed[stop.id] ? `<p class="hint">${puzzle.hint}</p>` : btn("hint", "힌트", "btn--ghost");
+  const hint = state.hintsUsed[stop.id] ? `<p class="hint">${puzzle.hint}</p>` : btn("hint", "💡 힌트", "btn--ghost");
   const solved = state.solvedPuzzleIds.includes(stop.id);
   let body = "";
   if (puzzle.type === "match") body = matchPuzzle(stop, state);
@@ -398,7 +395,7 @@ function puzzleView(state) {
       ${hint}
       ${state.puzzleMessage ? `<p class="${solved ? "ok" : "warn"}">${state.puzzleMessage}</p>` : ""}
       ${body}
-      ${solved ? btn("after-puzzle", "다음 장소") : ""}
+      ${solved ? btn("after-puzzle", "🚶 다음 장소") : ""}
     </main>
   `;
 }
@@ -425,7 +422,7 @@ function matchPuzzle(stop, state) {
             </fieldset>`;
         })
         .join("")}
-      ${btn("check-match", "확인")}
+      ${btn("check-match", "✅ 확인")}
     </form>
   `;
 }
@@ -460,7 +457,7 @@ function hotspotPuzzle(stop, state) {
         )
         .join("")}
     </fieldset>
-    ${btn("check-hotspot", "확인")}
+    ${btn("check-hotspot", "✅ 확인")}
   `;
 }
 
@@ -475,14 +472,14 @@ function orderPuzzle(stop, state) {
         <li>
           <span>${index + 1}. ${item.label}</span>
           <span class="row-actions">
-            <button type="button" data-action="move-up" data-index="${index}" aria-label="위로">위로</button>
-            <button type="button" data-action="move-down" data-index="${index}" aria-label="아래로">아래로</button>
+            <button type="button" data-action="move-up" data-index="${index}" aria-label="위로">⬆️ 위로</button>
+            <button type="button" data-action="move-down" data-index="${index}" aria-label="아래로">⬇️ 아래로</button>
           </span>
         </li>`,
         )
         .join("")}
     </ol>
-    ${btn("check-order", "확인")}
+    ${btn("check-order", "✅ 확인")}
   `;
 }
 
@@ -512,7 +509,7 @@ function accusationView(state) {
             </fieldset>`;
         })
         .join("")}
-      ${check?.allCorrect ? `<p class="ok">${accusation.success}</p>${btn("continue", "재구성 보기")}` : btn("check-accusation", accusation.submit)}
+      ${check?.allCorrect ? `<p class="ok">${accusation.success}</p>${btn("continue", "📖 재구성 보기")}` : btn("check-accusation", accusation.submit)}
     </main>
   `;
 }
@@ -524,8 +521,8 @@ function resolutionView(state) {
       ${chrome(state)}
       <h1>${ending.title}</h1>
       <ol class="ending">${ending.panels.map((p) => `<li>${p}</li>`).join("")}</ol>
-      <p class="note">경과 시간 약 ${elapsed}분 · 기기에만 표시</p>
-      ${btn("continue", "소감 남기기")}
+      <p class="note">${ico("⏱️", `경과 시간 약 ${elapsed}분 · 기기에만 표시`)}</p>
+      ${btn("continue", "📝 소감 남기기")}
     </main>
   `;
 }
@@ -563,7 +560,7 @@ function renderOverlay(state) {
   if (!state.overlay) return "";
   if (state.overlay === "notebook") return notebook(state);
   if (state.overlay === "help") {
-    return modal("도움", `<p>${routeMeta.helpBody}</p>${btn("close-overlay", "닫기")}`);
+    return modal("❓ 도움", `<p>${routeMeta.helpBody}</p>${btn("close-overlay", "닫기")}`);
   }
   if (state.overlay === "exit") {
     return modal(
@@ -592,7 +589,7 @@ function notebook(state) {
     if (stop?.notebookEntry) entries.push(stop.notebookEntry);
   }
   if (state.collectedCameraClueIds.includes("stop-2") && !state.solvedPuzzleIds.includes("stop-2")) {
-    entries.push("카메라 단서: 19:38 남색 우산 반영(가상).");
+    entries.push("📷 카메라 단서: 19:38 ☂️ 남색 우산 반영(가상).");
   }
   return modal(
     notebookCopy.title,

@@ -142,15 +142,18 @@ body {
 
 .sim {
   position: fixed;
-  left: 8px;
-  top: 2.7rem;
-  bottom: auto;
+  right: 8px;
+  bottom: 8px;
+  left: auto;
+  top: auto;
   z-index: 9;
   background: #1c2238;
   color: var(--text);
   padding: 0.45rem;
   border-radius: 10px;
   max-width: min(14.5rem, 72vw);
+  max-height: min(48vh, 22rem);
+  overflow: auto;
   font-size: 0.72rem;
   border: 1px solid #4a5470;
 }
