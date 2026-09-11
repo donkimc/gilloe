@@ -15,6 +15,7 @@ const mapHost = document.querySelector(".map-host");
 const persist = createStorage();
 const sim = parseSim(window.location.search);
 
+let simMinimized = false;
 let gpsMode = sim.gps || (sim.panel ? "good" : "live");
 let cameraMode = sim.camera || "live";
 let mapFail = sim.map === "fail";
@@ -149,7 +150,7 @@ location.onFix((fix) => {
 });
 
 function paint() {
-  ui.innerHTML = render({ ...state, simPanel: sim.panel });
+  ui.innerHTML = render({ ...state, simPanel: sim.panel, simMinimized });
   bindUi();
 }
 
@@ -212,6 +213,10 @@ function handleSim(kind, value) {
 function handleAction(action, dataset) {
   const stop = stopByOrder(state.currentStop);
   switch (action) {
+    case "sim-toggle":
+      simMinimized = !simMinimized;
+      paint();
+      break;
     case "start":
       dispatch({ type: "GOTO", screen: "mode" });
       break;

@@ -22,8 +22,28 @@ import {
 import { formatApproxDistance } from "../geo.js";
 import { notebookAllowed } from "../state.js";
 
+const safetyIcons = ["🛑", "🚦", "🚫", "🛍️", "📖", "📍", "📷", "🙅", "🌧️"];
+const suspectIcons = {
+  "kang-min-jae": "☂️",
+  "seo-yu-na": "🟨",
+  "lee-do-yun": "🧢",
+};
+const locationIcons = {
+  idle: "📍",
+  locating: "🔄",
+  good: "✅",
+  "low-accuracy": "⚠️",
+  denied: "🚫",
+  unavailable: "❌",
+  timeout: "⏳",
+};
+
 function h(strings, ...values) {
   return String.raw({ raw: strings }, ...values);
+}
+
+function ico(symbol, text) {
+  return `<span class="ico"><span class="ico__mark" aria-hidden="true">${symbol}</span><span>${text}</span></span>`;
 }
 
 function btn(action, label, extra = "") {
@@ -31,12 +51,12 @@ function btn(action, label, extra = "") {
 }
 
 function banner() {
-  return `<div class="proto-banner" role="status">${game.prototypeBanner}</div>`;
+  return `<div class="proto-banner" role="status">${ico("⚠️", game.prototypeBanner)}</div>`;
 }
 
 function progress(state) {
   const solved = state.solvedPuzzleIds.length;
-  return `<p class="progress">단서 ${Math.min(solved, 4)} / 4</p>`;
+  return `<p class="progress">${ico("🔎", `단서 ${Math.min(solved, 4)} / 4`)}</p>`;
 }
 
 function chrome(state, { showExit = false, showNotebook = false } = {}) {
@@ -45,8 +65,8 @@ function chrome(state, { showExit = false, showNotebook = false } = {}) {
       <p class="brand">${game.brand}</p>
       ${progress(state)}
       <div class="top-actions">
-        ${showNotebook && notebookAllowed(state.screen) ? btn("notebook", notebookCopy.open, "btn--ghost") : ""}
-        ${showExit ? btn("exit", gps.exit, "btn--ghost") : ""}
+        ${showNotebook && notebookAllowed(state.screen) ? btn("notebook", `📒 ${notebookCopy.open}`, "btn--ghost") : ""}
+        ${showExit ? btn("exit", `🚪 ${gps.exit}`, "btn--ghost") : ""}
       </div>
     </header>
   `;
@@ -112,15 +132,15 @@ function coverView(state) {
       <h1>${game.title}</h1>
       <p class="lead">${cover.lead}</p>
       <ul class="meta">
-        <li>${game.duration}</li>
-        <li>${game.difficulty}</li>
-        <li>${game.walking}</li>
-        <li>${game.players}</li>
+        <li>${ico("⏱️", game.duration)}</li>
+        <li>${ico("⭐", game.difficulty)}</li>
+        <li>${ico("🚶", game.walking)}</li>
+        <li>${ico("👥", game.players)}</li>
       </ul>
-      <p class="note">${game.operatingNote}</p>
-      <p class="warn">${game.notPublicReady}</p>
-      ${state.restored ? `<p class="ok">이전 진행을 복구했습니다.</p>` : ""}
-      ${state.invalidSave ? `<p class="warn">저장본이 오래되었거나 손상되어 처음부터 시작합니다.</p>` : ""}
+      <p class="note">${ico("☀️", game.operatingNote)}</p>
+      <p class="warn">${ico("🚧", game.notPublicReady)}</p>
+      ${state.restored ? `<p class="ok">${ico("✅", "이전 진행을 복구했습니다.")}</p>` : ""}
+      ${state.invalidSave ? `<p class="warn">${ico("⚠️", "저장본이 오래되었거나 손상되어 처음부터 시작합니다.")}</p>` : ""}
       ${state.playerMode ? btn("resume", cover.resume) : btn("start", cover.start)}
       ${state.playerMode ? btn("reset", cover.reset, "btn--ghost") : ""}
     </main>
@@ -132,11 +152,11 @@ function modeView() {
     <main id="main" class="screen card-screen">
       <h1>${modes.title}</h1>
       <button type="button" class="choice" data-action="mode" data-mode="solo">
-        <strong>${modes.solo.label}</strong>
+        <strong>${ico("👤", modes.solo.label)}</strong>
         <span>${modes.solo.body}</span>
       </button>
       <button type="button" class="choice" data-action="mode" data-mode="duo">
-        <strong>${modes.duo.label}</strong>
+        <strong>${ico("👥", modes.duo.label)}</strong>
         <span>${modes.duo.body}</span>
       </button>
     </main>
@@ -147,7 +167,9 @@ function safetyView() {
   return `
     <main id="main" class="screen card-screen">
       <h1>${safety.title}</h1>
-      <ul class="safety">${safety.items.map((item) => `<li>${item}</li>`).join("")}</ul>
+      <ul class="safety">${safety.items
+        .map((item, index) => `<li>${ico(safetyIcons[index] || "•", item)}</li>`)
+        .join("")}</ul>
       ${btn("accept-safety", safety.accept)}
     </main>
   `;
@@ -157,18 +179,18 @@ function briefingView(state) {
   return `
     <main id="main" class="screen card-screen">
       ${chrome(state, { showNotebook: true })}
-      <p class="tag">${briefing.fictionTag}</p>
+      <p class="tag">${ico("📖", briefing.fictionTag)}</p>
       <h1>${briefing.title}</h1>
       <p>${briefing.victim}</p>
       <p>${briefing.money}</p>
-      <p class="mission">${briefing.mission}</p>
-      <p class="note">${briefing.window}</p>
+      <p class="mission">${ico("🎯", briefing.mission)}</p>
+      <p class="note">${ico("🕖", briefing.window)}</p>
       <div class="suspects">
         ${suspects
           .map(
             (s) => `
           <article class="suspect">
-            <h2>${s.name}</h2>
+            <h2>${ico(suspectIcons[s.id] || "👤", s.name)}</h2>
             <p class="muted">${s.role} · ${s.cue}</p>
             <p>${s.claim}</p>
           </article>`,
@@ -197,9 +219,9 @@ function locationPanel(state) {
   const distance = `${gps.approx}: ${formatApproxDistance(state.distanceMeters)}`;
   return `
     <section class="loc" aria-live="polite">
-      <p><strong>${label}</strong></p>
-      <p>${accuracy}</p>
-      <p>${distance}</p>
+      <p><strong>${ico(locationIcons[state.locationStatus] || "📍", label)}</strong></p>
+      <p>${ico("🎯", accuracy)}</p>
+      <p>${ico("📏", distance)}</p>
     </section>
   `;
 }
@@ -208,12 +230,12 @@ function overviewView(state) {
   return `
     <main id="main" class="screen map-screen">
       ${chrome(state, { showExit: true, showNotebook: true })}
-      <h1>${routeMeta.overviewTitle}</h1>
-      <p class="note">${routeMeta.totalHint}</p>
+      <h1>${ico("🗺️", routeMeta.overviewTitle)}</h1>
+      <p class="note">${ico("⏱️", routeMeta.totalHint)}</p>
       ${state.mapStatus === "failed" ? `<p class="warn">${routeMeta.mapFailed}</p>` : ""}
       ${state.mapStatus === "tiles" ? `<p class="warn">${routeMeta.tilesFailed}</p>` : ""}
       ${locationPanel(state)}
-      ${!state.locationPermissionAsked ? btn("find-location", gps.findMe) : btn("retry-location", gps.retryLocation, "btn--ghost")}
+      ${!state.locationPermissionAsked ? btn("find-location", `📍 ${gps.findMe}`) : btn("retry-location", `🔄 ${gps.retryLocation}`, "btn--ghost")}
       ${btn("continue", "첫 장소로 이동")}
     </main>
   `;
@@ -230,12 +252,12 @@ function navView(state) {
       <p class="note">${stop.safeStandingNote}</p>
       ${state.mapStatus !== "ok" ? `<p class="warn">${stop.fallbackDirections}</p>` : ""}
       ${locationPanel(state)}
-      ${btn("arrive", gps.arrive, arriveEnabled ? "" : "is-disabled")}
-      ${!arriveEnabled ? `<p class="muted">${gps.arriveLocked}</p>` : ""}
-      ${state.manualAvailable || ["denied", "unavailable", "timeout", "low-accuracy"].includes(state.locationStatus) ? btn("manual", gps.manual, "btn--ghost") : ""}
-      ${btn("help", gps.help, "btn--ghost")}
-      ${btn("retry-location", gps.retryLocation, "btn--ghost")}
-      <a class="ext" href="${osmDirectionsUrl(stop)}" target="_blank" rel="noopener noreferrer">${gps.directionsExternal}</a>
+      ${btn("arrive", `📍 ${gps.arrive}`, arriveEnabled ? "" : "is-disabled")}
+      ${!arriveEnabled ? `<p class="muted">${ico("ℹ️", gps.arriveLocked)}</p>` : ""}
+      ${state.manualAvailable || ["denied", "unavailable", "timeout", "low-accuracy"].includes(state.locationStatus) ? btn("manual", `✋ ${gps.manual}`, "btn--ghost") : ""}
+      ${btn("help", `❓ ${gps.help}`, "btn--ghost")}
+      ${btn("retry-location", `🔄 ${gps.retryLocation}`, "btn--ghost")}
+      <a class="ext" href="${osmDirectionsUrl(stop)}" target="_blank" rel="noopener noreferrer">${ico("🧭", gps.directionsExternal)}</a>
     </main>
   `;
 }
@@ -247,10 +269,10 @@ function cameraView(state) {
   return `
     <main id="main" class="screen camera-screen">
       ${chrome(state, { showExit: true, showNotebook: true })}
-      <h1>카메라 단서</h1>
+      <h1>${ico("📷", "카메라 단서")}</h1>
       <p>${clue.framingInstruction}</p>
-      <p class="note">${cameraCopy.standStill}</p>
-      <p class="live ${state.cameraStatus === "active" ? "is-on" : ""}">${state.cameraStatus === "active" ? cameraCopy.active : cameraStatusLabel(state.cameraStatus)}</p>
+      <p class="note">${ico("🛑", cameraCopy.standStill)}</p>
+      <p class="live ${state.cameraStatus === "active" ? "is-on" : ""}">${ico(state.cameraStatus === "active" ? "🔴" : "📷", state.cameraStatus === "active" ? cameraCopy.active : cameraStatusLabel(state.cameraStatus))}</p>
       <div class="viewfinder">
         <video id="camera-video" class="camera-video" playsinline muted autoplay></video>
         <div class="frame-guide" aria-hidden="true"></div>
@@ -264,8 +286,8 @@ function cameraView(state) {
         }
         ${["fallback", "skipped", "denied", "unavailable"].includes(state.cameraStatus) ? `<div class="static-clue"><p>${clue.fallbackTitle}</p><p>${clue.fallbackClue}</p></div>` : ""}
       </div>
-      ${state.cameraStatus === "idle" || state.cameraStatus === "stopped" || state.cameraStatus === "interrupted" ? btn("start-camera", cameraCopy.start) : ""}
-      ${btn("skip-camera", cameraCopy.skip, "btn--ghost")}
+      ${state.cameraStatus === "idle" || state.cameraStatus === "stopped" || state.cameraStatus === "interrupted" ? btn("start-camera", `📷 ${cameraCopy.start}`) : ""}
+      ${btn("skip-camera", `👁️ ${cameraCopy.skip}`, "btn--ghost")}
     </main>
   `;
 }
@@ -584,17 +606,29 @@ function notebook(state) {
 }
 
 function renderSimPanel(state) {
+  const minimized = Boolean(state.simMinimized);
   return `
-    <aside class="sim" aria-label="프로토타입 시뮬레이터">
-      <p>시뮬레이터 · 실제 기기 검증이 아닙니다</p>
-      <button type="button" data-sim="gps" data-value="good">GPS 양호</button>
-      <button type="button" data-sim="gps" data-value="inaccurate">GPS 부정확</button>
-      <button type="button" data-sim="gps" data-value="denied">GPS 거부</button>
-      <button type="button" data-sim="gps" data-value="unavailable">GPS 없음</button>
-      <button type="button" data-sim="gps" data-value="timeout">GPS 시간초과</button>
-      <button type="button" data-sim="camera" data-value="ok">카메라 허용</button>
-      <button type="button" data-sim="camera" data-value="denied">카메라 거부</button>
-      <button type="button" data-sim="map" data-value="fail">지도 실패</button>
+    <aside class="sim${minimized ? " is-min" : ""}" aria-label="프로토타입 시뮬레이터">
+      <div class="sim-head">
+        <p>${ico("🧪", minimized ? "시뮬레이터" : "시뮬레이터 · 실제 기기 검증이 아닙니다")}</p>
+        <button type="button" class="sim-toggle" data-action="sim-toggle" aria-expanded="${minimized ? "false" : "true"}">
+          ${minimized ? "펼치기" : "접기"}
+        </button>
+      </div>
+      ${
+        minimized
+          ? ""
+          : `<div class="sim-body">
+        <button type="button" data-sim="gps" data-value="good">${ico("✅", "GPS 양호")}</button>
+        <button type="button" data-sim="gps" data-value="inaccurate">${ico("⚠️", "GPS 부정확")}</button>
+        <button type="button" data-sim="gps" data-value="denied">${ico("🚫", "GPS 거부")}</button>
+        <button type="button" data-sim="gps" data-value="unavailable">${ico("❌", "GPS 없음")}</button>
+        <button type="button" data-sim="gps" data-value="timeout">${ico("⏳", "GPS 시간초과")}</button>
+        <button type="button" data-sim="camera" data-value="ok">${ico("📷", "카메라 허용")}</button>
+        <button type="button" data-sim="camera" data-value="denied">${ico("🚫", "카메라 거부")}</button>
+        <button type="button" data-sim="map" data-value="fail">${ico("🗺️", "지도 실패")}</button>
+      </div>`
+      }
     </aside>
   `;
 }

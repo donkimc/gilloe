@@ -102,4 +102,13 @@ describe("rendered flow", () => {
     expect(html).toContain("재구성 보기");
     expect(html).toContain("세 답이 맞습니다");
   });
+
+  it("lets the simulator panel collapse", () => {
+    const open = render({ ...createInitialState(), simPanel: true, simMinimized: false });
+    expect(open).toContain("접기");
+    expect(open).toContain("GPS 양호");
+    const closed = render({ ...createInitialState(), simPanel: true, simMinimized: true });
+    expect(closed).toContain("펼치기");
+    expect(closed).not.toContain("GPS 양호");
+  });
 });
