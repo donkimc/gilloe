@@ -101,8 +101,12 @@ body {
 }
 .btn--ghost {
   background: transparent;
-  color: var(--text);
-  border: 1px solid #5a5368;
+  color: inherit;
+  border: 1px solid currentColor;
+}
+.overlay-card .btn--ghost {
+  color: var(--ink);
+  border-color: #6b5a3e;
 }
 .btn.is-disabled, .btn:disabled {
   opacity: 0.45;
