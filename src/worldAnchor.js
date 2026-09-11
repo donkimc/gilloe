@@ -1,6 +1,6 @@
 /**
- * World-lock for the Stop 2 navy umbrella (no AR framework).
- * Prefer GPS bearing + compass heading so the clue sits at a real outdoor
+ * World-lock for the Stop 2 puzzle tile (no AR framework).
+ * Prefer GPS bearing + compass heading so the tile sits at a real outdoor
  * lat/lng (Record Pizza sidewalk). Fall back to relative orientation / drag.
  */
 
@@ -356,10 +356,10 @@ export function updateLookGuidance(guide, pose, onScreen) {
   if (dist) dist.textContent = `${meters.toFixed(1)}m`;
   if (label) {
     if (pose.mode === "geo") {
-      label.textContent = meters < 8 ? "레코드피자 바깥쪽" : "남색 우산 · 가게 밖 인도";
+      label.textContent = meters < 8 ? "레코드피자 바깥쪽" : "조각 · 가게 밖 인도";
     } else {
       const turn = Math.round(Math.abs(pose.angularDistance ?? 0));
-      label.textContent = turn > 0 ? `이 방향으로 ${turn}°` : "남색 우산 방향";
+      label.textContent = turn > 0 ? `이 방향으로 ${turn}°` : "조각 방향";
     }
   }
 }

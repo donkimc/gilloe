@@ -1,5 +1,7 @@
 # Gilloe MVP 01 Plan
 
+> **Content pivot:** The playable MVP is now a four-stop piece hunt (arrive → collect a Gilloe-mark tile → assemble). See `BUILT.md`. This file keeps the original Cheonho corridor, safety, and field-test notes; do not restore the murder case.
+
 ## *Cheonho 19:42 — The Last Envelope*
 
 **Status:** Review draft; implementation has not started  

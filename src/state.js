@@ -1,4 +1,6 @@
 import { screens as SCREEN_LIST, game } from "./content.js";
+import { emptyPlacement, isAssembled } from "./assemble.js";
+import { SCHEMA_VERSION } from "./storage.js";
 
 export const SCREENS = SCREEN_LIST;
 
@@ -6,18 +8,16 @@ const FLOW = SCREEN_LIST;
 
 export function createInitialState() {
   return {
-    schemaVersion: 1,
+    schemaVersion: SCHEMA_VERSION,
     gameId: game.id,
     playerMode: null,
     screen: "cover",
     currentStop: 1,
-    solvedPuzzleIds: [],
+    collectedPieceIds: [],
     collectedCameraClueIds: [],
     cameraFallbackIds: [],
     hintsUsed: {},
     startedAt: null,
-    duoPhase: null,
-    discussedStops: [],
     safetyAccepted: false,
     locationPermissionAsked: false,
     overlay: null,
@@ -30,10 +30,11 @@ export function createInitialState() {
     manualAvailable: false,
     cameraStatus: "idle",
     mapStatus: "idle",
-    accusationCheck: null,
     feedbackAnswers: {},
-    puzzleDraft: {},
-    puzzleMessage: null,
+    assemblePlacement: emptyPlacement(),
+    assembleOrder: ["piece-2", "piece-4", "piece-1", "piece-3"],
+    assembleSelected: null,
+    assembleComplete: false,
     restored: false,
     invalidSave: false,
   };
@@ -51,7 +52,7 @@ export function needsCamera(screen) {
   return screen === "camera-stop-2";
 }
 
-export function notebookAllowed(screen) {
+export function trayAllowed(screen) {
   const blocked = new Set(["cover", "mode", "safety"]);
   return !blocked.has(screen);
 }
@@ -70,9 +71,9 @@ export function applyPersisted(state, saved) {
     manualAvailable: saved.locationPermissionAsked ? true : false,
     cameraStatus: "idle",
     mapStatus: "idle",
-    accusationCheck: null,
-    puzzleDraft: {},
-    puzzleMessage: null,
+    assemblePlacement: saved.assemblePlacement || emptyPlacement(),
+    assembleSelected: null,
+    assembleComplete: isAssembled(saved.assemblePlacement || emptyPlacement()),
     restored: true,
   };
 }
@@ -115,8 +116,6 @@ export function reduce(state, action) {
         currentStop,
         overlay: null,
         stoppedWalking: false,
-        duoPhase: duoStart(state.playerMode, screen),
-        puzzleMessage: null,
         cameraStatus: needsCamera(screen) ? "idle" : "idle",
       };
     }
@@ -133,7 +132,7 @@ export function reduce(state, action) {
       };
     }
     case "OPEN_NOTEBOOK":
-      if (!notebookAllowed(state.screen)) return state;
+      if (!trayAllowed(state.screen)) return state;
       return {
         ...state,
         overlay: "notebook",
@@ -171,7 +170,6 @@ export function reduce(state, action) {
         screen,
         overlay: null,
         stoppedWalking: false,
-        duoPhase: duoStart(state.playerMode, screen),
         cameraStatus: "idle",
       };
     }
@@ -185,50 +183,40 @@ export function reduce(state, action) {
         collectedCameraClueIds: ids,
         cameraFallbackIds: fallbackIds,
         cameraStatus: "stopped",
-        screen: "clue-stop-2",
-        duoPhase: duoStart(state.playerMode, "clue-stop-2"),
+        screen: "piece-stop-2",
       };
     }
     case "STOP_WALKING":
       return { ...state, stoppedWalking: true };
-    case "SET_DUO_PHASE":
-      return { ...state, duoPhase: action.phase };
-    case "DISCUSSED":
+    case "COLLECT_PIECE": {
+      const pieceId = action.pieceId;
+      const collectedPieceIds = unique(state.collectedPieceIds, pieceId);
+      const afterFour = collectedPieceIds.length >= 4;
+      const next = afterFour ? "assemble" : `navigating-stop-${state.currentStop + 1}`;
       return {
         ...state,
-        discussedStops: unique(state.discussedStops, state.currentStop),
-        duoPhase: "puzzle",
-        screen: puzzleScreen(state.currentStop),
+        collectedPieceIds,
+        screen: next,
+        currentStop: afterFour ? 4 : state.currentStop + 1,
+        stoppedWalking: false,
       };
+    }
     case "USE_HINT":
       return {
         ...state,
         hintsUsed: { ...state.hintsUsed, [action.puzzleId]: true },
       };
-    case "PUZZLE_DRAFT":
-      return { ...state, puzzleDraft: { ...state.puzzleDraft, ...action.draft } };
-    case "PUZZLE_MESSAGE":
-      return { ...state, puzzleMessage: action.message };
-    case "SOLVE":
+    case "SELECT_PIECE":
+      return { ...state, assembleSelected: action.pieceId };
+    case "PLACE_PIECE": {
+      const assemblePlacement = action.placement;
       return {
         ...state,
-        solvedPuzzleIds: unique(state.solvedPuzzleIds, action.puzzleId),
-        puzzleMessage: action.message,
-      };
-    case "AFTER_PUZZLE": {
-      const screen = afterPuzzle(state.currentStop);
-      return {
-        ...state,
-        screen,
-        currentStop: stopFromScreen(screen) ?? state.currentStop,
-        puzzleDraft: {},
-        puzzleMessage: null,
-        duoPhase: duoStart(state.playerMode, screen),
-        stoppedWalking: false,
+        assemblePlacement,
+        assembleSelected: null,
+        assembleComplete: isAssembled(assemblePlacement),
       };
     }
-    case "ACCUSATION_RESULT":
-      return { ...state, accusationCheck: action.check };
     case "FEEDBACK":
       return {
         ...state,
@@ -242,7 +230,6 @@ export function reduce(state, action) {
         screen: action.screen,
         currentStop: action.stop ?? stopFromScreen(action.screen) ?? state.currentStop,
         overlay: null,
-        duoPhase: duoStart(state.playerMode, action.screen),
       };
     default:
       return state;
@@ -256,24 +243,7 @@ export function stopFromScreen(screen) {
 
 function arrivingScreen(stop) {
   if (stop === 2) return "camera-stop-2";
-  if (stop === 4) return "clue-stop-4";
-  return `clue-stop-${stop}`;
-}
-
-function puzzleScreen(stop) {
-  if (stop === 4) return "accusation";
-  return `puzzle-stop-${stop}`;
-}
-
-function afterPuzzle(stop) {
-  if (stop === 4) return "accusation";
-  return `navigating-stop-${stop + 1}`;
-}
-
-function duoStart(mode, screen) {
-  if (mode !== "duo") return null;
-  if (screen.startsWith("clue-stop-") || screen === "camera-stop-2") return "witness";
-  return null;
+  return `piece-stop-${stop}`;
 }
 
 function unique(list, value) {

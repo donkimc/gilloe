@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 export const STORAGE_KEY = "gilloe.mvp01.progress";
 
 const PERSIST_KEYS = [
@@ -7,15 +7,13 @@ const PERSIST_KEYS = [
   "playerMode",
   "screen",
   "currentStop",
-  "solvedPuzzleIds",
+  "collectedPieceIds",
   "collectedCameraClueIds",
   "cameraFallbackIds",
   "hintsUsed",
   "startedAt",
-  "duoPhase",
   "safetyAccepted",
   "locationPermissionAsked",
-  "discussedStops",
 ];
 
 export function serializeProgress(state) {
@@ -41,8 +39,8 @@ export function validateProgress(raw, { gameId, allowedScreens }) {
   if (raw.currentStop != null && ![1, 2, 3, 4].includes(raw.currentStop)) {
     return { ok: false, reason: "stop" };
   }
-  if (raw.solvedPuzzleIds && !Array.isArray(raw.solvedPuzzleIds)) {
-    return { ok: false, reason: "puzzles" };
+  if (raw.collectedPieceIds && !Array.isArray(raw.collectedPieceIds)) {
+    return { ok: false, reason: "pieces" };
   }
   if (raw.collectedCameraClueIds && !Array.isArray(raw.collectedCameraClueIds)) {
     return { ok: false, reason: "camera" };

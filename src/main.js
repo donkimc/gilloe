@@ -1,13 +1,13 @@
 import "./styles.css";
-import { accusation, game, stopByOrder, stops } from "./content.js";
+import { game, stopByOrder, stops } from "./content.js";
 import { createStorage, STORAGE_KEY } from "./storage.js";
 import { SCREENS, createInitialState, needsCamera, needsLiveLocation, reduce } from "./state.js";
 import { createLocationService } from "./location.js";
 import { createCameraService } from "./camera.js";
 import { createMapService } from "./map.js";
-import { checkAccusation, checkChoice, checkMatchPuzzle, checkOrder, moveItem } from "./puzzles.js";
+import { placeOnCell, snapPlacement } from "./assemble.js";
 import { render } from "./ui/screens.js";
-import { bindHoldToReveal, downloadJson } from "./ui/components.js";
+import { downloadJson } from "./ui/components.js";
 import { createSimulatedGeolocation, createSimulatedMedia, parseSim } from "./simulate.js";
 import { applyWorldAnchorStyle, createWorldAnchor, updateLookGuidance } from "./worldAnchor.js";
 
@@ -18,7 +18,6 @@ const sim = parseSim(window.location.search);
 
 let simMinimized = false;
 let gpsMode = sim.gps || (sim.panel ? "good" : "live");
-// In ?sim=1 default to a visible fake camera feed so desktop/prototype demos work.
 let cameraMode = sim.camera || (sim.panel ? "ok" : "live");
 let mapFail = sim.map === "fail";
 const fakeGeo = createSimulatedGeolocation(gpsMode, { stop: stops[0] });
@@ -161,11 +160,11 @@ location.onFix((fix) => {
 function paint() {
   ui.innerHTML = render({ ...state, simPanel: sim.panel, simMinimized });
   bindUi();
-  // Full HTML re-renders replace <video>; keep the live stream attached.
   if (needsCamera(state.screen) && camera.hasActiveStream()) {
     camera.attach(document.querySelector("#camera-video"));
   }
   syncWorldAnchor();
+  bindAssemble();
 }
 
 function bindUi() {
@@ -184,26 +183,60 @@ function bindUi() {
     if (!(input instanceof HTMLInputElement) || input.type !== "radio") return;
     if (["understand", "walk", "gps", "camera", "another", "duo"].includes(input.name)) {
       dispatch({ type: "FEEDBACK", id: input.name, value: input.value });
-      return;
     }
-    dispatch({ type: "PUZZLE_DRAFT", draft: { [input.name]: input.value } });
   };
 
-  ui.querySelectorAll("[data-choice]").forEach((node) => {
-    const choose = () =>
-      dispatch({ type: "PUZZLE_DRAFT", draft: { hotspot: node.dataset.choice, choice: node.dataset.choice } });
-    node.addEventListener("click", choose);
-    node.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        choose();
-      }
-    });
-  });
-
-  bindHoldToReveal(ui);
   const arrive = ui.querySelector('[data-action="arrive"]');
   if (arrive && !state.canAutoArrive) arrive.disabled = true;
+}
+
+function bindAssemble() {
+  if (state.screen !== "assemble" || state.assembleComplete) return;
+  const board = ui.querySelector("[data-assemble-board]");
+  if (!board) return;
+
+  ui.querySelectorAll(".assemble-piece").forEach((node) => {
+    node.addEventListener("pointerdown", (event) => {
+      const pieceId = node.dataset.piece;
+      const startX = event.clientX;
+      const startY = event.clientY;
+      let ghost = null;
+      let dragging = false;
+      node.setPointerCapture(event.pointerId);
+
+      const move = (moveEvent) => {
+        const dx = moveEvent.clientX - startX;
+        const dy = moveEvent.clientY - startY;
+        if (!dragging && Math.hypot(dx, dy) < 10) return;
+        dragging = true;
+        if (!ghost) {
+          ghost = node.cloneNode(true);
+          ghost.classList.add("assemble-ghost");
+          document.body.appendChild(ghost);
+        }
+        ghost.style.left = `${moveEvent.clientX - 40}px`;
+        ghost.style.top = `${moveEvent.clientY - 40}px`;
+      };
+      const up = (upEvent) => {
+        node.removeEventListener("pointermove", move);
+        node.removeEventListener("pointerup", up);
+        node.removeEventListener("pointercancel", up);
+        ghost?.remove();
+        if (!dragging) return;
+        const next = snapPlacement(
+          state.assemblePlacement,
+          pieceId,
+          upEvent.clientX,
+          upEvent.clientY,
+          board.getBoundingClientRect(),
+        );
+        dispatch({ type: "PLACE_PIECE", placement: next });
+      };
+      node.addEventListener("pointermove", move);
+      node.addEventListener("pointerup", up);
+      node.addEventListener("pointercancel", up);
+    });
+  });
 }
 
 function handleSim(kind, value) {
@@ -283,48 +316,20 @@ function handleAction(action, dataset) {
     case "stopped":
       dispatch({ type: "STOP_WALKING" });
       break;
-    case "to-puzzle":
-      dispatch({
-        type: "GOTO",
-        screen: state.currentStop === 4 ? "accusation" : `puzzle-stop-${state.currentStop}`,
-      });
-      break;
-    case "duo-pass-evidence":
-      dispatch({ type: "SET_DUO_PHASE", phase: "pass-evidence" });
-      break;
-    case "duo-evidence":
-      dispatch({ type: "SET_DUO_PHASE", phase: "evidence" });
-      break;
-    case "duo-pass-discuss":
-      dispatch({ type: "SET_DUO_PHASE", phase: "pass-discuss" });
-      break;
-    case "duo-discuss":
-      dispatch({ type: "SET_DUO_PHASE", phase: "discuss" });
-      break;
-    case "discussed":
-    case "duo-alone":
-      dispatch({ type: "DISCUSSED" });
-      break;
     case "hint":
-      dispatch({ type: "USE_HINT", puzzleId: stop.id });
+      dispatch({ type: "USE_HINT", puzzleId: "assemble" });
       break;
-    case "check-match":
-      checkMatch();
+    case "select-piece":
+      dispatch({ type: "SELECT_PIECE", pieceId: dataset.piece });
       break;
-    case "check-hotspot":
-      checkHotspot();
+    case "place-cell": {
+      if (!state.assembleSelected) break;
+      const placement = placeOnCell(state.assemblePlacement, state.assembleSelected, dataset.cell);
+      dispatch({ type: "PLACE_PIECE", placement });
       break;
-    case "check-order":
-      checkTimeline();
-      break;
-    case "check-accusation":
-      dispatch({ type: "ACCUSATION_RESULT", check: checkAccusation(state.puzzleDraft, accusation.solution) });
-      break;
-    case "move-up":
-      moveOrder(-1, Number(dataset.index));
-      break;
-    case "move-down":
-      moveOrder(1, Number(dataset.index));
+    }
+    case "collect-piece":
+      dispatch({ type: "COLLECT_PIECE", pieceId: stop.pieceId });
       break;
     case "start-camera":
       startCamera();
@@ -342,9 +347,6 @@ function handleAction(action, dataset) {
         fallback: state.cameraStatus !== "active",
       });
       break;
-    case "after-puzzle":
-      dispatch({ type: "AFTER_PUZZLE" });
-      break;
     case "download-feedback":
       downloadJson("gilloe-feedback.json", {
         gameId: game.id,
@@ -361,55 +363,13 @@ function handleAction(action, dataset) {
   }
 }
 
-function checkMatch() {
-  const puzzleStop = stopByOrder(1);
-  const result = checkMatchPuzzle(state.puzzleDraft, puzzleStop.puzzle.solution);
-  if (!result.complete || !result.correct) {
-    dispatch({ type: "PUZZLE_MESSAGE", message: puzzleStop.puzzle.wrong });
-    return;
-  }
-  dispatch({ type: "SOLVE", puzzleId: puzzleStop.id, message: puzzleStop.puzzle.success });
-}
-
-function checkHotspot() {
-  const puzzleStop = stopByOrder(2);
-  const answer = state.puzzleDraft.choice || state.puzzleDraft.hotspot;
-  const result = checkChoice(answer, puzzleStop.puzzle.solution);
-  if (!result.correct) {
-    const choice = puzzleStop.puzzle.choices.find((c) => c.id === answer);
-    dispatch({ type: "PUZZLE_MESSAGE", message: choice?.wrong || "다시 고르세요." });
-    return;
-  }
-  dispatch({ type: "SOLVE", puzzleId: puzzleStop.id, message: puzzleStop.puzzle.success });
-}
-
-function checkTimeline() {
-  const puzzleStop = stopByOrder(3);
-  const ids = state.puzzleDraft.order || puzzleStop.puzzle.items.map((item) => item.id);
-  const result = checkOrder(ids, puzzleStop.puzzle.solution);
-  if (!result.correct) {
-    dispatch({ type: "PUZZLE_MESSAGE", message: puzzleStop.puzzle.wrong });
-    return;
-  }
-  dispatch({ type: "SOLVE", puzzleId: puzzleStop.id, message: puzzleStop.puzzle.success });
-}
-
-function moveOrder(direction, index) {
-  const puzzleStop = stopByOrder(3);
-  const ids = state.puzzleDraft.order || puzzleStop.puzzle.items.map((item) => item.id);
-  dispatch({ type: "PUZZLE_DRAFT", draft: { order: moveItem(ids, index, direction) } });
-}
-
 async function startCamera() {
-  // Ask for motion permission inside the tap gesture (required on iOS).
   await worldAnchor.requestPermission().catch(() => false);
-  // Keep GPS live so the umbrella can stay fixed at the outdoor lat/lng.
   if (state.locationPermissionAsked) startWatch();
   dispatch({ type: "CAMERA_STATUS", status: "starting" });
   try {
     const video = document.querySelector("#camera-video");
     await camera.start(video);
-    // Mark active, then re-bind after paint so the navy umbrella sits on live video.
     dispatch({ type: "CAMERA_STATUS", status: "active" });
     camera.attach(document.querySelector("#camera-video"));
     await syncWorldAnchor(true);

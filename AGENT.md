@@ -2,14 +2,14 @@
 
 ## Mission
 
-Implement the disposable mobile web prototype defined in `BUILT.md`. The goal is to test how one Gilloe walking mystery feels. Keep the implementation small, understandable, and easy to revise after field testing.
+Implement the disposable mobile web prototype defined in `BUILT.md`. The goal is to test how one Gilloe walking hunt feels. Keep the implementation small, understandable, and easy to revise after field testing.
 
 ## Read first
 
 Before editing, read:
 
 1. `BUILT.md`
-2. `docs/GILLOE_MVP_01_CHEONHO_MURDER_MYSTERY_PLAN.md`
+2. `docs/GILLOE_MVP_01_CHEONHO_MURDER_MYSTERY_PLAN.md` (route/safety history; content is the piece hunt)
 3. `docs/GILLOE_SAFETY_SECURITY_RISK_GUIDE.md`
 
 Treat `BUILT.md` as the implementation source of truth. Preserve all safety and privacy constraints even when simplifying another part of the build.
@@ -23,8 +23,8 @@ Build only:
 - four stops;
 - solo and two-player shared-phone modes;
 - live browser GPS;
-- one GPS-gated camera-overlay clue at Stop 2;
-- four easy puzzles, hints, notebook, accusation, ending, and local feedback;
+- one GPS-gated camera-overlay tile at Stop 2;
+- four collected tiles, a piece tray, one assemble puzzle, ending, and local feedback;
 - a static deployable Vite site.
 
 Do not add accounts, payments, a backend, remote analytics, a database, creator tools, multiple games, live multiplayer, QR codes, AR frameworks, object recognition, face recognition, media capture, or production infrastructure.
@@ -47,7 +47,7 @@ Do not stop implementation merely because final coordinates are pending. Use an 
 - Use Leaflet 1.9 and OpenStreetMap raster tiles with visible attribution.
 - Keep story and route content in one data module.
 - Keep game state independent of the DOM.
-- Keep map, location, camera, storage, puzzle logic, and view rendering in separate modules.
+- Keep map, location, camera, storage, assemble logic, and view rendering in separate modules.
 - Use semantic HTML and progressive enhancement.
 - Prefer native browser APIs and small pure functions.
 - Do not introduce a framework or dependency without documenting why the existing stack cannot reasonably do the job.
@@ -81,8 +81,7 @@ Do not stop implementation merely because final coordinates are pending. Use an 
 
 ## Safety rules
 
-- All crimes, characters, businesses, organizations, and transactions are fictional.
-- Do not identify any real business as a crime scene or suspect location.
+- All crime framing is dropped. Do not identify any real business as a crime scene.
 - No stop may require entry, purchase, employee interaction, or touching installed property.
 - Tell players to stop walking before reading or using the camera.
 - Keep a visible game-exit action on route and camera screens.
@@ -109,18 +108,17 @@ Until verified:
 - Make primary touch targets at least 44 px high.
 - Keep clue copy short and readable outdoors.
 - Show the active step and progress clearly.
-- Never require drag and drop as the only way to solve a puzzle.
-- Wrong answers must allow immediate recovery.
-- A hint must exist for every puzzle.
-- Notebook access must preserve and return to the active state.
-- Two-player mode must alternate roles and make both players participate without networking.
+- Assemble supports drag-to-snap and tap-to-place.
+- A hint must exist for the assemble step.
+- Tray access must preserve and return to the active state.
+- Two-player mode shares one phone without split roles.
 - Respect reduced-motion preferences.
 - Do not use color as the only information channel.
 - Maintain visible keyboard focus and useful text alternatives.
 
 ## State and storage rules
 
-Persist only the schema version, game ID, player mode, current state/stop, solved clues, collected camera-clue status, hint usage, and start time.
+Persist only the schema version, game ID, player mode, current state/stop, collected pieces, collected camera-clue status, hint usage, and start time.
 
 Do not persist:
 
@@ -152,12 +150,12 @@ Run the production build after meaningful changes. Add focused tests for pure lo
 - accuracy-aware arrival eligibility;
 - state transitions;
 - progress serialization and migration;
-- puzzle answers and final accusation.
+- assemble snap / complete checking.
 
 Manually verify:
 
 - solo and two-player flows;
-- every puzzle, hint, and wrong-answer recovery;
+- tile collection and assemble (drag and tap);
 - refresh recovery;
 - all GPS and camera permission outcomes;
 - camera tracks closing on every exit;

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { accusation } from "./content.js";
 import { createInitialState, reduce } from "./state.js";
 import { serializeProgress } from "./storage.js";
 import { render } from "./ui/screens.js";
@@ -13,10 +12,11 @@ describe("rendered flow", () => {
     const html = render(createInitialState());
     expect(html).toContain("현장 검증 전 임시 경로");
     expect(html).toContain("공개 플레이용이 아닙니다");
-    expect(html).toContain("수사 시작");
+    expect(html).toContain("걷기 시작");
+    expect(html).toContain("길로 마크");
   });
 
-  it("walks a solo path from briefing to accusation HTML", () => {
+  it("walks a solo path from briefing to a collected piece", () => {
     let state = play([
       { type: "SELECT_MODE", mode: "solo" },
       { type: "ACCEPT_SAFETY" },
@@ -31,7 +31,8 @@ describe("rendered flow", () => {
 
     state = reduce(state, { type: "ARRIVE", manual: true });
     html = render({ ...state, stoppedWalking: true });
-    expect(html).toContain("퍼즐 열기");
+    expect(html).toContain("조각 받기");
+    expect(html).toContain("조각 1 / 4");
 
     state = play(
       [
@@ -42,26 +43,21 @@ describe("rendered flow", () => {
       state,
     );
     html = render(state);
-    expect(html).toContain("카메라 없이 단서 보기");
-    expect(html).toContain("정적 단서");
-    expect(html).toContain("19:38");
+    expect(html).toContain("카메라 없이 조각 보기");
+    expect(html).toContain("정적 조각");
 
     state = reduce(state, { type: "COLLECT_CAMERA", fallback: true });
     expect(state.cameraStatus).toBe("stopped");
-    expect(state.screen).toBe("clue-stop-2");
+    expect(state.screen).toBe("piece-stop-2");
   });
 
-  it("shows two-player pass-the-phone copy", () => {
-    const state = play([
-      { type: "SELECT_MODE", mode: "duo" },
-      { type: "ACCEPT_SAFETY" },
-      { type: "GOTO", screen: "clue-stop-1", stop: 1 },
-      { type: "STOP_WALKING" },
-    ]);
-    const html = render(state);
-    expect(html).toContain("휴대폰을 들고 있을 사람");
-    expect(html).toContain("증인");
-    expect(html).toContain("휴대폰을 건네주세요");
+  it("shows shared-phone copy without witness roles", () => {
+    const html = render(createInitialState());
+    expect(html).not.toContain("증인");
+    const mode = render(play([{ type: "GOTO", screen: "mode" }]));
+    expect(mode).toContain("둘이 걷기");
+    expect(mode).toContain("휴대폰 한 대");
+    expect(mode).not.toContain("휴대폰을 건네주세요");
   });
 
   it("keeps text directions when the map fails", () => {
@@ -91,16 +87,17 @@ describe("rendered flow", () => {
     expect(saved.lastFix).toBeUndefined();
   });
 
-  it("renders accusation controls from content", () => {
+  it("renders the assemble board from four collected pieces", () => {
     const html = render({
       ...createInitialState(),
-      screen: "accusation",
+      screen: "assemble",
       playerMode: "solo",
-      puzzleDraft: accusation.solution,
-      accusationCheck: { allCorrect: true, murderer: true, motive: true, evidence: true },
+      collectedPieceIds: ["piece-1", "piece-2", "piece-3", "piece-4"],
+      assembleComplete: true,
     });
-    expect(html).toContain("재구성 보기");
-    expect(html).toContain("세 답이 맞습니다");
+    expect(html).toContain("길로 마크 맞추기");
+    expect(html).toContain("완성 보기");
+    expect(html).toContain("마크가 완성되었습니다");
   });
 
   it("lets the simulator panel collapse", () => {

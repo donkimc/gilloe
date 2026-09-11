@@ -1,6 +1,6 @@
-# Gilloe MVP 01 — 천호 19:42 — 마지막 봉투
+# Gilloe MVP 01 — 천호에서 길로 마크 모으기
 
-Disposable **field-test prototype** of one Korean walking mystery. It is **not** public-play ready and **not** production-ready. Stop coordinates, pedestrian geometry, arrival radii, and camera framing are **provisional** (`fieldVerified: false`). The UI always shows **현장 검증 전 임시 경로**.
+Disposable **field-test prototype** of one Korean walking scavenger hunt. Walk four Cheonho stops, collect a Gilloe-mark tile at each arrival, then assemble the four tiles. It is **not** public-play ready and **not** production-ready. Stop coordinates, pedestrian geometry, arrival radii, and camera framing are **provisional** (`fieldVerified: false`). The UI always shows **현장 검증 전 임시 경로**.
 
 ## Setup
 
@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` on the same computer. For a two-player pass-the-phone rehearsal, use a narrow mobile viewport.
+Open `http://localhost:5173` on the same computer. For a two-player shared-phone rehearsal, use a narrow mobile viewport.
 
 ## Build and test
 
@@ -51,7 +51,7 @@ Vanilla Vite app. Game progress is an explicit state machine in `src/state.js`. 
 
 | Path | Role |
 | --- | --- |
-| `src/content.js` | Korean copy, suspects, puzzles, answers, hints, overlay placement, stop data |
+| `src/content.js` | Korean copy, overlay placement, stop data |
 | `public/route.geojson` | Walking line (`[lng, lat]`), labelled unverified |
 | `src/state.js` | State machine |
 | `src/storage.js` | Minimal `localStorage` progress |
@@ -59,24 +59,24 @@ Vanilla Vite app. Game progress is an explicit state machine in `src/state.js`. 
 | `src/location.js` | Geolocation watcher (no coordinate persistence) |
 | `src/camera.js` | `getUserMedia` video only; `stop()` ends tracks |
 | `src/map.js` | Leaflet 1.9 + OSM tiles |
-| `src/puzzles.js` | Answer checking |
+| `src/assemble.js` | 2x2 snap / complete checking |
 | `src/ui/screens.js` | Screen HTML |
 | `src/simulate.js` | Injected GPS/camera/map states for tests and `?sim=1` |
 
 ## Content and route editing
 
-1. Edit story, answers, radii, and overlay placement in `src/content.js`.
+1. Edit copy, radii, and overlay placement in `src/content.js`.
 2. Replace `coordinates` on each stop after a physical survey. Keep `fieldVerified: false` until that survey is done.
 3. Replace `public/route.geojson` with a pedestrian line along streets, not a straight line between pins. GeoJSON order is `[longitude, latitude]`. The current file is an OpenStreetMap foot route (FOSSGIS OSRM), still unverified on site.
 4. Camera framing copy lives under `stops[1].cameraClue`. Do not point it at people or private interiors.
 
 ## Privacy behaviour
 
-Persisted keys: schema version, game id, mode, screen/stop, solved puzzles, camera-clue / fallback flags, hint flags, start time, duo phase, safety/location-asked flags.
+Persisted keys: schema version, game id, mode, screen/stop, collected pieces, camera-clue / fallback flags, hint flags, start time, safety/location-asked flags.
 
 **Never stored or transmitted:** coordinates, location history, accuracy samples, camera frames, photos, audio, video, names, emails, device ids.
 
-Location is requested only after **내 위치 찾기**. Camera starts only after **카메라 단서 찾기**. No microphone. No QR, object, or face detection. Feedback can be downloaded as JSON locally; there is no submit endpoint.
+Location is requested only after **내 위치 찾기**. Camera starts only after **카메라로 조각 찾기**. No microphone. No QR, object, or face detection. Feedback can be downloaded as JSON locally; there is no submit endpoint.
 
 Camera tracks stop on collect, skip, error, screen change, overlay, page hide, reset, and completion.
 
@@ -96,7 +96,7 @@ Do not invite outside testers until these are walked and approved.
 
 ## Known limitations
 
-- Desktop browsers often have no usable GPS or rear camera; use manual arrival and **카메라 없이 단서 보기**, or `?sim=1`.
+- Desktop browsers often have no usable GPS or rear camera; use manual arrival and **카메라 없이 조각 보기**, or `?sim=1`.
 - OSM tiles need a network. Text directions remain if the map fails.
 - Refresh restores the last screen, not a live GPS fix.
 - Two-player mode is one shared phone; no networking.
