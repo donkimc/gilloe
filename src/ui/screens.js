@@ -274,7 +274,7 @@ function cameraView(state) {
       <p class="live ${live ? "is-on" : ""}">${ico(live ? "🔴" : "📷", live ? cameraCopy.active : cameraStatusLabel(state.cameraStatus))}</p>
       <p class="note">${ico("ℹ️", live ? cameraCopy.overlayHint : fallback ? cameraCopy.fallbackHint : cameraCopy.beforeStartHint)}</p>
       <div class="viewfinder">
-        <video id="camera-video" class="camera-video" playsinline muted autoplay></video>
+        <video id="camera-video" class="camera-video" playsinline webkit-playsinline muted autoplay></video>
         <div class="frame-guide" aria-hidden="true"></div>
         ${
           live || fallback

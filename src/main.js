@@ -17,7 +17,8 @@ const sim = parseSim(window.location.search);
 
 let simMinimized = false;
 let gpsMode = sim.gps || (sim.panel ? "good" : "live");
-let cameraMode = sim.camera || "live";
+// In ?sim=1 default to a visible fake camera feed so desktop/prototype demos work.
+let cameraMode = sim.camera || (sim.panel ? "ok" : "live");
 let mapFail = sim.map === "fail";
 const fakeGeo = createSimulatedGeolocation(gpsMode, { stop: stops[0] });
 
@@ -79,7 +80,9 @@ function persistIfNeeded() {
 }
 
 function syncDevices(prev, next) {
-  if (!needsCamera(next.screen) || next.overlay) camera.stop();
+  const leavingCamera = needsCamera(prev.screen) && !needsCamera(next.screen);
+  const overlayOnCamera = needsCamera(next.screen) && Boolean(next.overlay);
+  if (leavingCamera || overlayOnCamera) camera.stop();
   if (needsLiveLocation(next.screen) && next.locationPermissionAsked) {
     const restart =
       prev.screen !== next.screen ||

@@ -6,6 +6,13 @@ export function createCameraService({
 
   function stopTracks() {
     if (!stream) return;
+    if (typeof stream._stopSimulation === "function") {
+      try {
+        stream._stopSimulation();
+      } catch {
+        /* ignore */
+      }
+    }
     for (const track of stream.getTracks()) {
       try {
         track.stop();
@@ -22,10 +29,34 @@ export function createCameraService({
   function bind(video) {
     videoEl = video || null;
     if (!video || !stream) return;
+    if (typeof video.setAttribute === "function") {
+      video.setAttribute("playsinline", "");
+      video.setAttribute("webkit-playsinline", "");
+    }
+    video.muted = true;
     if (video.srcObject !== stream) {
       video.srcObject = stream;
     }
-    video.play().catch(() => {});
+    const play = typeof video.play === "function" ? video.play() : null;
+    if (play && typeof play.catch === "function") {
+      play.catch(() => {});
+    }
+  }
+
+  async function requestStream() {
+    const attempts = [
+      { audio: false, video: { facingMode: { ideal: "environment" } } },
+      { audio: false, video: true },
+    ];
+    let lastError = null;
+    for (const constraints of attempts) {
+      try {
+        return await mediaDevices.getUserMedia(constraints);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError || new Error("unavailable");
   }
 
   return {
@@ -42,10 +73,7 @@ export function createCameraService({
         error.name = "NotSupportedError";
         throw error;
       }
-      stream = await mediaDevices.getUserMedia({
-        audio: false,
-        video: { facingMode: { ideal: "environment" } },
-      });
+      stream = await requestStream();
       bind(video);
       return stream;
     },
