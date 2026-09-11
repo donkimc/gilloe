@@ -1,24 +1,22 @@
 import {
   assembleCopy,
-  briefing,
-  cameraCopy,
-  cover,
+  brand,
+  copy,
+  createCopy,
   ending,
-  feedbackCopy,
-  game,
   gps,
-  modes,
   osmDirectionsUrl,
+  naverPlaceUrl,
   pieceCopy,
+  previewCopy,
   routeMeta,
   safety,
   screens as screenList,
-  stopByOrder,
   trayCopy,
 } from "../content.js";
-import { CELLS, markSvg, pieceMarkup, PIECES } from "../assemble.js";
+import { gridSizeForCount, outlinePreview, pieceMarkup, piecesForGrid } from "../assemble.js";
 import { formatApproxDistance } from "../geo.js";
-import { trayAllowed } from "../state.js";
+import { currentPlace, gridN, placeCount, trayAllowed } from "../state.js";
 
 const locationIcons = {
   idle: "📍",
@@ -30,10 +28,6 @@ const locationIcons = {
   timeout: "⏳",
 };
 
-function h(strings, ...values) {
-  return String.raw({ raw: strings }, ...values);
-}
-
 function ico(symbol, text) {
   return `<span class="ico"><span class="ico__mark" aria-hidden="true">${symbol}</span><span>${text}</span></span>`;
 }
@@ -43,20 +37,30 @@ function btn(action, label, extra = "") {
 }
 
 function banner() {
-  return `<div class="proto-banner" role="status">${ico("⚠️", game.prototypeBanner)}</div>`;
+  return `<div class="proto-banner" role="status">${ico("⚠️", brand.prototypeBanner)}</div>`;
+}
+
+function jigsaw(state) {
+  return state.game?.jigsaw || { source: "system", systemImageId: "station" };
+}
+
+function tile(state, pieceId, extraClass = "") {
+  return pieceMarkup(pieceId, extraClass, jigsaw(state), gridN(state));
 }
 
 function progress(state) {
+  const total = placeCount(state);
   const n = state.collectedPieceIds?.length || 0;
-  return `<p class="progress">${ico("🧩", trayCopy.count(Math.min(n, 4)))}</p>`;
+  return `<p class="progress">${ico("🧩", trayCopy.count(Math.min(n, total), total))}</p>`;
 }
 
-function chrome(state, { showExit = false, showTray = false } = {}) {
+function chrome(state, { showExit = false, showTray = false, showPrev = false } = {}) {
   return `
     <header class="top">
-      <p class="brand">${game.brand}</p>
-      ${progress(state)}
+      <p class="brand">${brand.name}</p>
+      ${state.game ? progress(state) : ""}
       <div class="top-actions">
+        ${showPrev && state.currentStop > 1 ? btn("prev-place", `⬅️ ${gps.prevPlace}`, "btn--ghost") : ""}
         ${showTray && trayAllowed(state.screen) ? btn("notebook", `🧩 ${trayCopy.open}`, "btn--ghost") : ""}
         ${showExit ? btn("exit", `🚪 ${gps.exit}`, "btn--ghost") : ""}
       </div>
@@ -65,89 +69,122 @@ function chrome(state, { showExit = false, showTray = false } = {}) {
 }
 
 export function render(state) {
-  const overlayHtml = renderOverlay(state);
   return `
     <a class="skip-link" href="#main">본문으로</a>
     ${banner()}
     <div class="app-shell" data-screen="${state.screen}">
       ${view(state)}
     </div>
-    ${overlayHtml}
+    ${renderOverlay(state)}
     ${state.simPanel ? renderSimPanel(state) : ""}
   `;
 }
 
 function view(state) {
   switch (state.screen) {
-    case "cover":
-      return coverView(state);
-    case "mode":
-      return modeView();
+    case "library":
+      return libraryView(state);
+    case "create":
+      return createView(state);
     case "safety":
       return safetyView();
-    case "briefing":
-      return briefingView(state);
-    case "route-overview":
-      return overviewView(state);
-    case "navigating-stop-1":
-    case "navigating-stop-2":
-    case "navigating-stop-3":
-    case "navigating-stop-4":
+    case "preview":
+      return previewView(state);
+    case "navigating":
       return navView(state);
-    case "camera-stop-2":
-      return cameraView(state);
-    case "piece-stop-1":
-    case "piece-stop-2":
-    case "piece-stop-3":
-    case "piece-stop-4":
-      return pieceView(state);
+    case "place":
+      return placeView(state);
     case "assemble":
       return assembleView(state);
     case "resolution":
       return resolutionView(state);
-    case "feedback":
-      return feedbackView(state);
     default:
-      return coverView(state);
+      return libraryView(state);
   }
 }
 
-function coverView(state) {
-  return h`
+function libraryView(state) {
+  const games = state.games || [];
+  return `
     <main id="main" class="screen card-screen">
-      ${chrome(state)}
-      <p class="kicker">${cover.kicker}</p>
-      <h1>${game.title}</h1>
-      <p class="lead">${cover.lead}</p>
-      <ul class="meta">
-        <li>${ico("⏱️", game.duration)}</li>
-        <li>${ico("⭐", game.difficulty)}</li>
-        <li>${ico("🚶", game.walking)}</li>
-        <li>${ico("👥", game.players)}</li>
+      <p class="kicker">${copy.libraryTitle}</p>
+      <h1>${brand.name}</h1>
+      <p class="lead">${copy.libraryLead}</p>
+      <p class="warn">${ico("🚧", brand.notPublicReady)}</p>
+      ${state.invalidSave ? `<p class="warn">저장본이 오래되어 목록부터 시작합니다.</p>` : ""}
+      ${state.createNotice ? `<p class="ok">${state.createNotice}</p>` : ""}
+      ${state.gamesError ? `<p class="warn">목록을 불러오지 못했습니다. API가 켜져 있는지 확인하세요.</p>` : ""}
+      ${btn("open-create", `➕ ${copy.create}`)}
+      <ul class="game-list">
+        ${games
+          .map(
+            (g) => `
+          <li>
+            <button type="button" class="choice" data-action="select-game" data-id="${g.id}">
+              <strong>${g.title}</strong>
+              <span>${g.placeCount}곳 · ${g.walkLabel || ""}</span>
+            </button>
+          </li>`,
+          )
+          .join("")}
       </ul>
-      <p class="note">${ico("☀️", game.operatingNote)}</p>
-      <p class="warn">${ico("🚧", game.notPublicReady)}</p>
-      ${state.restored ? `<p class="ok">${ico("✅", "이전 진행을 복구했습니다.")}</p>` : ""}
-      ${state.invalidSave ? `<p class="warn">${ico("⚠️", "저장본이 오래되었거나 손상되어 처음부터 시작합니다.")}</p>` : ""}
-      ${state.playerMode ? btn("resume", cover.resume) : btn("start", cover.start)}
-      ${state.playerMode ? btn("reset", cover.reset, "btn--ghost") : ""}
     </main>
   `;
 }
 
-function modeView() {
+function createView(state) {
+  const draft = state.createDraft || defaultDraft();
+  const n = Number(draft.placeCount) || 4;
   return `
     <main id="main" class="screen card-screen">
-      <h1>${modes.title}</h1>
-      <button type="button" class="choice" data-action="mode" data-mode="solo">
-        <strong>${ico("👤", modes.solo.label)}</strong>
-        <span>${modes.solo.body}</span>
-      </button>
-      <button type="button" class="choice" data-action="mode" data-mode="duo">
-        <strong>${ico("👥", modes.duo.label)}</strong>
-        <span>${modes.duo.body}</span>
-      </button>
+      <h1>${createCopy.title}</h1>
+      ${btn("back-library", copy.backLibrary, "btn--ghost")}
+      <label class="field">
+        <span>${createCopy.name}</span>
+        <input type="text" name="title" value="${escapeHtml(draft.title)}" maxlength="80" />
+      </label>
+      <fieldset>
+        <legend>${createCopy.count}</legend>
+        ${[4, 9, 16, 25]
+          .map(
+            (c) => `
+          <label class="chip">
+            <input type="radio" name="placeCount" value="${c}" ${n === c ? "checked" : ""} />
+            ${c}곳 (${Math.sqrt(c)}×${Math.sqrt(c)})
+          </label>`,
+          )
+          .join("")}
+      </fieldset>
+      ${Array.from({ length: n }, (_, i) => placeRow(draft, i)).join("")}
+      <fieldset>
+        <legend>${createCopy.jigsaw}</legend>
+        <label class="chip"><input type="radio" name="jigsawSource" value="final-place" ${draft.jigsawSource === "final-place" ? "checked" : ""} /> ${createCopy.jigsawFinal}</label>
+        <label class="chip"><input type="radio" name="jigsawSource" value="upload" ${draft.jigsawSource === "upload" ? "checked" : ""} /> ${createCopy.jigsawUpload}</label>
+        <label class="chip"><input type="radio" name="jigsawSource" value="system" ${draft.jigsawSource === "system" ? "checked" : ""} /> ${createCopy.jigsawSystem}</label>
+        ${draft.jigsawSource === "upload" ? `<input type="file" name="jigsawFile" accept="image/jpeg,image/png,image/webp" />` : ""}
+        ${draft.jigsawSource === "system" ? `<p class="note">저장 시 시스템 그림 중 하나가 쓰입니다.</p>` : ""}
+      </fieldset>
+      ${state.createError ? `<p class="warn">${state.createError}</p>` : ""}
+      ${btn("submit-create", state.createBusy ? "만드는 중…" : createCopy.submit, state.createBusy ? "is-disabled" : "")}
     </main>
+  `;
+}
+
+function defaultDraft() {
+  return { title: "", placeCount: 4, rows: [{ url: "" }], jigsawSource: "final-place" };
+}
+
+function placeRow(draft, i) {
+  const row = draft.rows?.[i] || { url: "" };
+  const resolved = row.resolved;
+  return `
+    <label class="field">
+      <span>${i + 1}. ${createCopy.url}</span>
+      <input type="url" name="place-url" data-index="${i}" value="${escapeHtml(row.url || "")}" placeholder="https://naver.me/… 또는 map.naver.com" />
+      ${row.resolving ? `<p class="muted">${createCopy.resolving}</p>` : ""}
+      ${resolved?.ok ? `<p class="ok">${resolved.name || "위치 확인"} · ${resolved.lat.toFixed(4)}, ${resolved.lng.toFixed(4)}</p>` : ""}
+      ${row.url && resolved && !resolved.ok ? `<p class="warn">${createCopy.needCoords}</p>` : ""}
+    </label>
   `;
 }
 
@@ -161,16 +198,19 @@ function safetyView() {
   `;
 }
 
-function briefingView(state) {
+function previewView(state) {
+  const game = state.game;
   return `
-    <main id="main" class="screen card-screen">
-      ${chrome(state, { showTray: true })}
-      <p class="tag">${ico("🎮", briefing.fictionTag)}</p>
-      <h1>${briefing.title}</h1>
-      <p class="mission">${ico("🎯", briefing.mission)}</p>
-      <p>${briefing.how}</p>
-      <div class="mark-preview">${markSvg({ clip: "full" })}</div>
-      ${btn("continue", "🗺️ 경로 보기")}
+    <main id="main" class="screen map-screen">
+      ${chrome(state, { showExit: true })}
+      <h1>${ico("🗺️", previewCopy.title)}</h1>
+      <p><strong>${game.title}</strong></p>
+      <p class="note">${game.walkLabel} · ${game.placeCount}곳</p>
+      <p class="muted">${state.previewPlaying ? previewCopy.playing : ""}</p>
+      ${locationPanel(state)}
+      ${!state.locationPermissionAsked ? btn("find-location", `📍 ${gps.findMe}`) : ""}
+      ${btn("skip-preview", previewCopy.skip, "btn--ghost")}
+      ${btn("continue", `🚶 ${previewCopy.startWalk}`)}
     </main>
   `;
 }
@@ -185,10 +225,9 @@ function locationPanel(state) {
     unavailable: gps.unavailable,
     timeout: gps.timeout,
   }[state.locationStatus];
-  const accuracy =
-    Number.isFinite(state.locationAccuracyMeters)
-      ? `수신 정확도 약 ${Math.round(state.locationAccuracyMeters)}m`
-      : "정확도 미확인";
+  const accuracy = Number.isFinite(state.locationAccuracyMeters)
+    ? `수신 정확도 약 ${Math.round(state.locationAccuracyMeters)}m`
+    : "정확도 미확인";
   const distance = `${gps.approx}: ${formatApproxDistance(state.distanceMeters)}`;
   return `
     <section class="loc" aria-live="polite">
@@ -199,103 +238,40 @@ function locationPanel(state) {
   `;
 }
 
-function overviewView(state) {
-  return `
-    <main id="main" class="screen map-screen">
-      ${chrome(state, { showExit: true, showTray: true })}
-      <h1>${ico("🗺️", routeMeta.overviewTitle)}</h1>
-      <p class="note">${ico("⏱️", routeMeta.totalHint)}</p>
-      ${state.mapStatus === "failed" ? `<p class="warn">${routeMeta.mapFailed}</p>` : ""}
-      ${state.mapStatus === "tiles" ? `<p class="warn">${routeMeta.tilesFailed}</p>` : ""}
-      ${locationPanel(state)}
-      ${!state.locationPermissionAsked ? btn("find-location", `📍 ${gps.findMe}`) : btn("retry-location", `🔄 ${gps.retryLocation}`, "btn--ghost")}
-      ${btn("continue", "🚶 첫 장소로 이동")}
-    </main>
-  `;
-}
-
 function navView(state) {
-  const stop = stopByOrder(state.currentStop);
+  const place = currentPlace(state);
   const arriveEnabled = state.canAutoArrive;
   return `
     <main id="main" class="screen map-screen">
-      ${chrome(state, { showExit: true, showTray: true })}
-      <h1>${stop.title}</h1>
-      <p>${stop.directions}</p>
-      <p class="note">${stop.safeStandingNote}</p>
-      ${state.mapStatus !== "ok" ? `<p class="warn">${stop.fallbackDirections}</p>` : ""}
+      ${chrome(state, { showExit: true, showTray: true, showPrev: true })}
+      <h1>${place.order}. ${place.name}</h1>
+      <p>${place.blurb || "공개 보행 공간에서 멈추세요."}</p>
+      ${place.address ? `<p class="note">${place.address}</p>` : ""}
+      ${state.mapStatus !== "ok" ? `<p class="warn">${place.address || routeMeta.mapFailed}</p>` : ""}
       ${locationPanel(state)}
       ${btn("arrive", `📍 ${gps.arrive}`, arriveEnabled ? "" : "is-disabled")}
       ${!arriveEnabled ? `<p class="muted">${ico("ℹ️", gps.arriveLocked)}</p>` : ""}
       ${state.manualAvailable || ["denied", "unavailable", "timeout", "low-accuracy"].includes(state.locationStatus) ? btn("manual", `✋ ${gps.manual}`, "btn--ghost") : ""}
       ${btn("help", `❓ ${gps.help}`, "btn--ghost")}
       ${btn("retry-location", `🔄 ${gps.retryLocation}`, "btn--ghost")}
-      <a class="ext" href="${osmDirectionsUrl(stop)}" target="_blank" rel="noopener noreferrer">${ico("🧭", gps.directionsExternal)}</a>
+      <a class="ext" href="${osmDirectionsUrl(place)}" target="_blank" rel="noopener noreferrer">${ico("🧭", gps.directionsExternal)}</a>
     </main>
   `;
 }
 
-function cameraView(state) {
-  const stop = stopByOrder(2);
-  const clue = stop.cameraClue;
-  const place = clue.overlay.placement;
-  const live = state.cameraStatus === "active";
-  const fallback = ["fallback", "skipped", "denied", "unavailable"].includes(state.cameraStatus);
-  return `
-    <main id="main" class="screen camera-screen">
-      ${chrome(state, { showExit: true, showTray: true })}
-      <h1>${ico("📷", "카메라 조각")}</h1>
-      <p>${clue.framingInstruction}</p>
-      <p class="note">${ico("🛑", cameraCopy.standStill)}</p>
-      <p class="live ${live ? "is-on" : ""}">${ico(live ? "🔴" : "📷", live ? cameraCopy.active : cameraStatusLabel(state.cameraStatus))}</p>
-      <p class="note">${ico("ℹ️", live ? cameraCopy.overlayHint : fallback ? cameraCopy.fallbackHint : cameraCopy.beforeStartHint)}</p>
-      <div class="viewfinder">
-        <video id="camera-video" class="camera-video" playsinline webkit-playsinline muted autoplay></video>
-        <div class="frame-guide" aria-hidden="true"></div>
-        <p class="ar-hint" id="ar-hint" hidden>📱 휴대폰을 돌리거나 화면을 드래그해 공간에 고정된 조각을 찾으세요.</p>
-        <div class="ar-guide" id="ar-guide" hidden aria-live="polite">
-          <div class="ar-guide-arrow" data-look-arrow aria-hidden="true">▲</div>
-          <p class="ar-guide-distance" data-look-distance>0.0m</p>
-          <p class="ar-guide-label" data-look-label>조각 방향</p>
-        </div>
-        ${
-          live || fallback
-            ? `<button type="button" class="ar-clue${fallback ? " is-fallback" : " is-world-locked"}" data-action="collect-camera" data-ar-clue="1" style="${fallback ? `top:${place.top};left:${place.left}` : "left:0;top:0"}" aria-label="길로 마크 조각">
-                ${pieceMarkup("piece-2", "mark-tile--overlay")}
-                <span class="ar-label">조각 2 / 4</span>
-              </button>`
-            : ""
-        }
-        ${fallback ? `<div class="static-clue"><p>${clue.fallbackTitle}</p><p>${clue.fallbackClue}</p></div>` : ""}
-      </div>
-      ${state.cameraStatus === "idle" || state.cameraStatus === "stopped" || state.cameraStatus === "interrupted" ? btn("start-camera", `📷 ${cameraCopy.start}`) : ""}
-      ${btn("skip-camera", `👁️ ${cameraCopy.skip}`, "btn--ghost")}
-    </main>
-  `;
-}
-
-function cameraStatusLabel(status) {
-  return {
-    idle: "카메라 대기",
-    starting: cameraCopy.starting,
-    denied: cameraCopy.denied,
-    unavailable: cameraCopy.unavailable,
-    interrupted: cameraCopy.interrupted,
-    stopped: cameraCopy.stopped,
-    fallback: cameraCopy.skip,
-    skipped: cameraCopy.skip,
-  }[status] || "카메라 대기";
-}
-
-function pieceView(state) {
-  const stop = stopByOrder(state.currentStop);
+function placeView(state) {
+  const place = currentPlace(state);
+  const pieceId = `piece-${place.order}`;
   return `
     <main id="main" class="screen card-screen">
-      ${chrome(state, { showExit: true, showTray: true })}
-      <h1>${pieceCopy.title(stop.order)}</h1>
-      ${!state.stoppedWalking ? `<p class="warn">${ico("🛑", "길을 멈춘 뒤에 조각을 받으세요.")}</p>${btn("stopped", "🛑 멈췄어요")}` : `
-        <p>${stop.scene}</p>
-        <div class="piece-award">${pieceMarkup(stop.pieceId, "mark-tile--large")}</div>
+      ${chrome(state, { showExit: true, showTray: true, showPrev: true })}
+      <h1>${place.order}. ${place.name}</h1>
+      ${!state.stoppedWalking ? `<p class="warn">${ico("🛑", "길을 멈춘 뒤에 안내를 보세요.")}</p>${btn("stopped", "🛑 멈췄어요")}` : `
+        ${place.photoUrl ? `<figure class="photo-card"><img src="${escapeHtml(place.photoUrl)}" alt="${escapeHtml(place.name)}" /></figure>` : `<p class="muted">등록된 사진이 없습니다.</p>`}
+        ${place.address ? `<p class="note">${place.address}</p>` : ""}
+        <p>${place.blurb || ""}</p>
+        <a class="ext" href="${naverPlaceUrl(place)}" target="_blank" rel="noopener noreferrer">${createCopy.naverLink}</a>
+        <div class="piece-award">${tile(state, pieceId, "mark-tile--large")}</div>
         ${btn("collect-piece", `🧩 ${pieceCopy.collect}`)}
       `}
     </main>
@@ -303,30 +279,40 @@ function pieceView(state) {
 }
 
 function assembleView(state) {
+  const n = gridN(state);
+  const pieces = piecesForGrid(n);
   const placement = state.assemblePlacement;
   const hint = state.hintsUsed.assemble ? `<p class="hint">${assembleCopy.hint}</p>` : btn("hint", "💡 힌트", "btn--ghost");
   const seated = new Set(Object.entries(placement).filter(([, cell]) => cell).map(([id]) => id));
-  const tray = (state.assembleOrder || PIECES.map((p) => p.id)).filter((id) => !seated.has(id));
+  const tray = (state.assembleOrder || pieces.map((p) => p.id)).filter((id) => !seated.has(id));
   return `
     <main id="main" class="screen card-screen">
       ${chrome(state, { showExit: true, showTray: true })}
       <h1>${assembleCopy.title}</h1>
       <p>${assembleCopy.body}</p>
       ${hint}
-      <div class="assemble-board" data-assemble-board>
-        ${CELLS.map((cell) => {
-          const occupant = Object.entries(placement).find(([, seatedCell]) => seatedCell === cell);
-          return `<button type="button" class="assemble-cell" data-action="place-cell" data-cell="${cell}" aria-label="${cell} 칸">
-            ${occupant ? pieceMarkup(occupant[0], "mark-tile--seated") : ""}
-          </button>`;
-        }).join("")}
+      <div class="assemble-board" data-assemble-board style="--grid:${n}">
+        <div class="assemble-fit" aria-hidden="true">
+          ${Object.entries(placement)
+            .filter(([, cell]) => cell)
+            .map(([id]) => tile(state, id, "mark-tile--seated"))
+            .join("")}
+        </div>
+        <div class="assemble-slots" style="grid-template-columns:repeat(${n},1fr);grid-template-rows:repeat(${n},1fr)">
+          ${pieces
+            .map((p) => {
+              const occupant = Object.entries(placement).find(([, c]) => c === p.cell);
+              return `<button type="button" class="assemble-cell${occupant ? " is-filled" : ""}" data-action="place-cell" data-cell="${p.cell}" aria-label="${p.cell}"></button>`;
+            })
+            .join("")}
+        </div>
       </div>
-      <div class="assemble-tray" data-assemble-tray>
+      <div class="assemble-tray">
         ${tray
           .map(
             (id) => `
           <button type="button" class="assemble-piece${state.assembleSelected === id ? " is-selected" : ""}" data-action="select-piece" data-piece="${id}" aria-label="${id}">
-            ${pieceMarkup(id)}
+            ${tile(state, id)}
           </button>`,
           )
           .join("")}
@@ -337,44 +323,15 @@ function assembleView(state) {
 }
 
 function resolutionView(state) {
-  const elapsed = state.startedAt ? Math.round((Date.now() - state.startedAt) / 60000) : "—";
+  const n = gridN(state);
   return `
     <main id="main" class="screen card-screen">
       ${chrome(state)}
       <h1>${ending.title}</h1>
-      <div class="mark-preview mark-preview--done">${markSvg({ clip: "full" })}</div>
+      <div class="mark-preview mark-preview--done">${outlinePreview(n)}</div>
+      <p class="note">맞춘 그림은 바로 앞 화면의 조각판에 있습니다. 시작 전에는 전체를 보여 주지 않습니다.</p>
       <p>${ending.thanks}</p>
-      <p class="note">${ico("⏱️", `경과 시간 약 ${elapsed}분 · 기기에만 표시`)}</p>
-      ${btn("continue", "📝 소감 남기기")}
-    </main>
-  `;
-}
-
-function feedbackView(state) {
-  return `
-    <main id="main" class="screen card-screen">
-      <h1>${feedbackCopy.title}</h1>
-      <p class="note">${feedbackCopy.savedLocal}</p>
-      ${feedbackCopy.questions
-        .filter((q) => !q.duoOnly || state.playerMode === "duo")
-        .map(
-          (q) => `
-        <fieldset>
-          <legend>${q.label}</legend>
-          ${feedbackCopy.scale
-            .map(
-              (s) => `
-            <label class="chip">
-              <input type="radio" name="${q.id}" value="${s.value}" ${state.feedbackAnswers[q.id] === s.value ? "checked" : ""} />
-              ${s.label}
-            </label>`,
-          )
-            .join("")}
-        </fieldset>`,
-        )
-        .join("")}
-      ${btn("download-feedback", feedbackCopy.download)}
-      ${btn("reset", feedbackCopy.skip, "btn--ghost")}
+      ${btn("reset", copy.backLibrary)}
     </main>
   `;
 }
@@ -382,20 +339,15 @@ function feedbackView(state) {
 function renderOverlay(state) {
   if (!state.overlay) return "";
   if (state.overlay === "notebook") return tray(state);
-  if (state.overlay === "help") {
-    return modal("❓ 도움", `<p>${routeMeta.helpBody}</p>${btn("close-overlay", "닫기")}`);
-  }
+  if (state.overlay === "help") return modal("❓ 도움", `<p>${routeMeta.helpBody}</p>${btn("close-overlay", "닫기")}`);
   if (state.overlay === "exit") {
-    return modal(
-      gps.exit,
-      `<p>${routeMeta.exitBody}</p>${btn("reset", "진행 지우고 종료")}${btn("close-overlay", "돌아가기", "btn--ghost")}`,
-    );
+    return modal(gps.exit, `<p>${routeMeta.exitBody}</p>${btn("reset", "진행 지우고 종료")}${btn("close-overlay", "돌아가기", "btn--ghost")}`);
   }
   if (state.overlay === "manual") {
-    const stop = stopByOrder(state.currentStop);
+    const place = currentPlace(state);
     return modal(
       gps.manualConfirmTitle,
-      `<p>${gps.manualConfirmBody}</p><p><strong>${stop.publicName}</strong></p><p>${stop.safeStandingNote}</p>${btn("confirm-manual", gps.manualConfirm)}${btn("close-overlay", "취소", "btn--ghost")}`,
+      `<p>${gps.manualConfirmBody}</p><p><strong>${place?.name || ""}</strong></p>${btn("confirm-manual", gps.manualConfirm)}${btn("close-overlay", "취소", "btn--ghost")}`,
     );
   }
   return "";
@@ -406,17 +358,20 @@ function modal(title, body) {
 }
 
 function tray(state) {
+  const n = gridN(state);
   const collected = new Set(state.collectedPieceIds || []);
   return modal(
     trayCopy.title,
     `
-      <div class="tray-grid">
-        ${PIECES.map((piece) => {
-          const have = collected.has(piece.id);
-          return `<div class="tray-slot${have ? " is-filled" : ""}">${have ? pieceMarkup(piece.id) : `<span class="muted">${piece.order}</span>`}</div>`;
-        }).join("")}
+      <div class="tray-grid" style="grid-template-columns:repeat(${Math.min(n, 5)},1fr)">
+        ${piecesForGrid(n)
+          .map((piece) => {
+            const have = collected.has(piece.id);
+            return `<div class="tray-slot${have ? " is-filled" : ""}">${have ? tile(state, piece.id) : `<span class="muted">${piece.order}</span>`}</div>`;
+          })
+          .join("")}
       </div>
-      ${collected.size ? `<p>${trayCopy.count(collected.size)}</p>` : `<p>${trayCopy.empty}</p>`}
+      <p>${collected.size ? trayCopy.count(collected.size, placeCount(state)) : trayCopy.empty}</p>
       ${btn("close-overlay", trayCopy.close)}
     `,
   );
@@ -428,9 +383,7 @@ function renderSimPanel(state) {
     <aside class="sim${minimized ? " is-min" : ""}" aria-label="프로토타입 시뮬레이터">
       <div class="sim-head">
         <p>${ico("🧪", minimized ? "시뮬레이터" : "시뮬레이터 · 실제 기기 검증이 아닙니다")}</p>
-        <button type="button" class="sim-toggle" data-action="sim-toggle" aria-expanded="${minimized ? "false" : "true"}">
-          ${minimized ? "펼치기" : "접기"}
-        </button>
+        <button type="button" class="sim-toggle" data-action="sim-toggle" aria-expanded="${minimized ? "false" : "true"}">${minimized ? "펼치기" : "접기"}</button>
       </div>
       ${
         minimized
@@ -441,8 +394,6 @@ function renderSimPanel(state) {
         <button type="button" data-sim="gps" data-value="denied">${ico("🚫", "GPS 거부")}</button>
         <button type="button" data-sim="gps" data-value="unavailable">${ico("❌", "GPS 없음")}</button>
         <button type="button" data-sim="gps" data-value="timeout">${ico("⏳", "GPS 시간초과")}</button>
-        <button type="button" data-sim="camera" data-value="ok">${ico("📷", "카메라 허용")}</button>
-        <button type="button" data-sim="camera" data-value="denied">${ico("🚫", "카메라 거부")}</button>
         <button type="button" data-sim="map" data-value="fail">${ico("🗺️", "지도 실패")}</button>
       </div>`
       }
@@ -450,4 +401,11 @@ function renderSimPanel(state) {
   `;
 }
 
-export { screenList };
+function escapeHtml(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/"/g, "&quot;");
+}
+
+export { gridSizeForCount, screenList };

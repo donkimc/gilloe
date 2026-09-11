@@ -1,15 +1,12 @@
-export const SCHEMA_VERSION = 2;
-export const STORAGE_KEY = "gilloe.mvp01.progress";
+export const SCHEMA_VERSION = 3;
+export const STORAGE_KEY = "gilloe.progress";
 
 const PERSIST_KEYS = [
   "schemaVersion",
   "gameId",
-  "playerMode",
   "screen",
   "currentStop",
   "collectedPieceIds",
-  "collectedCameraClueIds",
-  "cameraFallbackIds",
   "hintsUsed",
   "startedAt",
   "safetyAccepted",
@@ -18,35 +15,22 @@ const PERSIST_KEYS = [
 
 export function serializeProgress(state) {
   const out = {};
-  for (const key of PERSIST_KEYS) {
-    out[key] = structuredClone(state[key]);
-  }
+  for (const key of PERSIST_KEYS) out[key] = structuredClone(state[key]);
   return out;
 }
 
 export function validateProgress(raw, { gameId, allowedScreens }) {
   if (!raw || typeof raw !== "object") return { ok: false, reason: "missing" };
   if (raw.schemaVersion !== SCHEMA_VERSION) return { ok: false, reason: "schema" };
-  if (raw.gameId !== gameId) return { ok: false, reason: "game" };
-  if (!["solo", "duo"].includes(raw.playerMode) && raw.screen !== "cover" && raw.screen !== "mode") {
-    if (raw.screen !== "cover" && raw.screen !== "mode") {
-      return { ok: false, reason: "mode" };
-    }
-  }
+  if (gameId && raw.gameId !== gameId) return { ok: false, reason: "game" };
   if (typeof raw.screen !== "string" || !allowedScreens.includes(raw.screen)) {
     return { ok: false, reason: "screen" };
   }
-  if (raw.currentStop != null && ![1, 2, 3, 4].includes(raw.currentStop)) {
+  if (raw.currentStop != null && (!Number.isInteger(raw.currentStop) || raw.currentStop < 1)) {
     return { ok: false, reason: "stop" };
   }
   if (raw.collectedPieceIds && !Array.isArray(raw.collectedPieceIds)) {
     return { ok: false, reason: "pieces" };
-  }
-  if (raw.collectedCameraClueIds && !Array.isArray(raw.collectedCameraClueIds)) {
-    return { ok: false, reason: "camera" };
-  }
-  if (raw.hintsUsed && typeof raw.hintsUsed !== "object") {
-    return { ok: false, reason: "hints" };
   }
   return { ok: true };
 }
@@ -74,7 +58,7 @@ export function createStorage({
       try {
         storage.setItem(key, JSON.stringify(serializeProgress(state)));
       } catch {
-        /* quota or private mode — progress recovery is best-effort */
+        /* ignore */
       }
     },
     clear() {

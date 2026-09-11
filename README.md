@@ -1,6 +1,6 @@
-# Gilloe MVP 01 — 천호에서 길로 마크 모으기
+# Gilloe — 퍼즐 걷기
 
-Disposable **field-test prototype** of one Korean walking scavenger hunt. Walk four Cheonho stops, collect a Gilloe-mark tile at each arrival, then assemble the four tiles. It is **not** public-play ready and **not** production-ready. Stop coordinates, pedestrian geometry, arrival radii, and camera framing are **provisional** (`fieldVerified: false`). The UI always shows **현장 검증 전 임시 경로**.
+Prototype for **creating** and **playing** walking jigsaws. Paste Naver Map URLs (4 / 9 / 16 / 25 stops). It is **not** public-play ready. The banner **현장 검증 전 임시 경로** stays on.
 
 ## Setup
 
@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` on the same computer. For a two-player shared-phone rehearsal, use a narrow mobile viewport.
+Vite (5173) proxies `/api` to the local Node server (8787). Open `http://127.0.0.1:5173/`. Simulator: `http://127.0.0.1:5173/?sim=1`.
 
 ## Build and test
 
@@ -51,17 +51,20 @@ Vanilla Vite app. Game progress is an explicit state machine in `src/state.js`. 
 
 | Path | Role |
 | --- | --- |
-| `src/content.js` | Korean copy, overlay placement, stop data |
-| `public/route.geojson` | Walking line (`[lng, lat]`), labelled unverified |
+| `server/index.js` | Games API, Naver URL resolve, OSRM line, uploads |
+| `src/content.js` | Korean UI copy |
 | `src/state.js` | State machine |
-| `src/storage.js` | Minimal `localStorage` progress |
-| `src/geo.js` | Haversine + accuracy-aware arrival |
-| `src/location.js` | Geolocation watcher (no coordinate persistence) |
-| `src/camera.js` | `getUserMedia` video only; `stop()` ends tracks |
-| `src/map.js` | Leaflet 1.9 + OSM tiles |
-| `src/assemble.js` | 2x2 snap / complete checking |
+| `src/storage.js` | Minimal `localStorage` progress (no coordinates) |
+| `src/geo.js` | Haversine, arrival, route preview helpers |
+| `src/location.js` | Geolocation watcher |
+| `src/map.js` | Leaflet + OSM + walker preview |
+| `src/assemble.js` | NxN jigsaw snap |
 | `src/ui/screens.js` | Screen HTML |
-| `src/simulate.js` | Injected GPS/camera/map states for tests and `?sim=1` |
+| `src/simulate.js` | `?sim=1` GPS/map fakes |
+
+Camera overlay code remains in the repo but is not used in this flow. There is no end-of-game survey.
+
+Progress stores only schema, game id, screen/stop, collected pieces, hints, start time, safety/location-asked flags — never lat/lng.
 
 ## Content and route editing
 

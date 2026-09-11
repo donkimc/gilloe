@@ -15,18 +15,16 @@ If the documents conflict, follow `BUILT.md` for this prototype and preserve the
 
 ## Product to build
 
-Build one Korean-language, mobile-first walking scavenger hunt:
+Build a Korean-language, mobile-first walking puzzle:
 
-- **Title:** 천호에서 길로 마크 모으기
 - **Brand:** Gilloe
-- **Area:** Cheonho-dong, Gangdong-gu, Seoul
-- **Genre:** location scavenger hunt (four tiles → one mark)
-- **Target duration:** 20–30 minutes
-- **Route:** one fixed pedestrian route with four stops
-- **Players:** solo or two people sharing one phone
-- **Difficulty:** easy
-- **Delivery:** static mobile web app
-- **Data:** no account, backend, payment, or server database
+- **Genre:** creator-made location jigsaw (4 / 9 / 16 / 25 places)
+- **Players:** one phone
+- **Delivery:** Vite app plus a small Node API (`server/`)
+- **Camera overlay:** on hold
+- **Feedback form:** removed
+
+Creators paste Naver Map URLs. The API stores games on disk. Players pick a game, preview the route, visit each public stop, collect a tile, and assemble the picture. The completed jigsaw is not shown before play. GPS still gates arrival; permission denial never blocks completion (manual confirm).
 
 The experience must use browser GPS to show the player's live location and help determine arrival. At Stop 2, it must use the rear camera to show a deterministic puzzle-tile overlay on the live view. There are no QR codes, installed markers, image recognition, object recognition, facial recognition, photo capture, or video recording.
 

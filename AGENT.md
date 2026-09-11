@@ -2,7 +2,21 @@
 
 ## Mission
 
-Implement the disposable mobile web prototype defined in `BUILT.md`. The goal is to test how one Gilloe walking hunt feels. Keep the implementation small, understandable, and easy to revise after field testing.
+Implement the disposable mobile web prototype defined in `BUILT.md`. Creators paste Naver Map URLs to save puzzle walks; players collect tiles and assemble a jigsaw. Camera overlay is deferred.
+
+## Scope discipline
+
+Build:
+
+- a small local Node API that stores games;
+- a library and create form (title, 4/9/16/25 Naver Map URLs, jigsaw image);
+- live browser GPS;
+- route preview animation;
+- place cards with at most one Naver listing photo;
+- NxN assemble;
+- the seeded Cheonho game.
+
+Do not add accounts, payments, remote analytics, QR codes, AR frameworks, object recognition, face recognition, or media capture. Camera overlay stays unused in this flow.
 
 ## Read first
 
@@ -13,23 +27,6 @@ Before editing, read:
 3. `docs/GILLOE_SAFETY_SECURITY_RISK_GUIDE.md`
 
 Treat `BUILT.md` as the implementation source of truth. Preserve all safety and privacy constraints even when simplifying another part of the build.
-
-## Scope discipline
-
-Build only:
-
-- one game;
-- one route;
-- four stops;
-- solo and two-player shared-phone modes;
-- live browser GPS;
-- one GPS-gated camera-overlay tile at Stop 2;
-- four collected tiles, a piece tray, one assemble puzzle, ending, and local feedback;
-- a static deployable Vite site.
-
-Do not add accounts, payments, a backend, remote analytics, a database, creator tools, multiple games, live multiplayer, QR codes, AR frameworks, object recognition, face recognition, media capture, or production infrastructure.
-
-When a proposed abstraction does not help this one prototype, omit it.
 
 ## Before coding
 

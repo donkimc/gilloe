@@ -1,15 +1,14 @@
 import "./styles.css";
-import { game, stopByOrder, stops } from "./content.js";
+import { brand } from "./content.js";
 import { createStorage, STORAGE_KEY } from "./storage.js";
-import { SCREENS, createInitialState, needsCamera, needsLiveLocation, reduce } from "./state.js";
+import { SCREENS, createInitialState, currentPlace, gridN, needsLiveLocation, reduce } from "./state.js";
 import { createLocationService } from "./location.js";
-import { createCameraService } from "./camera.js";
 import { createMapService } from "./map.js";
 import { placeOnCell, snapPlacement } from "./assemble.js";
+import { pickRandomImage } from "./puzzleImages.js";
 import { render } from "./ui/screens.js";
-import { downloadJson } from "./ui/components.js";
-import { createSimulatedGeolocation, createSimulatedMedia, parseSim } from "./simulate.js";
-import { applyWorldAnchorStyle, createWorldAnchor, updateLookGuidance } from "./worldAnchor.js";
+import { createSimulatedGeolocation, parseSim } from "./simulate.js";
+import { createGame, getGame, listGames, resolvePlace } from "./api.js";
 
 const ui = document.querySelector("#ui");
 const mapHost = document.querySelector(".map-host");
@@ -18,47 +17,42 @@ const sim = parseSim(window.location.search);
 
 let simMinimized = false;
 let gpsMode = sim.gps || (sim.panel ? "good" : "live");
-let cameraMode = sim.camera || (sim.panel ? "ok" : "live");
 let mapFail = sim.map === "fail";
-const fakeGeo = createSimulatedGeolocation(gpsMode, { stop: stops[0] });
+let createDraft = { title: "", placeCount: 4, rows: emptyRows(4), jigsawSource: "final-place", imageDataUrl: null };
+let createBusy = false;
+let createError = "";
+let previewPlaying = false;
+let previewRaf = 0;
+let mapReady = false;
+
+function emptyRows(n) {
+  return Array.from({ length: n }, () => ({ url: "", resolved: null, resolving: false }));
+}
+
+function asStop(place) {
+  if (!place) return { coordinates: { lat: 37.53865, lng: 127.12385 }, arrivalRadiusMeters: 60 };
+  return {
+    coordinates: { lat: place.lat, lng: place.lng },
+    arrivalRadiusMeters: place.arrivalRadiusMeters || 60,
+  };
+}
+
+const fakeGeo = createSimulatedGeolocation(gpsMode, { stop: asStop(null) });
 
 function geoApi() {
   if (sim.panel || (sim.gps && sim.gps !== "live")) return fakeGeo;
   return typeof navigator !== "undefined" ? navigator.geolocation : null;
 }
 
-function mediaApi() {
-  if (cameraMode !== "live") return createSimulatedMedia(cameraMode);
-  return typeof navigator !== "undefined" ? navigator.mediaDevices : null;
-}
-
 const location = createLocationService({ geolocation: geoApi() });
-const camera = createCameraService({
-  mediaDevices: {
-    getUserMedia: (opts) => {
-      const media = mediaApi();
-      if (!media) {
-        const err = new Error("unavailable");
-        err.name = "NotFoundError";
-        throw err;
-      }
-      return media.getUserMedia(opts);
-    },
-  },
-});
 const map = createMapService();
-const worldAnchor = createWorldAnchor();
-
 let state = restore();
-let mapReady = false;
 
 function restore() {
-  const saved = persist.load({ gameId: game.id, allowedScreens: SCREENS });
+  const saved = persist.load({ allowedScreens: SCREENS });
   if (!saved) {
     try {
-      if (localStorage.getItem(STORAGE_KEY)) {
-        return reduce(createInitialState(), { type: "INVALID_SAVE" });
-      }
+      if (localStorage.getItem(STORAGE_KEY)) return reduce(createInitialState(), { type: "INVALID_SAVE" });
     } catch {
       /* ignore */
     }
@@ -76,34 +70,33 @@ function dispatch(action) {
 }
 
 function persistIfNeeded() {
-  if (state.screen === "cover" && !state.playerMode) return;
+  if (!state.gameId || state.screen === "library" || state.screen === "create") return;
   persist.save(state);
 }
 
 function syncDevices(prev, next) {
-  const leavingCamera = needsCamera(prev.screen) && !needsCamera(next.screen);
-  const overlayOnCamera = needsCamera(next.screen) && Boolean(next.overlay);
-  if (leavingCamera || overlayOnCamera) {
-    worldAnchor.stop();
-    camera.stop();
-  }
   if (needsLiveLocation(next.screen) && next.locationPermissionAsked) {
-    const restart =
-      prev.screen !== next.screen ||
-      prev.currentStop !== next.currentStop ||
-      (!prev.locationPermissionAsked && next.locationPermissionAsked);
+    const restart = prev.screen !== next.screen || prev.currentStop !== next.currentStop;
     if (restart) startWatch();
   } else if (!needsLiveLocation(next.screen)) {
     location.stop();
   }
-  const showMap = needsLiveLocation(next.screen) && !mapFail && next.mapStatus !== "failed";
+  const showMap = needsLiveLocation(next.screen) && !mapFail && next.mapStatus !== "failed" && next.game;
   mapHost.hidden = !showMap;
-  if (needsLiveLocation(next.screen) && !mapFail) {
+  if (showMap) {
     ensureMap().then(() => {
       map.invalidate();
-      if (next.screen === "route-overview") map.focusOverview(stops);
-      else map.focusStop(stopByOrder(next.currentStop));
+      if (next.screen === "preview") {
+        map.focusOverview(next.game.places);
+        if (previewPlaying) return;
+        runPreview();
+      } else {
+        stopPreview();
+        map.focusStop(currentPlace(next));
+      }
     });
+  } else {
+    stopPreview();
   }
 }
 
@@ -112,10 +105,10 @@ async function ensureMap() {
     if (state.mapStatus !== "failed") dispatch({ type: "MAP_STATUS", status: "failed" });
     return;
   }
-  if (mapReady) return;
+  if (mapReady || !state.game) return;
   const ok = await map.mount(document.querySelector("#map"), {
-    stops,
-    geoJsonUrl: game.geoJsonUrl,
+    places: state.game.places,
+    routeLine: state.game.routeLine,
     onError() {
       mapReady = false;
       state = reduce(state, { type: "MAP_STATUS", status: "failed" });
@@ -137,13 +130,13 @@ async function ensureMap() {
 }
 
 function startWatch() {
-  const stop = stopByOrder(state.currentStop) || stops[0];
+  const stop = asStop(currentPlace(state));
   fakeGeo._setMode(gpsMode === "live" ? "good" : gpsMode, { stop });
   location.start({
     stop,
-    options: game.locationOptions,
-    accuracyCeilingMeters: game.accuracyCeilingMeters,
-    manualFallbackAfterMs: game.manualFallbackAfterMs,
+    options: brand.locationOptions,
+    accuracyCeilingMeters: brand.accuracyCeilingMeters,
+    manualFallbackAfterMs: brand.manualFallbackAfterMs,
   });
 }
 
@@ -153,17 +146,53 @@ location.onChange((payload) => {
 });
 
 location.onFix((fix) => {
-  worldAnchor.setPlayerFix(fix);
   if (mapReady) map.setPlayer(fix.lat, fix.lng, fix.accuracyMeters);
 });
 
-function paint() {
-  ui.innerHTML = render({ ...state, simPanel: sim.panel, simMinimized });
-  bindUi();
-  if (needsCamera(state.screen) && camera.hasActiveStream()) {
-    camera.attach(document.querySelector("#camera-video"));
+function runPreview() {
+  stopPreview();
+  previewPlaying = true;
+  map.showWalker(true);
+  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  if (reduced) {
+    map.setLineProgress(1);
+    previewPlaying = false;
+    paint();
+    return;
   }
-  syncWorldAnchor();
+  const start = performance.now();
+  const dur = 5200;
+  const tick = (now) => {
+    const t = Math.min(1, (now - start) / dur);
+    map.setLineProgress(t);
+    if (t < 1 && previewPlaying) previewRaf = requestAnimationFrame(tick);
+    else {
+      previewPlaying = false;
+      map.showWalker(false);
+      paint();
+    }
+  };
+  previewRaf = requestAnimationFrame(tick);
+  paint();
+}
+
+function stopPreview() {
+  previewPlaying = false;
+  if (previewRaf) cancelAnimationFrame(previewRaf);
+  previewRaf = 0;
+}
+
+function paint() {
+  ui.innerHTML = render({
+    ...state,
+    createDraft,
+    createBusy,
+    createError,
+    previewPlaying,
+    simPanel: sim.panel,
+    simMinimized,
+  });
+  bindUi();
   bindAssemble();
 }
 
@@ -177,24 +206,67 @@ function bindUi() {
     const button = event.target.closest("[data-action]");
     if (button) handleAction(button.dataset.action, button.dataset);
   };
-
   ui.onchange = (event) => {
     const input = event.target;
-    if (!(input instanceof HTMLInputElement) || input.type !== "radio") return;
-    if (["understand", "walk", "gps", "camera", "another", "duo"].includes(input.name)) {
-      dispatch({ type: "FEEDBACK", id: input.name, value: input.value });
+    if (!(input instanceof HTMLInputElement)) return;
+    if (input.name === "placeCount") {
+      const n = Number(input.value);
+      createDraft = { ...createDraft, placeCount: n, rows: padRows(createDraft.rows, n) };
+      paint();
+      return;
+    }
+    if (input.name === "jigsawSource") {
+      createDraft = { ...createDraft, jigsawSource: input.value };
+      paint();
+      return;
+    }
+    if (input.name === "jigsawFile" && input.files?.[0]) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        createDraft = { ...createDraft, imageDataUrl: reader.result };
+      };
+      reader.readAsDataURL(file);
     }
   };
-
+  ui.oninput = (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    if (input.name === "title") createDraft = { ...createDraft, title: input.value };
+  };
+  ui.querySelectorAll("input[name='place-url']").forEach((input) => {
+    input.addEventListener("change", () => onPlaceUrl(Number(input.dataset.index), input.value));
+  });
   const arrive = ui.querySelector('[data-action="arrive"]');
   if (arrive && !state.canAutoArrive) arrive.disabled = true;
+}
+
+function padRows(rows, n) {
+  const next = rows.slice(0, n);
+  while (next.length < n) next.push({ url: "", resolved: null, resolving: false });
+  return next;
+}
+
+async function onPlaceUrl(index, url) {
+  const rows = [...createDraft.rows];
+  rows[index] = { ...rows[index], url, resolving: true };
+  createDraft = { ...createDraft, rows };
+  paint();
+  try {
+    const resolved = await resolvePlace(url);
+    rows[index] = { url, resolved, resolving: false };
+  } catch {
+    rows[index] = { url, resolved: { ok: false }, resolving: false };
+  }
+  createDraft = { ...createDraft, rows };
+  paint();
 }
 
 function bindAssemble() {
   if (state.screen !== "assemble" || state.assembleComplete) return;
   const board = ui.querySelector("[data-assemble-board]");
   if (!board) return;
-
+  const n = gridN(state);
   ui.querySelectorAll(".assemble-piece").forEach((node) => {
     node.addEventListener("pointerdown", (event) => {
       const pieceId = node.dataset.piece;
@@ -203,7 +275,6 @@ function bindAssemble() {
       let ghost = null;
       let dragging = false;
       node.setPointerCapture(event.pointerId);
-
       const move = (moveEvent) => {
         const dx = moveEvent.clientX - startX;
         const dy = moveEvent.clientY - startY;
@@ -223,13 +294,7 @@ function bindAssemble() {
         node.removeEventListener("pointercancel", up);
         ghost?.remove();
         if (!dragging) return;
-        const next = snapPlacement(
-          state.assemblePlacement,
-          pieceId,
-          upEvent.clientX,
-          upEvent.clientY,
-          board.getBoundingClientRect(),
-        );
+        const next = snapPlacement(state.assemblePlacement, pieceId, upEvent.clientX, upEvent.clientY, board.getBoundingClientRect(), n);
         dispatch({ type: "PLACE_PIECE", placement: next });
       };
       node.addEventListener("pointermove", move);
@@ -244,10 +309,6 @@ function handleSim(kind, value) {
     gpsMode = value;
     if (state.locationPermissionAsked) startWatch();
   }
-  if (kind === "camera") {
-    cameraMode = value;
-    camera.stop();
-  }
   if (kind === "map") {
     mapFail = true;
     map.unmount();
@@ -257,35 +318,38 @@ function handleSim(kind, value) {
   }
 }
 
-function handleAction(action, dataset) {
-  const stop = stopByOrder(state.currentStop);
+async function handleAction(action, dataset) {
   switch (action) {
     case "sim-toggle":
       simMinimized = !simMinimized;
       paint();
       break;
-    case "start":
-      dispatch({ type: "GOTO", screen: "mode" });
+    case "open-create":
+      dispatch({ type: "OPEN_CREATE" });
       break;
-    case "resume":
-      dispatch({
-        type: "GOTO",
-        screen: state.safetyAccepted ? "briefing" : "safety",
-      });
-      break;
-    case "reset":
-      camera.stop();
-      location.stop();
-      persist.clear();
+    case "back-library":
       dispatch({ type: "RESET" });
       break;
-    case "mode":
-      dispatch({ type: "SELECT_MODE", mode: dataset.mode });
+    case "select-game":
+      try {
+        const game = await getGame(dataset.id);
+        persist.clear();
+        mapReady = false;
+        map.unmount();
+        dispatch({ type: "SELECT_GAME", game });
+      } catch {
+        dispatch({ type: "GAMES_ERROR", error: "load" });
+      }
+      break;
+    case "submit-create":
+      await submitCreate();
       break;
     case "accept-safety":
       dispatch({ type: "ACCEPT_SAFETY" });
       break;
     case "continue":
+    case "skip-preview":
+      stopPreview();
       dispatch({ type: "CONTINUE" });
       break;
     case "notebook":
@@ -316,6 +380,9 @@ function handleAction(action, dataset) {
     case "stopped":
       dispatch({ type: "STOP_WALKING" });
       break;
+    case "prev-place":
+      dispatch({ type: "PREV_PLACE" });
+      break;
     case "hint":
       dispatch({ type: "USE_HINT", puzzleId: "assemble" });
       break;
@@ -324,127 +391,87 @@ function handleAction(action, dataset) {
       break;
     case "place-cell": {
       if (!state.assembleSelected) break;
-      const placement = placeOnCell(state.assemblePlacement, state.assembleSelected, dataset.cell);
+      const placement = placeOnCell(state.assemblePlacement, state.assembleSelected, dataset.cell, gridN(state));
       dispatch({ type: "PLACE_PIECE", placement });
       break;
     }
     case "collect-piece":
-      dispatch({ type: "COLLECT_PIECE", pieceId: stop.pieceId });
+      dispatch({ type: "COLLECT_PIECE", pieceId: `piece-${state.currentStop}` });
       break;
-    case "start-camera":
-      startCamera();
-      break;
-    case "skip-camera":
-      worldAnchor.stop();
-      camera.stop();
-      dispatch({ type: "CAMERA_STATUS", status: "fallback" });
-      break;
-    case "collect-camera":
-      worldAnchor.stop();
-      camera.stop();
-      dispatch({
-        type: "COLLECT_CAMERA",
-        fallback: state.cameraStatus !== "active",
-      });
-      break;
-    case "download-feedback":
-      downloadJson("gilloe-feedback.json", {
-        gameId: game.id,
-        playerMode: state.playerMode,
-        answers: state.feedbackAnswers,
-        hintsUsed: state.hintsUsed,
-        cameraFallback: state.cameraFallbackIds,
-        fieldVerified: false,
-        note: "No coordinates or media included.",
-      });
+    case "reset":
+      location.stop();
+      persist.clear();
+      mapReady = false;
+      map.unmount();
+      dispatch({ type: "RESET" });
       break;
     default:
       break;
   }
 }
 
-async function startCamera() {
-  await worldAnchor.requestPermission().catch(() => false);
-  if (state.locationPermissionAsked) startWatch();
-  dispatch({ type: "CAMERA_STATUS", status: "starting" });
+async function submitCreate() {
+  createBusy = true;
+  createError = "";
+  paint();
+  const places = (createDraft.rows || []).slice(0, createDraft.placeCount).map((row) => ({
+    naverUrl: row.url,
+    name: row.resolved?.name,
+    lat: row.resolved?.lat,
+    lng: row.resolved?.lng,
+    address: row.resolved?.address,
+    photoUrl: row.resolved?.photoUrl,
+    blurb: row.resolved?.blurb,
+  }));
   try {
-    const video = document.querySelector("#camera-video");
-    await camera.start(video);
-    dispatch({ type: "CAMERA_STATUS", status: "active" });
-    camera.attach(document.querySelector("#camera-video"));
-    await syncWorldAnchor(true);
+    const game = await createGame({
+      title: createDraft.title,
+      placeCount: createDraft.placeCount,
+      places,
+      jigsaw: {
+        source: createDraft.jigsawSource,
+        imageDataUrl: createDraft.imageDataUrl,
+        systemImageId: pickRandomImage(),
+      },
+    });
+    const games = await listGames();
+    createDraft = { title: "", placeCount: 4, rows: emptyRows(4), jigsawSource: "final-place", imageDataUrl: null };
+    createBusy = false;
+    dispatch({ type: "CREATE_SAVED", message: `${game.title} · ${game.walkLabel}`, games });
   } catch (error) {
-    worldAnchor.stop();
-    camera.stop();
-    const status = error?.name === "NotAllowedError" ? "denied" : "unavailable";
-    dispatch({ type: "CAMERA_STATUS", status });
-    dispatch({ type: "CAMERA_STATUS", status: "fallback" });
+    createBusy = false;
+    createError = error.message || "만들기에 실패했습니다.";
+    paint();
   }
 }
 
-async function syncWorldAnchor(forceStart = false) {
-  const clue = document.querySelector("[data-ar-clue]");
-  const viewfinder = document.querySelector(".viewfinder");
-  const hint = document.querySelector("#ar-hint");
-  const live = needsCamera(state.screen) && state.cameraStatus === "active" && camera.hasActiveStream();
-  if (!live || !clue) {
-    worldAnchor.stop();
-    if (hint) hint.hidden = true;
-    const guide = document.querySelector("#ar-guide");
-    if (guide) guide.hidden = true;
-    return;
+async function bootLibrary() {
+  try {
+    const games = await listGames();
+    state = reduce(state, { type: "GAMES", games });
+    if (state.gameId && !state.game) {
+      try {
+        const game = await getGame(state.gameId);
+        state = { ...state, game };
+      } catch {
+        state = reduce(createInitialState(), { type: "GAMES", games });
+        persist.clear();
+      }
+    }
+  } catch {
+    state = reduce(state, { type: "GAMES_ERROR", error: "list" });
   }
-  const stop = stopByOrder(2);
-  const geo = stop?.cameraClue?.geoAnchor || stop?.coordinates;
-  worldAnchor.setGeoTarget(geo);
-  worldAnchor.setPlayerFix(location.getLastFix());
-  const onPose = (pose) => {
-    const node = document.querySelector("[data-ar-clue]");
-    const vf = document.querySelector(".viewfinder");
-    const tip = document.querySelector("#ar-hint");
-    const guide = document.querySelector("#ar-guide");
-    if (!node) return;
-    const guidance = applyWorldAnchorStyle(node, pose, vf);
-    const onScreen = Boolean(guidance?.onScreen);
-    node.classList.toggle("is-world-locked", Boolean(pose.ready));
-    if (tip) tip.hidden = true;
-    updateLookGuidance(guide, pose, onScreen);
-  };
-  if (forceStart || !worldAnchor.isListening()) {
-    await worldAnchor.start(onPose, { viewfinder });
-  } else {
-    worldAnchor.setHandler(onPose);
-    worldAnchor.bindViewfinder(viewfinder);
-  }
+  paint();
+  mapHost.hidden = !needsLiveLocation(state.screen) || mapFail || !state.game;
+  if (needsLiveLocation(state.screen) && state.locationPermissionAsked) startWatch();
+  if (needsLiveLocation(state.screen) && state.game && !mapFail) ensureMap();
 }
 
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    worldAnchor.stop();
-    camera.stop();
-    location.stop();
-    if (needsCamera(state.screen)) {
-      state = reduce(state, { type: "CAMERA_STATUS", status: "interrupted" });
-      paint();
-    }
-  } else if (needsLiveLocation(state.screen) && state.locationPermissionAsked) {
-    startWatch();
-  }
+  if (document.hidden) location.stop();
+  else if (needsLiveLocation(state.screen) && state.locationPermissionAsked) startWatch();
 });
-
-window.addEventListener("pagehide", () => {
-  worldAnchor.stop();
-  camera.stop();
-  location.stop();
-});
-
+window.addEventListener("pagehide", () => location.stop());
 window.addEventListener("popstate", () => dispatch({ type: "BACK" }));
 
-function boot() {
-  paint();
-  mapHost.hidden = !needsLiveLocation(state.screen) || mapFail;
-  if (needsLiveLocation(state.screen) && state.locationPermissionAsked) startWatch();
-  if (needsLiveLocation(state.screen) && !mapFail) ensureMap();
-}
-
-boot();
+bootLibrary();

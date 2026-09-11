@@ -3,81 +3,61 @@ import { createInitialState, reduce } from "./state.js";
 import { serializeProgress } from "./storage.js";
 import { render } from "./ui/screens.js";
 
-function play(actions, start = createInitialState()) {
-  return actions.reduce((state, action) => reduce(state, action), start);
-}
+const sampleGame = {
+  id: "cheonho-pieces",
+  title: "천호에서 길로 마크 모으기",
+  placeCount: 4,
+  walkLabel: "약 1.1km · 약 25분",
+  places: [
+    {
+      order: 1,
+      name: "천호역",
+      blurb: "출구 앞",
+      address: "천호동",
+      lat: 37.53865,
+      lng: 127.12385,
+      naverUrl: "https://map.naver.com/p?c=16,127.12385,37.53865,0,0,0,dh",
+    },
+  ],
+  jigsaw: { source: "system", systemImageId: "station" },
+};
 
 describe("rendered flow", () => {
-  it("keeps the provisional-route warning on the cover", () => {
+  it("keeps the provisional-route warning on the library", () => {
     const html = render(createInitialState());
     expect(html).toContain("현장 검증 전 임시 경로");
     expect(html).toContain("공개 플레이용이 아닙니다");
-    expect(html).toContain("걷기 시작");
-    expect(html).toContain("길로 마크");
+    expect(html).toContain("게임 만들기");
   });
 
-  it("walks a solo path from briefing to a collected piece", () => {
-    let state = play([
-      { type: "SELECT_MODE", mode: "solo" },
-      { type: "ACCEPT_SAFETY" },
-      { type: "CONTINUE" },
-      { type: "LOCATION_ASKED" },
-      { type: "LOCATION_STATUS", status: "denied", canAutoArrive: false, manualAvailable: true },
-      { type: "GOTO", screen: "navigating-stop-1", stop: 1 },
-    ]);
-    let html = render(state);
-    expect(html).toContain("GPS가 정확하지 않아요 — 직접 도착 확인");
-    expect(html).toContain("외부 도보 안내 열기");
-
-    state = reduce(state, { type: "ARRIVE", manual: true });
-    html = render({ ...state, stoppedWalking: true });
+  it("shows a place card with a naver link after arrival", () => {
+    let state = reduce(createInitialState(), { type: "SELECT_GAME", game: sampleGame });
+    state = { ...state, screen: "place", currentStop: 1, stoppedWalking: true };
+    const html = render(state);
     expect(html).toContain("조각 받기");
-    expect(html).toContain("조각 1 / 4");
-
-    state = play(
-      [
-        { type: "GOTO", screen: "camera-stop-2", stop: 2 },
-        { type: "CAMERA_STATUS", status: "denied" },
-        { type: "CAMERA_STATUS", status: "fallback" },
-      ],
-      state,
-    );
-    html = render(state);
-    expect(html).toContain("카메라 없이 조각 보기");
-    expect(html).toContain("정적 조각");
-
-    state = reduce(state, { type: "COLLECT_CAMERA", fallback: true });
-    expect(state.cameraStatus).toBe("stopped");
-    expect(state.screen).toBe("piece-stop-2");
-  });
-
-  it("shows shared-phone copy without witness roles", () => {
-    const html = render(createInitialState());
-    expect(html).not.toContain("증인");
-    const mode = render(play([{ type: "GOTO", screen: "mode" }]));
-    expect(mode).toContain("둘이 걷기");
-    expect(mode).toContain("휴대폰 한 대");
-    expect(mode).not.toContain("휴대폰을 건네주세요");
+    expect(html).toContain("네이버에서 보기");
+    expect(html).not.toContain("소감");
+    expect(html).not.toContain("카메라로 조각");
   });
 
   it("keeps text directions when the map fails", () => {
-    const state = play([
-      { type: "SELECT_MODE", mode: "solo" },
-      { type: "ACCEPT_SAFETY" },
-      { type: "CONTINUE" },
-      { type: "MAP_STATUS", status: "failed" },
-      { type: "GOTO", screen: "navigating-stop-3", stop: 3 },
-    ]);
+    const state = {
+      ...createInitialState(),
+      game: sampleGame,
+      screen: "navigating",
+      currentStop: 2,
+      mapStatus: "failed",
+    };
     const html = render(state);
-    expect(html).toContain("상점 앞을 가로막지 말고");
     expect(html).toContain("외부 도보 안내 열기");
+    expect(html).toContain("이전 장소");
   });
 
   it("does not persist coordinates in serialized progress", () => {
     const saved = serializeProgress({
       ...createInitialState(),
-      playerMode: "solo",
-      screen: "navigating-stop-2",
+      gameId: "cheonho-pieces",
+      screen: "navigating",
       currentStop: 2,
       locationAccuracyMeters: 22,
       distanceMeters: 40,
@@ -85,19 +65,6 @@ describe("rendered flow", () => {
     });
     expect(JSON.stringify(saved)).not.toMatch(/127\./);
     expect(saved.lastFix).toBeUndefined();
-  });
-
-  it("renders the assemble board from four collected pieces", () => {
-    const html = render({
-      ...createInitialState(),
-      screen: "assemble",
-      playerMode: "solo",
-      collectedPieceIds: ["piece-1", "piece-2", "piece-3", "piece-4"],
-      assembleComplete: true,
-    });
-    expect(html).toContain("길로 마크 맞추기");
-    expect(html).toContain("완성 보기");
-    expect(html).toContain("마크가 완성되었습니다");
   });
 
   it("lets the simulator panel collapse", () => {

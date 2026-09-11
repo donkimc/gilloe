@@ -71,3 +71,51 @@ export function shortestAngleDelta(fromDeg, toDeg) {
   while (d < -180) d += 360;
   return d;
 }
+
+export function lineLength(coords) {
+  let total = 0;
+  for (let i = 1; i < coords.length; i += 1) {
+    total += distanceLngLat(coords[i - 1], coords[i]);
+  }
+  return total;
+}
+
+export function pointAlong(coords, t) {
+  const target = Math.max(0, Math.min(1, t)) * lineLength(coords);
+  if (target <= 0) return { coord: coords[0] };
+  let traveled = 0;
+  for (let i = 1; i < coords.length; i += 1) {
+    const a = coords[i - 1];
+    const b = coords[i];
+    const seg = distanceLngLat(a, b) || 0;
+    if (traveled + seg >= target || i === coords.length - 1) {
+      const u = seg === 0 ? 0 : (target - traveled) / seg;
+      return {
+        coord: [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u],
+      };
+    }
+    traveled += seg;
+  }
+  return { coord: coords[coords.length - 1] };
+}
+
+export function sliceLine(coords, t) {
+  const target = Math.max(0, Math.min(1, t)) * lineLength(coords);
+  if (t <= 0) return [coords[0], coords[0]];
+  if (t >= 1) return coords;
+  const out = [coords[0]];
+  let traveled = 0;
+  for (let i = 1; i < coords.length; i += 1) {
+    const a = coords[i - 1];
+    const b = coords[i];
+    const seg = distanceLngLat(a, b) || 0;
+    if (traveled + seg >= target) {
+      const u = seg === 0 ? 0 : (target - traveled) / seg;
+      out.push([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]);
+      return out;
+    }
+    out.push(b);
+    traveled += seg;
+  }
+  return coords;
+}

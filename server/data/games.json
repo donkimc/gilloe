@@ -1,0 +1,67 @@
+[
+  {
+    "id": "cheonho-pieces",
+    "title": "천호에서 길로 마크 모으기",
+    "type": "puzzle",
+    "placeCount": 4,
+    "places": [
+      {
+        "order": 1,
+        "name": "천호역 5번 출구 인근",
+        "address": "서울 강동구 천호동",
+        "blurb": "출구 앞 공개 보행 공간에서 멈춰 첫 조각을 받으세요. 차도로 내려가지 마세요.",
+        "lat": 37.53865,
+        "lng": 127.12385,
+        "naverUrl": "https://map.naver.com/p?c=16,127.12385,37.53865,0,0,0,dh",
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60
+      },
+      {
+        "order": 2,
+        "name": "레코드피자 바깥 인도",
+        "address": "서울 강동구 천호대로157길 45",
+        "blurb": "가게 간판이 보이는 공개 인도에서 멈추세요. 매장 안으로 들어가지 마세요.",
+        "lat": 37.53891,
+        "lng": 127.12755,
+        "naverUrl": "https://map.naver.com/p?c=16,127.12755,37.53891,0,0,0,dh",
+        "photoUrl": "",
+        "arrivalRadiusMeters": 55
+      },
+      {
+        "order": 3,
+        "name": "문구·완구거리 인근",
+        "address": "서울 강동구 구천면로 일대",
+        "blurb": "상점 앞을 막지 말고 인도 위 빈 공간에 서세요.",
+        "lat": 37.54078,
+        "lng": 127.12936,
+        "naverUrl": "https://map.naver.com/p?c=16,127.12936,37.54078,0,0,0,dh",
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60
+      },
+      {
+        "order": 4,
+        "name": "냉면거리 인근",
+        "address": "서울 강동구 천중로 18길 일대",
+        "blurb": "큰 가로가 보이는 인도에서 멈추세요. 게임에 필요한 구매는 없습니다.",
+        "lat": 37.54239,
+        "lng": 127.12949,
+        "naverUrl": "https://map.naver.com/p?c=16,127.12949,37.54239,0,0,0,dh",
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60
+      }
+    ],
+    "jigsaw": {
+      "source": "system",
+      "imageUrl": "",
+      "systemImageId": "station"
+    },
+    "stats": {
+      "walkingMeters": 1100,
+      "durationMinutes": 25
+    },
+    "walkLabel": "약 1.1km · 약 25분",
+    "routeLine": [],
+    "fieldVerified": false,
+    "createdAt": 0
+  }
+]

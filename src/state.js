@@ -1,21 +1,19 @@
-import { screens as SCREEN_LIST, game } from "./content.js";
-import { emptyPlacement, isAssembled } from "./assemble.js";
+import { screens as SCREEN_LIST } from "./content.js";
+import { emptyPlacement, gridSizeForCount, isAssembled, piecesForGrid, shufflePieceOrder } from "./assemble.js";
 import { SCHEMA_VERSION } from "./storage.js";
 
 export const SCREENS = SCREEN_LIST;
 
-const FLOW = SCREEN_LIST;
-
 export function createInitialState() {
   return {
     schemaVersion: SCHEMA_VERSION,
-    gameId: game.id,
-    playerMode: null,
-    screen: "cover",
+    gameId: null,
+    game: null,
+    games: [],
+    gamesError: null,
+    screen: "library",
     currentStop: 1,
     collectedPieceIds: [],
-    collectedCameraClueIds: [],
-    cameraFallbackIds: [],
     hintsUsed: {},
     startedAt: null,
     safetyAccepted: false,
@@ -28,33 +26,35 @@ export function createInitialState() {
     distanceMeters: null,
     canAutoArrive: false,
     manualAvailable: false,
-    cameraStatus: "idle",
     mapStatus: "idle",
-    feedbackAnswers: {},
-    assemblePlacement: emptyPlacement(),
-    assembleOrder: ["piece-2", "piece-4", "piece-1", "piece-3"],
+    assemblePlacement: emptyPlacement(2),
+    assembleOrder: [],
     assembleSelected: null,
     assembleComplete: false,
+    createNotice: null,
     restored: false,
     invalidSave: false,
   };
 }
 
 export function needsLiveLocation(screen) {
-  return (
-    screen === "route-overview" ||
-    screen.startsWith("navigating-stop-") ||
-    screen === "camera-stop-2"
-  );
+  return screen === "preview" || screen === "navigating";
 }
 
-export function needsCamera(screen) {
-  return screen === "camera-stop-2";
+export function needsCamera() {
+  return false;
 }
 
 export function trayAllowed(screen) {
-  const blocked = new Set(["cover", "mode", "safety"]);
-  return !blocked.has(screen);
+  return !["library", "create", "safety"].includes(screen);
+}
+
+export function placeCount(state) {
+  return state.game?.placeCount || 4;
+}
+
+export function gridN(state) {
+  return gridSizeForCount(placeCount(state));
 }
 
 export function applyPersisted(state, saved) {
@@ -68,76 +68,75 @@ export function applyPersisted(state, saved) {
     locationAccuracyMeters: null,
     distanceMeters: null,
     canAutoArrive: false,
-    manualAvailable: saved.locationPermissionAsked ? true : false,
-    cameraStatus: "idle",
+    manualAvailable: Boolean(saved.locationPermissionAsked),
     mapStatus: "idle",
-    assemblePlacement: saved.assemblePlacement || emptyPlacement(),
     assembleSelected: null,
-    assembleComplete: isAssembled(saved.assemblePlacement || emptyPlacement()),
     restored: true,
   };
 }
 
-function nextScreen(screen) {
-  const index = FLOW.indexOf(screen);
-  if (index < 0 || index === FLOW.length - 1) return screen;
-  return FLOW[index + 1];
-}
-
-function previousScreen(screen) {
-  const index = FLOW.indexOf(screen);
-  if (index <= 0) return screen;
-  return FLOW[index - 1];
-}
-
 export function reduce(state, action) {
   switch (action.type) {
+    case "GAMES":
+      return { ...state, games: action.games, gamesError: null };
+    case "GAMES_ERROR":
+      return { ...state, gamesError: action.error };
     case "RESTORE":
       return applyPersisted(createInitialState(), action.saved);
     case "INVALID_SAVE":
       return { ...createInitialState(), invalidSave: true };
     case "RESET":
-      return createInitialState();
-    case "SELECT_MODE":
       return {
-        ...state,
-        playerMode: action.mode,
+        ...createInitialState(),
+        games: state.games,
+        game: null,
+        screen: "library",
+      };
+    case "OPEN_CREATE":
+      return { ...state, screen: "create", createNotice: null };
+    case "CREATE_SAVED":
+      return { ...state, screen: "library", createNotice: action.message, games: action.games || state.games };
+    case "SELECT_GAME": {
+      const game = action.game;
+      const n = gridSizeForCount(game.placeCount);
+      const ids = piecesForGrid(n).map((p) => p.id);
+      return {
+        ...createInitialState(),
+        games: state.games,
+        game,
+        gameId: game.id,
         screen: "safety",
-        startedAt: state.startedAt ?? Date.now(),
+        startedAt: Date.now(),
+        assemblePlacement: emptyPlacement(n),
+        assembleOrder: shufflePieceOrder(ids),
       };
+    }
     case "ACCEPT_SAFETY":
-      return { ...state, safetyAccepted: true, screen: "briefing" };
+      return { ...state, safetyAccepted: true, screen: "preview" };
     case "CONTINUE": {
-      const screen = nextScreen(state.screen);
-      const currentStop = stopFromScreen(screen) ?? state.currentStop;
+      const next = nextAfter(state.screen);
+      return { ...state, screen: next, overlay: null, stoppedWalking: false };
+    }
+    case "PREV_PLACE": {
+      if (state.currentStop <= 1) return { ...state, screen: "navigating" };
       return {
         ...state,
-        screen,
-        currentStop,
+        currentStop: state.currentStop - 1,
+        screen: "place",
         overlay: null,
-        stoppedWalking: false,
-        cameraStatus: needsCamera(screen) ? "idle" : "idle",
+        stoppedWalking: true,
       };
     }
-    case "BACK": {
-      if (state.overlay) {
-        return { ...state, overlay: null };
+    case "BACK":
+      if (state.overlay) return { ...state, overlay: null };
+      if (state.screen === "create") return { ...state, screen: "library" };
+      if (state.screen === "navigating" || state.screen === "place") {
+        return reduce(state, { type: "PREV_PLACE" });
       }
-      const screen = previousScreen(state.screen);
-      return {
-        ...state,
-        screen,
-        currentStop: stopFromScreen(screen) ?? state.currentStop,
-        cameraStatus: "idle",
-      };
-    }
+      return state;
     case "OPEN_NOTEBOOK":
       if (!trayAllowed(state.screen)) return state;
-      return {
-        ...state,
-        overlay: "notebook",
-        overlayReturnScreen: state.screen,
-      };
+      return { ...state, overlay: "notebook", overlayReturnScreen: state.screen };
     case "CLOSE_OVERLAY":
       return { ...state, overlay: null, overlayReturnScreen: null };
     case "OPEN_HELP":
@@ -147,12 +146,7 @@ export function reduce(state, action) {
     case "OPEN_MANUAL":
       return { ...state, overlay: "manual" };
     case "LOCATION_ASKED":
-      return {
-        ...state,
-        locationPermissionAsked: true,
-        locationStatus: "locating",
-        manualAvailable: false,
-      };
+      return { ...state, locationPermissionAsked: true, locationStatus: "locating", manualAvailable: false };
     case "LOCATION_STATUS":
       return {
         ...state,
@@ -164,86 +158,48 @@ export function reduce(state, action) {
       };
     case "ARRIVE": {
       if (!state.canAutoArrive && !action.manual) return state;
-      const screen = arrivingScreen(state.currentStop);
-      return {
-        ...state,
-        screen,
-        overlay: null,
-        stoppedWalking: false,
-        cameraStatus: "idle",
-      };
-    }
-    case "CAMERA_STATUS":
-      return { ...state, cameraStatus: action.status };
-    case "COLLECT_CAMERA": {
-      const ids = unique(state.collectedCameraClueIds, "stop-2");
-      const fallbackIds = action.fallback ? unique(state.cameraFallbackIds, "stop-2") : state.cameraFallbackIds;
-      return {
-        ...state,
-        collectedCameraClueIds: ids,
-        cameraFallbackIds: fallbackIds,
-        cameraStatus: "stopped",
-        screen: "piece-stop-2",
-      };
+      return { ...state, screen: "place", overlay: null, stoppedWalking: false };
     }
     case "STOP_WALKING":
       return { ...state, stoppedWalking: true };
     case "COLLECT_PIECE": {
-      const pieceId = action.pieceId;
-      const collectedPieceIds = unique(state.collectedPieceIds, pieceId);
-      const afterFour = collectedPieceIds.length >= 4;
-      const next = afterFour ? "assemble" : `navigating-stop-${state.currentStop + 1}`;
+      const collectedPieceIds = unique(state.collectedPieceIds, action.pieceId);
+      const total = placeCount(state);
+      const done = collectedPieceIds.length >= total;
       return {
         ...state,
         collectedPieceIds,
-        screen: next,
-        currentStop: afterFour ? 4 : state.currentStop + 1,
+        screen: done ? "assemble" : "navigating",
+        currentStop: done ? state.currentStop : state.currentStop + 1,
         stoppedWalking: false,
       };
     }
     case "USE_HINT":
-      return {
-        ...state,
-        hintsUsed: { ...state.hintsUsed, [action.puzzleId]: true },
-      };
+      return { ...state, hintsUsed: { ...state.hintsUsed, [action.puzzleId]: true } };
     case "SELECT_PIECE":
       return { ...state, assembleSelected: action.pieceId };
     case "PLACE_PIECE": {
-      const assemblePlacement = action.placement;
+      const n = gridN(state);
       return {
         ...state,
-        assemblePlacement,
+        assemblePlacement: action.placement,
         assembleSelected: null,
-        assembleComplete: isAssembled(assemblePlacement),
+        assembleComplete: isAssembled(action.placement, n),
       };
     }
-    case "FEEDBACK":
-      return {
-        ...state,
-        feedbackAnswers: { ...state.feedbackAnswers, [action.id]: action.value },
-      };
     case "MAP_STATUS":
       return { ...state, mapStatus: action.status };
     case "GOTO":
-      return {
-        ...state,
-        screen: action.screen,
-        currentStop: action.stop ?? stopFromScreen(action.screen) ?? state.currentStop,
-        overlay: null,
-      };
+      return { ...state, screen: action.screen, currentStop: action.stop ?? state.currentStop, overlay: null };
     default:
       return state;
   }
 }
 
-export function stopFromScreen(screen) {
-  const match = String(screen).match(/stop-(\d)/);
-  return match ? Number(match[1]) : null;
-}
-
-function arrivingScreen(stop) {
-  if (stop === 2) return "camera-stop-2";
-  return `piece-stop-${stop}`;
+function nextAfter(screen) {
+  if (screen === "preview") return "navigating";
+  if (screen === "assemble") return "resolution";
+  return screen;
 }
 
 function unique(list, value) {
@@ -252,7 +208,6 @@ function unique(list, value) {
   return next;
 }
 
-export function canTransitionToArrive(state, { manual }) {
-  if (manual) return true;
-  return Boolean(state.canAutoArrive);
+export function currentPlace(state) {
+  return state.game?.places?.find((p) => p.order === state.currentStop) || state.game?.places?.[0];
 }
