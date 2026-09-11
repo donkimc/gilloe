@@ -154,6 +154,7 @@ location.onChange((payload) => {
 });
 
 location.onFix((fix) => {
+  worldAnchor.setPlayerFix(fix);
   if (mapReady) map.setPlayer(fix.lat, fix.lng, fix.accuracyMeters);
 });
 
@@ -402,6 +403,8 @@ function moveOrder(direction, index) {
 async function startCamera() {
   // Ask for motion permission inside the tap gesture (required on iOS).
   await worldAnchor.requestPermission().catch(() => false);
+  // Keep GPS live so the umbrella can stay fixed at the outdoor lat/lng.
+  if (state.locationPermissionAsked) startWatch();
   dispatch({ type: "CAMERA_STATUS", status: "starting" });
   try {
     const video = document.querySelector("#camera-video");
@@ -431,6 +434,10 @@ async function syncWorldAnchor(forceStart = false) {
     if (guide) guide.hidden = true;
     return;
   }
+  const stop = stopByOrder(2);
+  const geo = stop?.cameraClue?.geoAnchor || stop?.coordinates;
+  worldAnchor.setGeoTarget(geo);
+  worldAnchor.setPlayerFix(location.getLastFix());
   const onPose = (pose) => {
     const node = document.querySelector("[data-ar-clue]");
     const vf = document.querySelector(".viewfinder");

@@ -42,7 +42,8 @@ export function createInitialState() {
 export function needsLiveLocation(screen) {
   return (
     screen === "route-overview" ||
-    screen.startsWith("navigating-stop-")
+    screen.startsWith("navigating-stop-") ||
+    screen === "camera-stop-2"
   );
 }
 

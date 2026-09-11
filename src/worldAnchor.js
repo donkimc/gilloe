@@ -1,42 +1,38 @@
 /**
  * World-lock for the Stop 2 navy umbrella (no AR framework).
- * Combines orientation sensors + pointer look-around so the clue stays in
- * physical/heading space instead of a fixed CSS spot on the screen.
+ * Prefer GPS bearing + compass heading so the clue sits at a real outdoor
+ * lat/lng (Record Pizza sidewalk). Fall back to relative orientation / drag.
  */
+
+import { bearingDegrees, distanceMeters, shortestAngleDelta } from "./geo.js";
 
 const PX_PER_DEG_X = 12;
 const PX_PER_DEG_Y = 14;
 const VISIBLE_DEG = 42;
 
-function shortestDelta(from, to) {
-  let d = to - from;
-  while (d > 180) d -= 360;
-  while (d < -180) d += 360;
-  return d;
-}
-
-function poseFromLook(lookYaw, lookPitch, targetYaw, targetPitch) {
-  const yaw = shortestDelta(lookYaw, targetYaw);
-  const pitch = shortestDelta(lookPitch, targetPitch);
-  // Phone turns right → world object slides left on the viewfinder.
+function poseFromLook(lookYaw, lookPitch, targetYaw, targetPitch, distanceMetersOverride) {
+  const yaw = shortestAngleDelta(lookYaw, targetYaw);
+  const pitch = shortestAngleDelta(lookPitch, targetPitch);
   const x = yaw * PX_PER_DEG_X;
   const y = -pitch * PX_PER_DEG_Y;
   const angularDistance = Math.hypot(yaw, pitch);
-  // Game-scaled "walk/look" distance so the HUD can show how far to turn/move.
-  const distanceMeters = Math.max(0.4, angularDistance * 0.12);
-  // 0deg = up, clockwise positive — for an on-screen look arrow.
+  const meters =
+    Number.isFinite(distanceMetersOverride)
+      ? Math.max(0.4, distanceMetersOverride)
+      : Math.max(0.4, angularDistance * 0.12);
   const arrowDeg = (Math.atan2(x, -y) * 180) / Math.PI;
   return {
     x,
     y,
-    scale: Math.max(0.7, 1.2 - angularDistance * 0.012),
+    scale: Math.max(0.7, 1.25 - Math.min(meters, 80) * 0.006),
     visible: angularDistance < VISIBLE_DEG,
     ready: true,
     yaw,
     pitch,
     angularDistance,
-    distanceMeters,
+    distanceMeters: meters,
     arrowDeg,
+    mode: Number.isFinite(distanceMetersOverride) ? "geo" : "relative",
   };
 }
 
@@ -57,11 +53,36 @@ export function createWorldAnchor({
   let lookPitch = 0;
   let pointerDrag = null;
   let viewfinderEl = null;
+  let geoTarget = null;
+  let playerFix = null;
+  let compassHeading = null;
 
   function emit() {
     if (!onUpdate) return;
+
+    if (geoTarget && playerFix && Number.isFinite(compassHeading)) {
+      const bearing = bearingDegrees(playerFix, geoTarget);
+      const meters = distanceMeters(playerFix, geoTarget);
+      if (bearing != null && meters != null) {
+        // Keep a gentle downward pitch so the clue reads as street-level, not sky.
+        const pitchTarget = Math.max(-12, -4 - Math.min(meters, 60) * 0.05);
+        onUpdate(poseFromLook(compassHeading, lookPitch || 0, bearing, pitchTarget, meters));
+        return;
+      }
+    }
+
     if (!calibrated) {
-      onUpdate({ x: 0, y: 0, scale: 1, visible: true, ready: false, angularDistance: 0, distanceMeters: 0, arrowDeg: 0 });
+      onUpdate({
+        x: 0,
+        y: 0,
+        scale: 1,
+        visible: true,
+        ready: false,
+        angularDistance: 0,
+        distanceMeters: 0,
+        arrowDeg: 0,
+        mode: "pending",
+      });
       return;
     }
     onUpdate(poseFromLook(lookYaw, lookPitch, targetYaw, targetPitch));
@@ -71,23 +92,30 @@ export function createWorldAnchor({
     if (calibrated) return;
     originYaw = lookYaw;
     originPitch = lookPitch;
-    // Anchor the umbrella slightly off the first framing direction.
+    // Relative fallback only — geo mode uses real lat/lng instead.
     targetYaw = originYaw + 10;
     targetPitch = originPitch - 4;
     calibrated = true;
   }
 
   function setLookFromDevice(alpha, beta) {
-    // alpha: compass yaw, beta: front-back tilt. Normalize into look space.
     lookYaw = alpha;
     lookPitch = beta;
+    compassHeading = alpha;
     calibrateIfNeeded();
     emit();
   }
 
   function onDeviceOrientation(event) {
     if (event.alpha == null || event.beta == null) return;
-    setLookFromDevice(event.alpha, event.beta);
+    // webkitCompassHeading is iOS absolute compass (0 = north).
+    const heading =
+      typeof event.webkitCompassHeading === "number"
+        ? event.webkitCompassHeading
+        : event.absolute
+          ? event.alpha
+          : event.alpha;
+    setLookFromDevice(heading, event.beta);
   }
 
   function startOrientationListeners() {
@@ -111,10 +139,9 @@ export function createWorldAnchor({
         const q = sensor.quaternion;
         if (!q) return;
         const [x, y, z, w] = q;
-        // Yaw / pitch from quaternion (screen frame).
         const yaw = (Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)) * 180) / Math.PI;
         const pitch = (Math.asin(Math.max(-1, Math.min(1, 2 * (w * y - z * x)))) * 180) / Math.PI;
-        setLookFromDevice(yaw, pitch);
+        setLookFromDevice((yaw + 360) % 360, pitch);
       });
       sensor.addEventListener("error", () => {
         try {
@@ -150,6 +177,7 @@ export function createWorldAnchor({
       y: event.clientY,
       yaw: lookYaw,
       pitch: lookPitch,
+      heading: compassHeading ?? lookYaw,
     };
     try {
       viewfinderEl.setPointerCapture(event.pointerId);
@@ -162,9 +190,9 @@ export function createWorldAnchor({
     if (!pointerDrag || event.pointerId !== pointerDrag.id) return;
     const dx = event.clientX - pointerDrag.x;
     const dy = event.clientY - pointerDrag.y;
-    // Drag looks around the world; umbrella stays world-fixed.
     lookYaw = pointerDrag.yaw - dx * 0.18;
     lookPitch = pointerDrag.pitch + dy * 0.16;
+    compassHeading = ((pointerDrag.heading - dx * 0.18) % 360 + 360) % 360;
     calibrateIfNeeded();
     emit();
   }
@@ -201,7 +229,6 @@ export function createWorldAnchor({
       emit();
       raf = root?.requestAnimationFrame ? root.requestAnimationFrame(tick) : 0;
     };
-    // Orientation events already emit; raf keeps pose applied after DOM remounts.
     raf = root?.requestAnimationFrame ? root.requestAnimationFrame(tick) : 0;
   }
 
@@ -211,10 +238,6 @@ export function createWorldAnchor({
   }
 
   return {
-    /**
-     * Must run inside the original tap gesture (before await getUserMedia)
-     * or iOS will refuse DeviceOrientation permission.
-     */
     async requestPermission() {
       const DO = root?.DeviceOrientationEvent;
       if (DO && typeof DO.requestPermission === "function") {
@@ -224,14 +247,29 @@ export function createWorldAnchor({
       return true;
     },
 
+    setGeoTarget(coords) {
+      geoTarget =
+        coords && Number.isFinite(coords.lat) && Number.isFinite(coords.lng)
+          ? { lat: coords.lat, lng: coords.lng }
+          : null;
+      emit();
+    },
+
+    setPlayerFix(fix) {
+      playerFix =
+        fix && Number.isFinite(fix.lat) && Number.isFinite(fix.lng)
+          ? { lat: fix.lat, lng: fix.lng, accuracyMeters: fix.accuracyMeters }
+          : null;
+      emit();
+    },
+
     async start(callback, { viewfinder } = {}) {
       this.stop();
       onUpdate = callback;
       calibrated = false;
       lookYaw = 0;
       lookPitch = 0;
-      // Seed a world pose immediately so the umbrella is NOT screen-centered.
-      // Sensors/pointer then move the look direction around this fixed world target.
+      compassHeading = null;
       calibrateIfNeeded();
       bindPointer(viewfinder || documentRef?.querySelector?.(".viewfinder"));
       startGenericSensor();
@@ -317,7 +355,11 @@ export function updateLookGuidance(guide, pose, onScreen) {
   if (arrow) arrow.style.transform = `rotate(${deg}deg)`;
   if (dist) dist.textContent = `${meters.toFixed(1)}m`;
   if (label) {
-    const turn = Math.round(Math.abs(pose.angularDistance ?? 0));
-    label.textContent = turn > 0 ? `이 방향으로 ${turn}°` : "남색 우산 방향";
+    if (pose.mode === "geo") {
+      label.textContent = meters < 8 ? "레코드피자 바깥쪽" : "남색 우산 · 가게 밖 인도";
+    } else {
+      const turn = Math.round(Math.abs(pose.angularDistance ?? 0));
+      label.textContent = turn > 0 ? `이 방향으로 ${turn}°` : "남색 우산 방향";
+    }
   }
 }

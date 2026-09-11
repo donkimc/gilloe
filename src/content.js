@@ -129,7 +129,7 @@ export const cameraCopy = {
   stopped: "카메라를 종료했습니다.",
   standStill: "안전한 공개 장소에 선 뒤, 사람·집·차량이 아닌 공개된 방향을 비추세요. 휴대폰을 천천히 돌려 우산을 찾으세요.",
   beforeStartHint: "후면 카메라를 켠 뒤 주변을 비추세요. 움직임 권한을 허용하면 남색 우산이 현실 공간에 고정됩니다.",
-  overlayHint: "남색 우산은 화면에 붙어 있지 않고 공간에 고정됩니다. 휴대폰을 돌리거나 화면을 드래그해 찾아 탭하세요.",
+  overlayHint: "남색 우산은 레코드피자 바깥 인도 GPS에 고정됩니다. 화살표·거리를 따라 가게 밖에서 찾아 탭하세요. 매장에 들어가지 마세요.",
   fallbackHint: "카메라 대신 같은 남색 우산 단서를 정적으로 보여 줍니다. 우산을 탭하세요.",
 };
 
@@ -247,15 +247,16 @@ export const stops = [
   {
     id: "stop-2",
     order: 2,
-    title: "임시 지점 2 · 천호 로데오거리 인근",
-    publicName: "천호대로 157길 일대 공개 보행 공간",
-    coordinates: { lat: 37.53974, lng: 127.12774 },
+    title: "임시 지점 2 · 레코드피자 바깥 인도",
+    publicName: "천호대로157길 45 앞 공개 보행 공간",
+    // Outdoor sidewalk in front of Record Pizza (천호대로157길 45). Do not enter the shop.
+    coordinates: { lat: 37.53891, lng: 127.12755 },
     fieldVerified: false,
-    arrivalRadiusMeters: 60,
+    arrivalRadiusMeters: 55,
     directions:
-      "🛍️ 로데오거리로 안내된 공개 인도를 따라가 넓은 보행 공간에서 멈추세요. 가게 안으로 들어가지 마세요.",
-    fallbackDirections: "🪧 간판이 밀집한 거리의 인도에서 멈추고, 출입구를 막지 마세요.",
-    safeStandingNote: "🚶 보행자 옆구리, 턱이 낮은 공개 공간에 서세요.",
+      "🛍️ 천호대로157길을 따라 레코드피자 간판이 보이는 공개 인도에서 멈추세요. 가게 안으로 들어가지 마세요.",
+    fallbackDirections: "🪧 RECORD PIZZA 간판이 보이는 인도에서 멈추고, 출입구를 막지 마세요.",
+    safeStandingNote: "🚶 가게 바깥 인도·보행자 옆구리에 서세요. 매장 내부는 조사 지점이 아닙니다.",
     scene: "🪟 가상 작업실 유리에 남았다는 반영 기록을 확인합니다. 실제 가게와 무관합니다.",
     witnessCard: "🚇 민재는 이미 역에 있었다고 합니다. 유나는 🟨 노란 우산, 민재는 ☂️ 남색 우산입니다.",
     evidenceCard: "🖼️ 가상 증거 사진에서 작업실 쪽 반영에 남은 물건을 고르세요.",
@@ -263,8 +264,15 @@ export const stops = [
     cameraClue: {
       enabled: true,
       framingInstruction:
-        "📷 현장 검증 전 임시 안내: 사람·출입구가 아닌, 공개된 가로등이나 안내판이 보이는 방향을 프레임에 두세요.",
-      publicAnchor: "💡 공개 가로등·안내판 (좌표·방향은 현장 검증 후 교체)",
+        "📷 가게 밖 인도에서 카메라를 켜세요. 남색 우산은 레코드피자 바깥 GPS 좌표에 고정됩니다. 매장에 들어가지 마세요.",
+      publicAnchor: "📍 레코드피자 천호점 바깥 인도 · 천호대로157길 45 (37.53891, 127.12755)",
+      geoAnchor: {
+        lat: 37.53891,
+        lng: 127.12755,
+        label: "레코드피자 바깥 인도",
+        address: "서울 강동구 천호대로157길 45",
+        outdoorOnly: true,
+      },
       overlay: {
         timestamp: "19:38",
         motif: "navy-umbrella",

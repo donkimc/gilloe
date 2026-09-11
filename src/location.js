@@ -17,6 +17,7 @@ export function createLocationService({
   let watchId = null;
   let startedAt = 0;
   let last = null;
+  let lastFix = null;
   let listener = null;
   let fixListener = null;
 
@@ -51,11 +52,12 @@ export function createLocationService({
       distanceMeters: distance,
       accuracyCeiling: config.accuracyCeilingMeters,
     };
-    fixListener?.({
+    lastFix = {
       lat: here.lat,
       lng: here.lng,
       accuracyMeters,
-    });
+    };
+    fixListener?.(lastFix);
     const status = classify({ accuracyMeters });
     const waited = now() - startedAt >= config.manualFallbackAfterMs;
     emit({
@@ -89,6 +91,9 @@ export function createLocationService({
     },
     onFix(fn) {
       fixListener = fn;
+    },
+    getLastFix() {
+      return lastFix;
     },
     start({ stop, options, accuracyCeilingMeters, manualFallbackAfterMs }) {
       this.stop();
