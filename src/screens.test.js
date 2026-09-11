@@ -23,11 +23,27 @@ const sampleGame = {
 };
 
 describe("rendered flow", () => {
-  it("keeps the provisional-route warning on the library", () => {
-    const html = render(createInitialState());
-    expect(html).toContain("현장 검증 전 임시 경로");
-    expect(html).toContain("공개 플레이용이 아닙니다");
-    expect(html).toContain("게임 만들기");
+  it("shows edit and delete on library cards", () => {
+    const html = render({
+      ...createInitialState(),
+      games: [{ id: "cheonho-pieces", title: "천호에서 길로 마크 모으기", placeCount: 4, walkLabel: "약 1.1km · 약 25분" }],
+    });
+    expect(html).toContain("수정");
+    expect(html).toContain("삭제");
+    expect(html).toContain('data-action="edit-game"');
+    expect(html).toContain('data-action="ask-delete-game"');
+  });
+
+  it("asks before deleting a game", () => {
+    const html = render({
+      ...createInitialState(),
+      overlay: "delete-game",
+      deleteGameId: "game-1",
+      deleteGameTitle: "건대",
+    });
+    expect(html).toContain("이 게임을 삭제할까요?");
+    expect(html).toContain("건대");
+    expect(html).toContain('data-action="confirm-delete-game"');
   });
 
   it("shows a place card with a naver link after arrival", () => {

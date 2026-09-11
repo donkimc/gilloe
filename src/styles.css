@@ -571,7 +571,19 @@ legend { font-weight: 700; margin-bottom: 0.35rem; }
 }
 
 .game-list { list-style: none; padding: 0; margin: 1rem 0; }
-.game-list li { margin: 0.5rem 0; }
+.game-list li { margin: 0.75rem 0; }
+.game-item .choice { margin: 0; }
+.row-actions {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.4rem;
+}
+.row-actions .btn {
+  width: auto;
+  flex: 1;
+  margin: 0;
+  font-size: 0.92rem;
+}
 .field { display: block; margin: 0.8rem 0; }
 .field span { display: block; font-weight: 700; margin-bottom: 0.3rem; }
 .field input[type="text"], .field input[type="url"] {

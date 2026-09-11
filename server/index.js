@@ -3,13 +3,17 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  decodeMeta,
+  extractNaverPlaceId,
   formatWalkLabel,
   parseCoordsFromNaverUrl,
+  parsePlaceDetailHtml,
+  placePageUrl,
+  placesMoved,
   straightRouteLine,
   validateGamePayload,
   walkingStats,
 } from "./gameLogic.js";
+import { fetchOsrmLine, withWalkingLine } from "./osrm.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "data");
@@ -59,54 +63,67 @@ async function readBody(req) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
 }
 
-async function fetchOsrmLine(places) {
-  const coords = places.map((p) => `${p.lng},${p.lat}`).join(";");
-  const url = `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${coords}?overview=full&geometries=geojson`;
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 8000);
-  try {
-    const res = await fetch(url, { signal: ctrl.signal, headers: { "user-agent": "gilloe-prototype/1" } });
-    if (!res.ok) throw new Error("osrm");
-    const data = await res.json();
-    const line = data?.routes?.[0]?.geometry?.coordinates;
-    if (!Array.isArray(line) || line.length < 2) throw new Error("empty");
-    return line;
-  } finally {
-    clearTimeout(timer);
+
+const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+
+async function fetchText(target) {
+  let current = target;
+  for (let hop = 0; hop < 8; hop += 1) {
+    const res = await fetch(current, {
+      redirect: "manual",
+      headers: {
+        "user-agent": BROWSER_UA,
+        accept: "text/html,application/xhtml+xml",
+      },
+      signal: AbortSignal.timeout(12000),
+    });
+    const location = res.headers.get("location");
+    if (location && [301, 302, 303, 307, 308].includes(res.status)) {
+      current = new URL(location, current).href;
+      continue;
+    }
+    return { finalUrl: res.url || current, html: await res.text(), ok: res.ok };
   }
+  return { finalUrl: current, html: "", ok: false };
 }
 
 async function resolvePlace(url) {
-  const coordsFromUrl = parseCoordsFromNaverUrl(url);
   let finalUrl = url;
   let html = "";
   try {
-    const res = await fetch(url, {
-      redirect: "follow",
-      headers: {
-        "user-agent": "Mozilla/5.0 (compatible; Gilloe/1.0; +https://github.com/donkimc/gilloe)",
-        accept: "text/html",
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    finalUrl = res.url || url;
-    html = await res.text();
+    const first = await fetchText(url);
+    finalUrl = first.finalUrl;
+    html = first.html;
   } catch {
     /* parse URL only */
   }
-  const coords = coordsFromUrl || parseCoordsFromNaverUrl(finalUrl);
-  const meta = html ? decodeMeta(html) : { title: "", image: "", description: "" };
-  const photoUrl = meta.image && !/blog|post|review/i.test(meta.image) ? meta.image : "";
+
+  const placeId = extractNaverPlaceId(finalUrl) || extractNaverPlaceId(url);
+  let detail = parsePlaceDetailHtml(html);
+  if (placeId && (detail.lat == null || !detail.name)) {
+    try {
+      const page = await fetchText(placePageUrl(placeId));
+      detail = parsePlaceDetailHtml(page.html);
+      if (page.finalUrl) finalUrl = page.finalUrl;
+    } catch {
+      /* keep first-pass detail */
+    }
+  }
+
+  const coords = parseCoordsFromNaverUrl(url) || parseCoordsFromNaverUrl(finalUrl);
+  const lat = coords?.lat ?? detail.lat;
+  const lng = coords?.lng ?? detail.lng;
   return {
     naverUrl: url,
     finalUrl,
-    name: meta.title || "",
-    address: "",
-    blurb: meta.description || "",
-    photoUrl,
-    lat: coords?.lat ?? null,
-    lng: coords?.lng ?? null,
-    ok: Boolean(coords),
+    name: detail.name || "",
+    address: detail.address || "",
+    blurb: detail.blurb || "",
+    photoUrl: detail.photoUrl || "",
+    lat: lat ?? null,
+    lng: lng ?? null,
+    ok: Number.isFinite(lat) && Number.isFinite(lng),
   };
 }
 
@@ -123,11 +140,78 @@ async function saveUpload(dataUrl) {
   return `/uploads/${file}`;
 }
 
+function gameIdFromPath(pathname) {
+  const id = pathname.slice("/api/games/".length);
+  return id && !id.includes("/") ? id : "";
+}
+
+async function assembleSavedGame(check, previous = null) {
+  const places = check.places.map((p, i) => ({
+    order: i + 1,
+    name: String(p.name || `장소 ${i + 1}`).slice(0, 80),
+    address: String(p.address || "").slice(0, 120),
+    blurb: String(p.blurb || "공개된 보행 공간에서 멈춰 조각을 받으세요.").slice(0, 200),
+    lat: p.lat,
+    lng: p.lng,
+    naverUrl: String(p.naverUrl || ""),
+    photoUrl: String(p.photoUrl || ""),
+    arrivalRadiusMeters: Number(previous?.places?.[i]?.arrivalRadiusMeters) || 60,
+  }));
+  const stats = walkingStats(places);
+  let routeLine = previous?.routeLine;
+  if (!previous || placesMoved(previous.places, places)) {
+    routeLine = straightRouteLine(places);
+    try {
+      routeLine = await fetchOsrmLine(places);
+    } catch {
+      /* straight fallback */
+    }
+  }
+  let imageUrl = previous?.jigsaw?.imageUrl || "";
+  let systemImageId = check.jigsaw.systemImageId || previous?.jigsaw?.systemImageId || null;
+  const source = check.jigsaw.source;
+  if (source === "upload") {
+    if (check.jigsaw.imageDataUrl) imageUrl = await saveUpload(check.jigsaw.imageDataUrl);
+    else if (!imageUrl) throw new Error("사진을 올리세요.");
+  } else if (source === "final-place") {
+    imageUrl = places[places.length - 1].photoUrl || "";
+    if (!imageUrl) {
+      systemImageId = systemImageId || "station";
+      return finish("system", imageUrl, systemImageId);
+    }
+  } else {
+    systemImageId = systemImageId || "station";
+    imageUrl = "";
+  }
+  return finish(source, imageUrl, systemImageId);
+
+  function finish(jigsawSource, url, sysId) {
+    return {
+      id: previous?.id || `game-${Date.now().toString(36)}`,
+      title: check.title,
+      type: "puzzle",
+      placeCount: check.placeCount,
+      places,
+      jigsaw: {
+        source: jigsawSource === "final-place" && !url ? "system" : jigsawSource,
+        imageUrl: url,
+        systemImageId: sysId,
+      },
+      stats,
+      walkLabel: formatWalkLabel(stats),
+      routeLine,
+      fieldVerified: false,
+      createdAt: previous?.createdAt || Date.now(),
+      updatedAt: Date.now(),
+    };
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
       "access-control-allow-origin": "*",
-      "access-control-allow-methods": "GET,POST,OPTIONS",
+      "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
       "access-control-allow-headers": "content-type",
     });
     res.end();
@@ -166,10 +250,14 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "GET" && url.pathname.startsWith("/api/games/")) {
-      const id = url.pathname.slice("/api/games/".length);
+      const id = gameIdFromPath(url.pathname);
       const games = await readGames();
-      const game = games.find((g) => g.id === id);
-      if (!game) return notFound(res);
+      const found = games.find((g) => g.id === id);
+      if (!found) return notFound(res);
+      const { game, changed } = await withWalkingLine(found);
+      if (changed) {
+        await writeGames(games.map((item) => (item.id === id ? game : item)));
+      }
       send(res, 200, game);
       return;
     }
@@ -187,59 +275,38 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const check = validateGamePayload(body);
       if (!check.ok) return send(res, 400, { error: check.error });
-      const places = check.places.map((p, i) => ({
-        order: i + 1,
-        name: String(p.name || `장소 ${i + 1}`).slice(0, 80),
-        address: String(p.address || "").slice(0, 120),
-        blurb: String(p.blurb || "공개된 보행 공간에서 멈춰 조각을 받으세요.").slice(0, 200),
-        lat: p.lat,
-        lng: p.lng,
-        naverUrl: String(p.naverUrl || ""),
-        photoUrl: String(p.photoUrl || ""),
-        arrivalRadiusMeters: 60,
-      }));
-      const stats = walkingStats(places);
-      let routeLine = straightRouteLine(places);
-      try {
-        routeLine = await fetchOsrmLine(places);
-      } catch {
-        /* straight fallback */
-      }
-      let imageUrl = "";
-      let systemImageId = check.jigsaw.systemImageId || null;
-      if (check.jigsaw.source === "upload") {
-        imageUrl = await saveUpload(check.jigsaw.imageDataUrl);
-      } else if (check.jigsaw.source === "final-place") {
-        imageUrl = places[places.length - 1].photoUrl || "";
-        if (!imageUrl) {
-          check.jigsaw.source = "system";
-          systemImageId = systemImageId || "station";
-        }
-      } else {
-        systemImageId = systemImageId || "station";
-      }
-      const game = {
-        id: `game-${Date.now().toString(36)}`,
-        title: check.title,
-        type: "puzzle",
-        placeCount: check.placeCount,
-        places,
-        jigsaw: {
-          source: check.jigsaw.source,
-          imageUrl,
-          systemImageId,
-        },
-        stats,
-        walkLabel: formatWalkLabel(stats),
-        routeLine,
-        fieldVerified: false,
-        createdAt: Date.now(),
-      };
+      const game = await assembleSavedGame(check);
       const games = await readGames();
       games.unshift(game);
       await writeGames(games);
       send(res, 201, game);
       return;
+    }
+
+    if (url.pathname.startsWith("/api/games/")) {
+      const id = gameIdFromPath(url.pathname);
+      if (!id) return notFound(res);
+      const games = await readGames();
+      const index = games.findIndex((g) => g.id === id);
+      if (index < 0) return notFound(res);
+
+      if (req.method === "PUT") {
+        const body = await readBody(req);
+        const check = validateGamePayload(body);
+        if (!check.ok) return send(res, 400, { error: check.error });
+        const game = await assembleSavedGame(check, games[index]);
+        games[index] = game;
+        await writeGames(games);
+        send(res, 200, game);
+        return;
+      }
+
+      if (req.method === "DELETE") {
+        const next = games.filter((g) => g.id !== id);
+        await writeGames(next);
+        send(res, 200, { ok: true, id });
+        return;
+      }
     }
 
     notFound(res);
@@ -248,6 +315,17 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, "127.0.0.1", () => {
-  console.log(`Gilloe API http://127.0.0.1:${PORT}`);
-});
+export function startApi() {
+  server.on("error", (error) => {
+    if (error.code === "EADDRINUSE") {
+      console.log(`Gilloe API already running on ${PORT}`);
+      return;
+    }
+    throw error;
+  });
+  server.listen(PORT, "127.0.0.1", () => {
+    console.log(`Gilloe API http://127.0.0.1:${PORT}`);
+  });
+}
+
+startApi();

@@ -32,8 +32,8 @@ function ico(symbol, text) {
   return `<span class="ico"><span class="ico__mark" aria-hidden="true">${symbol}</span><span>${text}</span></span>`;
 }
 
-function btn(action, label, extra = "") {
-  return `<button type="button" class="btn ${extra}" data-action="${action}">${label}</button>`;
+function btn(action, label, extra = "", attrs = "") {
+  return `<button type="button" class="btn ${extra}" data-action="${action}" ${attrs}>${label}</button>`;
 }
 
 function banner() {
@@ -113,17 +113,21 @@ function libraryView(state) {
       <p class="warn">${ico("🚧", brand.notPublicReady)}</p>
       ${state.invalidSave ? `<p class="warn">저장본이 오래되어 목록부터 시작합니다.</p>` : ""}
       ${state.createNotice ? `<p class="ok">${state.createNotice}</p>` : ""}
-      ${state.gamesError ? `<p class="warn">목록을 불러오지 못했습니다. API가 켜져 있는지 확인하세요.</p>` : ""}
+      ${state.gamesError ? `<p class="warn">${state.gamesError === "list" ? "목록을 불러오지 못했습니다. API가 켜져 있는지 확인하세요." : "게임을 수정하거나 삭제하지 못했습니다."}</p>` : ""}
       ${btn("open-create", `➕ ${copy.create}`)}
       <ul class="game-list">
         ${games
           .map(
             (g) => `
-          <li>
-            <button type="button" class="choice" data-action="select-game" data-id="${g.id}">
-              <strong>${g.title}</strong>
-              <span>${g.placeCount}곳 · ${g.walkLabel || ""}</span>
+          <li class="game-item">
+            <button type="button" class="choice" data-action="select-game" data-id="${escapeHtml(g.id)}">
+              <strong>${escapeHtml(g.title)}</strong>
+              <span>${g.placeCount}곳 · ${escapeHtml(g.walkLabel || "")}</span>
             </button>
+            <div class="row-actions">
+              ${btn("edit-game", `✏️ ${createCopy.edit}`, "btn--ghost", `data-id="${escapeHtml(g.id)}"`)}
+              ${btn("ask-delete-game", `🗑️ ${createCopy.delete}`, "btn--ghost", `data-id="${escapeHtml(g.id)}" data-title="${escapeHtml(g.title)}"`)}
+            </div>
           </li>`,
           )
           .join("")}
@@ -135,9 +139,10 @@ function libraryView(state) {
 function createView(state) {
   const draft = state.createDraft || defaultDraft();
   const n = Number(draft.placeCount) || 4;
+  const editing = Boolean(draft.editingId);
   return `
     <main id="main" class="screen card-screen">
-      <h1>${createCopy.title}</h1>
+      <h1>${editing ? createCopy.editTitle : createCopy.title}</h1>
       ${btn("back-library", copy.backLibrary, "btn--ghost")}
       <label class="field">
         <span>${createCopy.name}</span>
@@ -165,7 +170,7 @@ function createView(state) {
         ${draft.jigsawSource === "system" ? `<p class="note">저장 시 시스템 그림 중 하나가 쓰입니다.</p>` : ""}
       </fieldset>
       ${state.createError ? `<p class="warn">${state.createError}</p>` : ""}
-      ${btn("submit-create", state.createBusy ? "만드는 중…" : createCopy.submit, state.createBusy ? "is-disabled" : "")}
+      ${btn("submit-create", state.createBusy ? "저장 중…" : editing ? createCopy.save : createCopy.submit, state.createBusy ? "is-disabled" : "")}
     </main>
   `;
 }
@@ -183,7 +188,7 @@ function placeRow(draft, i) {
       <input type="url" name="place-url" data-index="${i}" value="${escapeHtml(row.url || "")}" placeholder="https://naver.me/… 또는 map.naver.com" />
       ${row.resolving ? `<p class="muted">${createCopy.resolving}</p>` : ""}
       ${resolved?.ok ? `<p class="ok">${resolved.name || "위치 확인"} · ${resolved.lat.toFixed(4)}, ${resolved.lng.toFixed(4)}</p>` : ""}
-      ${row.url && resolved && !resolved.ok ? `<p class="warn">${createCopy.needCoords}</p>` : ""}
+      ${row.url && resolved && !resolved.ok ? `<p class="warn">${resolved.error || createCopy.needCoords}</p>` : ""}
     </label>
   `;
 }
@@ -348,6 +353,12 @@ function renderOverlay(state) {
     return modal(
       gps.manualConfirmTitle,
       `<p>${gps.manualConfirmBody}</p><p><strong>${place?.name || ""}</strong></p>${btn("confirm-manual", gps.manualConfirm)}${btn("close-overlay", "취소", "btn--ghost")}`,
+    );
+  }
+  if (state.overlay === "delete-game") {
+    return modal(
+      createCopy.deleteTitle,
+      `<p>${createCopy.deleteBody}</p><p><strong>${escapeHtml(state.deleteGameTitle || "")}</strong></p>${btn("confirm-delete-game", createCopy.deleteConfirm, "", `data-id="${escapeHtml(state.deleteGameId || "")}"`)}${btn("close-overlay", "취소", "btn--ghost")}`,
     );
   }
   return "";

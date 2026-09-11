@@ -70,4 +70,12 @@ describe("state transitions", () => {
     state = reduce(state, { type: "COLLECT_PIECE", pieceId: "piece-4" });
     expect(state.screen).toBe("assemble");
   });
+
+  it("opens a delete confirmation without leaving the library", () => {
+    let state = createInitialState();
+    state = reduce(state, { type: "OPEN_DELETE", id: "game-1", title: "건대" });
+    expect(state.screen).toBe("library");
+    expect(state.overlay).toBe("delete-game");
+    expect(state.deleteGameId).toBe("game-1");
+  });
 });

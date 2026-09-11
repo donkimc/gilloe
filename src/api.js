@@ -16,7 +16,7 @@ export async function resolvePlace(url) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ url }),
   });
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "resolve");
   return data;
 }
@@ -29,5 +29,23 @@ export async function createGame(payload) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "create");
+  return data;
+}
+
+export async function updateGame(id, payload) {
+  const res = await fetch(`/api/games/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "update");
+  return data;
+}
+
+export async function deleteGame(id) {
+  const res = await fetch(`/api/games/${encodeURIComponent(id)}`, { method: "DELETE" });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "delete");
   return data;
 }

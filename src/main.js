@@ -1,5 +1,5 @@
 import "./styles.css";
-import { brand } from "./content.js";
+import { brand, createCopy } from "./content.js";
 import { createStorage, STORAGE_KEY } from "./storage.js";
 import { SCREENS, createInitialState, currentPlace, gridN, needsLiveLocation, reduce } from "./state.js";
 import { createLocationService } from "./location.js";
@@ -8,7 +8,7 @@ import { placeOnCell, snapPlacement } from "./assemble.js";
 import { pickRandomImage } from "./puzzleImages.js";
 import { render } from "./ui/screens.js";
 import { createSimulatedGeolocation, parseSim } from "./simulate.js";
-import { createGame, getGame, listGames, resolvePlace } from "./api.js";
+import { createGame, deleteGame, getGame, listGames, resolvePlace, updateGame } from "./api.js";
 
 const ui = document.querySelector("#ui");
 const mapHost = document.querySelector(".map-host");
@@ -18,7 +18,7 @@ const sim = parseSim(window.location.search);
 let simMinimized = false;
 let gpsMode = sim.gps || (sim.panel ? "good" : "live");
 let mapFail = sim.map === "fail";
-let createDraft = { title: "", placeCount: 4, rows: emptyRows(4), jigsawSource: "final-place", imageDataUrl: null };
+let createDraft = blankDraft();
 let createBusy = false;
 let createError = "";
 let previewPlaying = false;
@@ -27,6 +27,34 @@ let mapReady = false;
 
 function emptyRows(n) {
   return Array.from({ length: n }, () => ({ url: "", resolved: null, resolving: false }));
+}
+
+function blankDraft() {
+  return { editingId: null, title: "", placeCount: 4, rows: emptyRows(4), jigsawSource: "final-place", imageDataUrl: null };
+}
+
+function draftFromGame(game) {
+  return {
+    editingId: game.id,
+    title: game.title || "",
+    placeCount: game.placeCount || 4,
+    jigsawSource: game.jigsaw?.source || "system",
+    systemImageId: game.jigsaw?.systemImageId || null,
+    imageDataUrl: null,
+    rows: (game.places || []).map((place) => ({
+      url: place.naverUrl || "",
+      resolving: false,
+      resolved: {
+        ok: Number.isFinite(place.lat) && Number.isFinite(place.lng),
+        name: place.name,
+        lat: place.lat,
+        lng: place.lng,
+        address: place.address,
+        photoUrl: place.photoUrl,
+        blurb: place.blurb,
+      },
+    })),
+  };
 }
 
 function asStop(place) {
@@ -100,6 +128,23 @@ function syncDevices(prev, next) {
   }
 }
 
+async function walkingLineForGame(game) {
+  const places = game.places || [];
+  const line = game.routeLine;
+  if (Array.isArray(line) && line.length > places.length) return line;
+  if (game.id === "cheonho-pieces") {
+    try {
+      const res = await fetch("/route.geojson");
+      const data = await res.json();
+      const coords = data?.features?.[0]?.geometry?.coordinates;
+      if (Array.isArray(coords) && coords.length > places.length) return coords;
+    } catch {
+      /* keep stored line */
+    }
+  }
+  return line;
+}
+
 async function ensureMap() {
   if (mapFail) {
     if (state.mapStatus !== "failed") dispatch({ type: "MAP_STATUS", status: "failed" });
@@ -108,7 +153,7 @@ async function ensureMap() {
   if (mapReady || !state.game) return;
   const ok = await map.mount(document.querySelector("#map"), {
     places: state.game.places,
-    routeLine: state.game.routeLine,
+    routeLine: await walkingLineForGame(state.game),
     onError() {
       mapReady = false;
       state = reduce(state, { type: "MAP_STATUS", status: "failed" });
@@ -235,7 +280,9 @@ function bindUi() {
     if (input.name === "title") createDraft = { ...createDraft, title: input.value };
   };
   ui.querySelectorAll("input[name='place-url']").forEach((input) => {
-    input.addEventListener("change", () => onPlaceUrl(Number(input.dataset.index), input.value));
+    const run = () => onPlaceUrl(Number(input.dataset.index), input.value.trim());
+    input.addEventListener("change", run);
+    input.addEventListener("paste", () => queueMicrotask(run));
   });
   const arrive = ui.querySelector('[data-action="arrive"]');
   if (arrive && !state.canAutoArrive) arrive.disabled = true;
@@ -248,17 +295,28 @@ function padRows(rows, n) {
 }
 
 async function onPlaceUrl(index, url) {
+  if (!url) return;
   const rows = [...createDraft.rows];
-  rows[index] = { ...rows[index], url, resolving: true };
+  if (rows[index]?.url === url && (rows[index].resolving || rows[index].resolved?.ok)) return;
+  rows[index] = { ...rows[index], url, resolving: true, resolved: null };
   createDraft = { ...createDraft, rows };
   paint();
   try {
     const resolved = await resolvePlace(url);
-    rows[index] = { url, resolved, resolving: false };
+    if (createDraft.rows[index]?.url !== url) return;
+    createDraft = {
+      ...createDraft,
+      rows: createDraft.rows.map((row, i) => (i === index ? { url, resolved, resolving: false } : row)),
+    };
   } catch {
-    rows[index] = { url, resolved: { ok: false }, resolving: false };
+    if (createDraft.rows[index]?.url !== url) return;
+    createDraft = {
+      ...createDraft,
+      rows: createDraft.rows.map((row, i) =>
+        i === index ? { url, resolved: { ok: false, error: createCopy.needServer }, resolving: false } : row,
+      ),
+    };
   }
-  createDraft = { ...createDraft, rows };
   paint();
 }
 
@@ -325,9 +383,29 @@ async function handleAction(action, dataset) {
       paint();
       break;
     case "open-create":
+      createDraft = blankDraft();
+      createError = "";
       dispatch({ type: "OPEN_CREATE" });
       break;
+    case "edit-game":
+      try {
+        const game = await getGame(dataset.id);
+        createDraft = draftFromGame(game);
+        createError = "";
+        dispatch({ type: "OPEN_CREATE" });
+      } catch {
+        dispatch({ type: "GAMES_ERROR", error: "load" });
+      }
+      break;
+    case "ask-delete-game":
+      dispatch({ type: "OPEN_DELETE", id: dataset.id, title: dataset.title });
+      break;
+    case "confirm-delete-game":
+      await confirmDelete(dataset.id);
+      break;
     case "back-library":
+      createDraft = blankDraft();
+      createError = "";
       dispatch({ type: "RESET" });
       break;
     case "select-game":
@@ -424,24 +502,45 @@ async function submitCreate() {
     blurb: row.resolved?.blurb,
   }));
   try {
-    const game = await createGame({
+    const payload = {
       title: createDraft.title,
       placeCount: createDraft.placeCount,
       places,
       jigsaw: {
         source: createDraft.jigsawSource,
         imageDataUrl: createDraft.imageDataUrl,
-        systemImageId: pickRandomImage(),
+        systemImageId: createDraft.systemImageId || pickRandomImage(),
       },
-    });
+    };
+    const game = createDraft.editingId
+      ? await updateGame(createDraft.editingId, payload)
+      : await createGame(payload);
+    if (createDraft.editingId && persist.load({ allowedScreens: SCREENS })?.gameId === createDraft.editingId) {
+      persist.clear();
+    }
     const games = await listGames();
-    createDraft = { title: "", placeCount: 4, rows: emptyRows(4), jigsawSource: "final-place", imageDataUrl: null };
+    createDraft = blankDraft();
     createBusy = false;
     dispatch({ type: "CREATE_SAVED", message: `${game.title} · ${game.walkLabel}`, games });
   } catch (error) {
     createBusy = false;
     createError = error.message || "만들기에 실패했습니다.";
     paint();
+  }
+}
+
+async function confirmDelete(id) {
+  const target = id || state.deleteGameId;
+  if (!target) return;
+  try {
+    await deleteGame(target);
+    if (persist.load({ allowedScreens: SCREENS })?.gameId === target) persist.clear();
+    const games = await listGames();
+    createDraft = blankDraft();
+    dispatch({ type: "CREATE_SAVED", message: createCopy.deleted, games });
+  } catch (error) {
+    dispatch({ type: "GAMES_ERROR", error: error.message || "delete" });
+    dispatch({ type: "CLOSE_OVERLAY" });
   }
 }
 

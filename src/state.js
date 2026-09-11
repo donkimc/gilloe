@@ -32,6 +32,8 @@ export function createInitialState() {
     assembleSelected: null,
     assembleComplete: false,
     createNotice: null,
+    deleteGameId: null,
+    deleteGameTitle: null,
     restored: false,
     invalidSave: false,
   };
@@ -93,9 +95,24 @@ export function reduce(state, action) {
         screen: "library",
       };
     case "OPEN_CREATE":
-      return { ...state, screen: "create", createNotice: null };
+      return { ...state, screen: "create", createNotice: null, overlay: null };
+    case "OPEN_DELETE":
+      return {
+        ...state,
+        overlay: "delete-game",
+        deleteGameId: action.id,
+        deleteGameTitle: action.title || "",
+      };
     case "CREATE_SAVED":
-      return { ...state, screen: "library", createNotice: action.message, games: action.games || state.games };
+      return {
+        ...state,
+        screen: "library",
+        createNotice: action.message,
+        games: action.games || state.games,
+        overlay: null,
+        deleteGameId: null,
+        deleteGameTitle: null,
+      };
     case "SELECT_GAME": {
       const game = action.game;
       const n = gridSizeForCount(game.placeCount);
@@ -138,7 +155,7 @@ export function reduce(state, action) {
       if (!trayAllowed(state.screen)) return state;
       return { ...state, overlay: "notebook", overlayReturnScreen: state.screen };
     case "CLOSE_OVERLAY":
-      return { ...state, overlay: null, overlayReturnScreen: null };
+      return { ...state, overlay: null, overlayReturnScreen: null, deleteGameId: null, deleteGameTitle: null };
     case "OPEN_HELP":
       return { ...state, overlay: "help" };
     case "OPEN_EXIT":
