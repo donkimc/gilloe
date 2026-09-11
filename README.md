@@ -11,6 +11,8 @@ npm run dev
 
 Vite (5173) proxies `/api` to the local Node server (8787). Open `http://127.0.0.1:5173/`. Simulator: `http://127.0.0.1:5173/?sim=1`.
 
+Production (`npm run build` then `npm start`) serves the built UI and the API from one Node process so `/api/places/resolve` works on Railway.
+
 ## Build and test
 
 ```bash

@@ -19,8 +19,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "data");
 const GAMES_FILE = path.join(DATA_DIR, "games.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
+const DIST_DIR = path.join(__dirname, "..", "dist");
+const HOST = process.env.HOST || "0.0.0.0";
 const PORT = Number(process.env.PORT || 8787);
 const MAX_JSON = 2_000_000;
+
+const MIME = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".geojson": "application/geo+json",
+  ".map": "application/json",
+  ".woff2": "font/woff2",
+};
 
 async function readGames() {
   try {
@@ -49,6 +67,38 @@ function send(res, status, body, headers = {}) {
 
 function notFound(res) {
   send(res, 404, { error: "not found" });
+}
+
+function isSafePath(root, target) {
+  const resolved = path.resolve(target);
+  return resolved === root || resolved.startsWith(root + path.sep);
+}
+
+async function serveStatic(req, res, url) {
+  if (req.method !== "GET" && req.method !== "HEAD") return false;
+  let relative = decodeURIComponent(url.pathname);
+  if (relative === "/" || relative.endsWith("/")) relative = "/index.html";
+  const filePath = path.join(DIST_DIR, relative);
+  if (!isSafePath(path.resolve(DIST_DIR), filePath)) return false;
+  try {
+    const data = await fs.readFile(filePath);
+    res.writeHead(200, {
+      "content-type": MIME[path.extname(filePath).toLowerCase()] || "application/octet-stream",
+      "cache-control": relative === "/index.html" ? "no-cache" : "public, max-age=86400",
+    });
+    res.end(req.method === "HEAD" ? Buffer.alloc(0) : data);
+    return true;
+  } catch {
+    if (path.extname(relative)) return false;
+    try {
+      const html = await fs.readFile(path.join(DIST_DIR, "index.html"));
+      res.writeHead(200, { "content-type": MIME[".html"], "cache-control": "no-cache" });
+      res.end(req.method === "HEAD" ? undefined : html);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 
 async function readBody(req) {
@@ -309,6 +359,8 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (!url.pathname.startsWith("/api") && (await serveStatic(req, res, url))) return;
+
     notFound(res);
   } catch (error) {
     send(res, 500, { error: error.message || "server" });
@@ -323,8 +375,8 @@ export function startApi() {
     }
     throw error;
   });
-  server.listen(PORT, "127.0.0.1", () => {
-    console.log(`Gilloe API http://127.0.0.1:${PORT}`);
+  server.listen(PORT, HOST, () => {
+    console.log(`Gilloe http://${HOST}:${PORT}`);
   });
 }
 
