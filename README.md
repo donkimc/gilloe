@@ -67,7 +67,7 @@ Vanilla Vite app. Game progress is an explicit state machine in `src/state.js`. 
 
 1. Edit story, answers, radii, and overlay placement in `src/content.js`.
 2. Replace `coordinates` on each stop after a physical survey. Keep `fieldVerified: false` until that survey is done.
-3. Replace `public/route.geojson` with a pedestrian line. GeoJSON order is `[longitude, latitude]`.
+3. Replace `public/route.geojson` with a pedestrian line along streets, not a straight line between pins. GeoJSON order is `[longitude, latitude]`. The current file is an OpenStreetMap foot route (FOSSGIS OSRM), still unverified on site.
 4. Camera framing copy lives under `stops[1].cameraClue`. Do not point it at people or private interiors.
 
 ## Privacy behaviour
@@ -88,7 +88,7 @@ Camera tracks stop on collect, skip, error, screen change, overlay, page hide, r
 | Rodeo Street stop | Provisional |
 | Stationery/Toy Street area stop | Provisional |
 | Naengmyeon Street area stop | Provisional |
-| Pedestrian GeoJSON | Prototype line, not a walked path |
+| Pedestrian GeoJSON | OSM foot route along streets; not a walked field survey |
 | 60 m radius / 80 m accuracy ceiling | Starting values only |
 | Stop 2 camera anchor and facing direction | Placeholder copy; not night-checked |
 

@@ -5,7 +5,7 @@ export const game = {
   area: "서울 강동구 천호동",
   duration: "약 25–35분",
   difficulty: "쉬움",
-  walking: "약 600–900m · 임시 추정치",
+  walking: "약 1.1km · OSM 보행 경로 추정치",
   players: "1–2명 · 휴대폰 1대",
   operatingNote: "낮 시간, 사람이 많은 보행로에서만 진행하세요.",
   prototypeBanner: "현장 검증 전 임시 경로",
@@ -184,7 +184,7 @@ export const ending = {
 
 export const routeMeta = {
   overviewTitle: "오늘 걷는 길",
-  totalHint: "임시 추정치 · 약 10–14분 도보",
+  totalHint: "임시 OSM 보행 경로 · 약 14–18분",
   attribution: "© OpenStreetMap contributors",
   mapFailed: "지도를 불러오지 못했습니다. 아래 글 안내로 이동하세요.",
   tilesFailed: "지도 타일을 표시하지 못했습니다. 글 안내와 외부 링크를 사용하세요.",
@@ -195,9 +195,9 @@ export const routeMeta = {
 };
 
 /**
- * Provisional stop coordinates for a testable map only.
- * fieldVerified is false. These are not a field survey.
- * Replace after walking Cheonho Station Exit 5 → Rodeo → stationery/toy street → naengmyeon street.
+ * Provisional stop coordinates snapped onto OpenStreetMap walkable ways
+ * so the map line can follow a foot route instead of straight segments.
+ * fieldVerified remains false until a physical survey.
  */
 export const stops = [
   {
@@ -246,7 +246,7 @@ export const stops = [
     order: 2,
     title: "임시 지점 2 · 천호 로데오거리 인근",
     publicName: "천호대로 157길 일대 공개 보행 공간",
-    coordinates: { lat: 37.53985, lng: 127.12715 },
+    coordinates: { lat: 37.53974, lng: 127.12774 },
     fieldVerified: false,
     arrivalRadiusMeters: 60,
     directions:
@@ -287,8 +287,8 @@ export const stops = [
     id: "stop-3",
     order: 3,
     title: "임시 지점 3 · 문구·완구거리 인근",
-    publicName: "천호동 456-16 일대 공개 보행 공간",
-    coordinates: { lat: 37.54105, lng: 127.12855 },
+    publicName: "구천면로 일대 공개 보행 공간",
+    coordinates: { lat: 37.54078, lng: 127.12936 },
     fieldVerified: false,
     arrivalRadiusMeters: 60,
     directions: "문구·완구거리로 알려진 공개 가로 구간까지 걸어, 인도 위 빈 공간에 서세요.",
@@ -316,8 +316,8 @@ export const stops = [
     id: "stop-4",
     order: 4,
     title: "임시 지점 4 · 냉면거리 인근",
-    publicName: "구천면로 29길 일대 공개 보행 공간",
-    coordinates: { lat: 37.5424, lng: 127.12955 },
+    publicName: "천중로 18길 일대 공개 보행 공간",
+    coordinates: { lat: 37.54239, lng: 127.12949 },
     fieldVerified: false,
     arrivalRadiusMeters: 60,
     directions: "냉면거리로 알려진 공개 가로 구간까지 걸어, 식사할 곳이 보여도 게임에 필요한 구매는 없습니다.",
