@@ -267,6 +267,7 @@ body {
   background: #070b14;
   overflow: hidden;
   border-radius: 12px;
+  touch-action: none;
 }
 .camera-video {
   width: 100%;
@@ -307,8 +308,8 @@ body {
   border: 0;
   background: transparent;
   color: var(--text);
-  transform-origin: center center;
-  will-change: left, top, transform, opacity;
+  transform-origin: top left;
+  will-change: transform, opacity;
 }
 .ar-clue.is-fallback {
   /* Static fallback only — no grey card, still tappable */

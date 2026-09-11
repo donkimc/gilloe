@@ -400,6 +400,8 @@ function moveOrder(direction, index) {
 }
 
 async function startCamera() {
+  // Ask for motion permission inside the tap gesture (required on iOS).
+  await worldAnchor.requestPermission().catch(() => false);
   dispatch({ type: "CAMERA_STATUS", status: "starting" });
   try {
     const video = document.querySelector("#camera-video");
@@ -428,14 +430,19 @@ async function syncWorldAnchor(forceStart = false) {
     return;
   }
   const onPose = (pose) => {
-    applyWorldAnchorStyle(clue, pose, viewfinder);
-    clue.classList.toggle("is-world-locked", Boolean(pose.ready));
-    if (hint) hint.hidden = Boolean(pose.visible);
+    const node = document.querySelector("[data-ar-clue]");
+    const vf = document.querySelector(".viewfinder");
+    const tip = document.querySelector("#ar-hint");
+    if (!node) return;
+    const onScreen = applyWorldAnchorStyle(node, pose, vf);
+    node.classList.toggle("is-world-locked", Boolean(pose.ready));
+    if (tip) tip.hidden = Boolean(onScreen);
   };
   if (forceStart || !worldAnchor.isListening()) {
-    await worldAnchor.start(onPose);
+    await worldAnchor.start(onPose, { viewfinder });
   } else {
     worldAnchor.setHandler(onPose);
+    worldAnchor.bindViewfinder(viewfinder);
   }
 }
 
