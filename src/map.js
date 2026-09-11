@@ -15,6 +15,7 @@ export function createMapService() {
   let accuracyCircle = null;
   let tileLayer = null;
   let onTileError = null;
+  let hasPlayerFix = false;
 
   function pinIcon(num, active) {
     return L.divIcon({
@@ -22,6 +23,15 @@ export function createMapService() {
       html: `<div class="pin${active ? " is-active" : ""}"><span>${num}</span></div>`,
       iconSize: [36, 36],
       iconAnchor: [18, 18],
+    });
+  }
+
+  function playerIcon() {
+    return L.divIcon({
+      className: "player-wrap",
+      html: `<div class="player-dot" title="내 위치" aria-hidden="true"></div>`,
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
     });
   }
 
@@ -61,22 +71,28 @@ export function createMapService() {
           }).addTo(map),
         );
 
-        playerMarker = L.circleMarker([stops[0].coordinates.lat, stops[0].coordinates.lng], {
-          radius: 7,
-          color: "#f3efe4",
-          fillColor: "#4aa3ff",
-          fillOpacity: 0.9,
+        // Hidden until the first GPS fix; not parked on stop 1.
+        playerMarker = L.marker([stops[0].coordinates.lat, stops[0].coordinates.lng], {
+          icon: playerIcon(),
+          keyboard: false,
+          interactive: false,
+          zIndexOffset: 1200,
           opacity: 0,
         }).addTo(map);
         accuracyCircle = L.circle([stops[0].coordinates.lat, stops[0].coordinates.lng], {
           radius: 1,
           color: "#4aa3ff",
-          fillOpacity: 0.12,
+          weight: 1,
+          fillColor: "#4aa3ff",
+          fillOpacity: 0,
           opacity: 0,
         }).addTo(map);
+        hasPlayerFix = false;
 
         map.fitBounds(L.latLngBounds(latlngs).pad(0.18), { maxZoom: 16 });
-        requestAnimationFrame(() => map.invalidateSize());
+        requestAnimationFrame(() => {
+          map?.invalidateSize();
+        });
         return true;
       } catch {
         onError?.();
@@ -92,10 +108,23 @@ export function createMapService() {
       map.fitBounds(bounds.pad(0.2), { maxZoom: 16, animate: false });
       this.setActive(null);
     },
-    focusStop(stop) {
+    focusStop(stop, playerFix) {
       if (!map || !stop) return;
-      map.setView([stop.coordinates.lat, stop.coordinates.lng], 17, { animate: false });
       this.setActive(stop.order);
+      const stopLatLng = L.latLng(stop.coordinates.lat, stop.coordinates.lng);
+      if (
+        playerFix &&
+        Number.isFinite(playerFix.lat) &&
+        Number.isFinite(playerFix.lng)
+      ) {
+        const bounds = L.latLngBounds([
+          stopLatLng,
+          L.latLng(playerFix.lat, playerFix.lng),
+        ]);
+        map.fitBounds(bounds.pad(0.35), { maxZoom: 17, animate: false });
+        return;
+      }
+      map.setView(stopLatLng, 17, { animate: false });
     },
     setActive(order) {
       markers.forEach((marker, i) => {
@@ -105,11 +134,29 @@ export function createMapService() {
     },
     setPlayer(lat, lng, accuracy) {
       if (!playerMarker || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
-      playerMarker.setLatLng([lat, lng]).setStyle({ opacity: 1 });
-      accuracyCircle.setLatLng([lat, lng]);
-      if (Number.isFinite(accuracy)) {
-        accuracyCircle.setRadius(accuracy).setStyle({ opacity: 0.6 });
+      const latlng = L.latLng(lat, lng);
+      playerMarker.setLatLng(latlng).setOpacity(1);
+      accuracyCircle.setLatLng(latlng);
+      if (Number.isFinite(accuracy) && accuracy > 0) {
+        accuracyCircle.setRadius(accuracy).setStyle({ opacity: 0.55, fillOpacity: 0.14 });
+      } else {
+        accuracyCircle.setStyle({ opacity: 0, fillOpacity: 0 });
       }
+      hasPlayerFix = true;
+      if (typeof playerMarker.setZIndexOffset === "function") {
+        playerMarker.setZIndexOffset(1200);
+      }
+      this.ensurePlayerVisible(lat, lng);
+    },
+    ensurePlayerVisible(lat, lng) {
+      if (!map || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      const latlng = L.latLng(lat, lng);
+      if (!map.getBounds().pad(-0.15).contains(latlng)) {
+        map.panTo(latlng, { animate: true, duration: 0.35 });
+      }
+    },
+    hasPlayer() {
+      return hasPlayerFix;
     },
     unmount() {
       if (tileLayer && onTileError) tileLayer.off("tileerror");
@@ -122,6 +169,7 @@ export function createMapService() {
       playerMarker = null;
       accuracyCircle = null;
       tileLayer = null;
+      hasPlayerFix = false;
     },
   };
 }

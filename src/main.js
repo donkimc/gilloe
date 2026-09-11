@@ -94,8 +94,10 @@ function syncDevices(prev, next) {
   if (needsLiveLocation(next.screen) && !mapFail) {
     ensureMap().then(() => {
       map.invalidate();
+      const fix = location.getLastFix();
       if (next.screen === "route-overview") map.focusOverview(stops);
-      else map.focusStop(stopByOrder(next.currentStop));
+      else map.focusStop(stopByOrder(next.currentStop), fix);
+      applyPlayerFix(fix);
     });
   }
 }
@@ -105,7 +107,10 @@ async function ensureMap() {
     if (state.mapStatus !== "failed") dispatch({ type: "MAP_STATUS", status: "failed" });
     return;
   }
-  if (mapReady) return;
+  if (mapReady) {
+    applyPlayerFix(location.getLastFix());
+    return;
+  }
   const ok = await map.mount(document.querySelector("#map"), {
     stops,
     geoJsonUrl: game.geoJsonUrl,
@@ -122,11 +127,20 @@ async function ensureMap() {
     },
   });
   mapReady = ok;
+  if (ok) {
+    // GPS may have arrived before Leaflet finished mounting — reapply cached fix.
+    applyPlayerFix(location.getLastFix());
+  }
   if (ok && state.mapStatus !== "ok") {
     state = reduce(state, { type: "MAP_STATUS", status: "ok" });
     persistIfNeeded();
     paint();
   }
+}
+
+function applyPlayerFix(fix) {
+  if (!mapReady || !fix) return;
+  map.setPlayer(fix.lat, fix.lng, fix.accuracyMeters);
 }
 
 function startWatch() {
@@ -146,7 +160,7 @@ location.onChange((payload) => {
 });
 
 location.onFix((fix) => {
-  if (mapReady) map.setPlayer(fix.lat, fix.lng, fix.accuracyMeters);
+  applyPlayerFix(fix);
 });
 
 function paint() {

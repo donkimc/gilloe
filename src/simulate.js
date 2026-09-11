@@ -10,21 +10,56 @@ export function parseSim(search = "") {
 
 export function createSimulatedGeolocation(mode, { stop } = {}) {
   const listeners = { success: null, error: null };
+  let watchId = 0;
+  let timer = null;
+  let activeStop = stop;
+
+  function clearTimer() {
+    if (timer != null) {
+      clearInterval(timer);
+      timer = null;
+    }
+  }
+
+  function emit() {
+    applyGpsMode(mode, {
+      success: listeners.success,
+      error: listeners.error,
+      stop: activeStop,
+    });
+  }
+
+  function startTicker() {
+    clearTimer();
+    // Keep emitting while watching so the player pin tracks like real GPS.
+    if (mode === "denied" || mode === "unavailable" || mode === "timeout") return;
+    timer = setInterval(() => {
+      if (listeners.success || listeners.error) emit();
+    }, 1500);
+  }
+
   return {
     watchPosition(success, error) {
       listeners.success = success;
       listeners.error = error;
-      queueMicrotask(() => applyGpsMode(mode, { success, error, stop }));
-      return 1;
+      watchId += 1;
+      queueMicrotask(() => {
+        emit();
+        startTicker();
+      });
+      return watchId;
     },
     clearWatch() {
       listeners.success = null;
       listeners.error = null;
+      clearTimer();
     },
     _setMode(next, ctx) {
       mode = next;
+      if (ctx?.stop) activeStop = ctx.stop;
       if (listeners.success || listeners.error) {
-        applyGpsMode(mode, { success: listeners.success, error: listeners.error, stop: ctx?.stop });
+        emit();
+        startTicker();
       }
     },
   };
