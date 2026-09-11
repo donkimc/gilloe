@@ -296,6 +296,47 @@ body {
   text-align: center;
   pointer-events: none;
 }
+.ar-guide {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  transform: translate(-50%, -50%);
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  min-width: 7.5rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 16px;
+  background: rgba(7, 11, 20, 0.72);
+  border: 1px solid rgba(243, 239, 228, 0.35);
+  color: var(--text);
+  pointer-events: none;
+  text-align: center;
+}
+.ar-guide-arrow {
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: #4aa3ff;
+  text-shadow: 0 0 10px rgba(74, 163, 255, 0.45);
+  transform-origin: center center;
+  will-change: transform;
+}
+.ar-guide-distance {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.ar-guide-label {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted, #c9c3b6);
+}
 .ar-clue {
   position: absolute;
   z-index: 4;

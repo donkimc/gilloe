@@ -21,15 +21,22 @@ function poseFromLook(lookYaw, lookPitch, targetYaw, targetPitch) {
   // Phone turns right → world object slides left on the viewfinder.
   const x = yaw * PX_PER_DEG_X;
   const y = -pitch * PX_PER_DEG_Y;
-  const distance = Math.hypot(yaw, pitch);
+  const angularDistance = Math.hypot(yaw, pitch);
+  // Game-scaled "walk/look" distance so the HUD can show how far to turn/move.
+  const distanceMeters = Math.max(0.4, angularDistance * 0.12);
+  // 0deg = up, clockwise positive — for an on-screen look arrow.
+  const arrowDeg = (Math.atan2(x, -y) * 180) / Math.PI;
   return {
     x,
     y,
-    scale: Math.max(0.7, 1.2 - distance * 0.012),
-    visible: distance < VISIBLE_DEG,
+    scale: Math.max(0.7, 1.2 - angularDistance * 0.012),
+    visible: angularDistance < VISIBLE_DEG,
     ready: true,
     yaw,
     pitch,
+    angularDistance,
+    distanceMeters,
+    arrowDeg,
   };
 }
 
@@ -54,7 +61,7 @@ export function createWorldAnchor({
   function emit() {
     if (!onUpdate) return;
     if (!calibrated) {
-      onUpdate({ x: 0, y: 0, scale: 1, visible: true, ready: false });
+      onUpdate({ x: 0, y: 0, scale: 1, visible: true, ready: false, angularDistance: 0, distanceMeters: 0, arrowDeg: 0 });
       return;
     }
     onUpdate(poseFromLook(lookYaw, lookPitch, targetYaw, targetPitch));
@@ -65,8 +72,8 @@ export function createWorldAnchor({
     originYaw = lookYaw;
     originPitch = lookPitch;
     // Anchor the umbrella slightly off the first framing direction.
-    targetYaw = originYaw + 14;
-    targetPitch = originPitch - 6;
+    targetYaw = originYaw + 10;
+    targetPitch = originPitch - 4;
     calibrated = true;
   }
 
@@ -262,7 +269,9 @@ export function createWorldAnchor({
 }
 
 export function applyWorldAnchorStyle(element, pose, viewfinder) {
-  if (!element || !pose) return false;
+  if (!element || !pose) {
+    return { onScreen: false, arrowDeg: 0, distanceMeters: 0, angularDistance: 0 };
+  }
   const vf = viewfinder || element.parentElement;
   const width = vf?.clientWidth || 320;
   const height = vf?.clientHeight || 260;
@@ -287,5 +296,28 @@ export function applyWorldAnchorStyle(element, pose, viewfinder) {
   element.hidden = false;
   element.classList.toggle("is-world-locked", Boolean(pose.ready));
   element.classList.toggle("is-offscreen", !onScreen);
-  return onScreen;
+  return {
+    onScreen,
+    arrowDeg: pose.arrowDeg ?? 0,
+    distanceMeters: pose.distanceMeters ?? 0,
+    angularDistance: pose.angularDistance ?? 0,
+  };
+}
+
+export function updateLookGuidance(guide, pose, onScreen) {
+  if (!guide) return;
+  const show = Boolean(pose?.ready) && !onScreen;
+  guide.hidden = !show;
+  if (!show) return;
+  const arrow = guide.querySelector("[data-look-arrow]");
+  const dist = guide.querySelector("[data-look-distance]");
+  const label = guide.querySelector("[data-look-label]");
+  const deg = pose.arrowDeg ?? 0;
+  const meters = pose.distanceMeters ?? 0;
+  if (arrow) arrow.style.transform = `rotate(${deg}deg)`;
+  if (dist) dist.textContent = `${meters.toFixed(1)}m`;
+  if (label) {
+    const turn = Math.round(Math.abs(pose.angularDistance ?? 0));
+    label.textContent = turn > 0 ? `이 방향으로 ${turn}°` : "남색 우산 방향";
+  }
 }

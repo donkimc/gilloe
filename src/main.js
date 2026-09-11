@@ -9,7 +9,7 @@ import { checkAccusation, checkChoice, checkMatchPuzzle, checkOrder, moveItem } 
 import { render } from "./ui/screens.js";
 import { bindHoldToReveal, downloadJson } from "./ui/components.js";
 import { createSimulatedGeolocation, createSimulatedMedia, parseSim } from "./simulate.js";
-import { applyWorldAnchorStyle, createWorldAnchor } from "./worldAnchor.js";
+import { applyWorldAnchorStyle, createWorldAnchor, updateLookGuidance } from "./worldAnchor.js";
 
 const ui = document.querySelector("#ui");
 const mapHost = document.querySelector(".map-host");
@@ -427,16 +427,21 @@ async function syncWorldAnchor(forceStart = false) {
   if (!live || !clue) {
     worldAnchor.stop();
     if (hint) hint.hidden = true;
+    const guide = document.querySelector("#ar-guide");
+    if (guide) guide.hidden = true;
     return;
   }
   const onPose = (pose) => {
     const node = document.querySelector("[data-ar-clue]");
     const vf = document.querySelector(".viewfinder");
     const tip = document.querySelector("#ar-hint");
+    const guide = document.querySelector("#ar-guide");
     if (!node) return;
-    const onScreen = applyWorldAnchorStyle(node, pose, vf);
+    const guidance = applyWorldAnchorStyle(node, pose, vf);
+    const onScreen = Boolean(guidance?.onScreen);
     node.classList.toggle("is-world-locked", Boolean(pose.ready));
-    if (tip) tip.hidden = Boolean(onScreen);
+    if (tip) tip.hidden = true;
+    updateLookGuidance(guide, pose, onScreen);
   };
   if (forceStart || !worldAnchor.isListening()) {
     await worldAnchor.start(onPose, { viewfinder });

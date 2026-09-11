@@ -277,6 +277,11 @@ function cameraView(state) {
         <video id="camera-video" class="camera-video" playsinline webkit-playsinline muted autoplay></video>
         <div class="frame-guide" aria-hidden="true"></div>
         <p class="ar-hint" id="ar-hint" hidden>📱 휴대폰을 돌리거나 화면을 드래그해 공간에 고정된 남색 우산을 찾으세요.</p>
+        <div class="ar-guide" id="ar-guide" hidden aria-live="polite">
+          <div class="ar-guide-arrow" data-look-arrow aria-hidden="true">▲</div>
+          <p class="ar-guide-distance" data-look-distance>0.0m</p>
+          <p class="ar-guide-label" data-look-label>남색 우산 방향</p>
+        </div>
         ${
           live || fallback
             ? `<button type="button" class="ar-clue${fallback ? " is-fallback" : " is-world-locked"}" data-action="collect-camera" data-ar-clue="1" style="${fallback ? `top:${place.top};left:${place.left}` : "left:0;top:0"}" aria-label="남색 우산 단서">
