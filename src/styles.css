@@ -260,6 +260,35 @@ body {
   border-color: var(--paper);
 }
 
+.player-wrap {
+  background: transparent;
+  border: none;
+}
+.player-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #4aa3ff;
+  border: 3px solid #f3efe4;
+  box-sizing: border-box;
+  transform-origin: center;
+  animation: player-pulse 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .player-dot {
+    animation: none;
+  }
+}
+@keyframes player-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
 .viewfinder {
   position: relative;
   margin: 0.6rem 0;

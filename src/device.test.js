@@ -49,4 +49,27 @@ describe("location service", () => {
     });
     location.stop();
   });
+
+  it("keeps emitting fixes while watching so the player pin can track movement", async () => {
+    vi.useFakeTimers();
+    try {
+      const geo = createSimulatedGeolocation("far", { stop: stops[0] });
+      const location = createLocationService({ geolocation: geo, now: () => 0 });
+      const fixes = [];
+      location.onFix((fix) => fixes.push(fix));
+      location.start({
+        stop: stops[0],
+        options: {},
+        accuracyCeilingMeters: 80,
+        manualFallbackAfterMs: 50,
+      });
+      await Promise.resolve();
+      expect(fixes.length).toBeGreaterThanOrEqual(1);
+      await vi.advanceTimersByTimeAsync(1500);
+      expect(fixes.length).toBeGreaterThanOrEqual(2);
+      location.stop();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
