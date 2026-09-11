@@ -152,6 +152,10 @@ location.onFix((fix) => {
 function paint() {
   ui.innerHTML = render({ ...state, simPanel: sim.panel, simMinimized });
   bindUi();
+  // Full HTML re-renders replace <video>; keep the live stream attached.
+  if (needsCamera(state.screen) && camera.hasActiveStream()) {
+    camera.attach(document.querySelector("#camera-video"));
+  }
 }
 
 function bindUi() {
@@ -389,7 +393,9 @@ async function startCamera() {
   try {
     const video = document.querySelector("#camera-video");
     await camera.start(video);
+    // Mark active, then re-bind after paint so the navy-umbrella overlay sits on live video.
     dispatch({ type: "CAMERA_STATUS", status: "active" });
+    camera.attach(document.querySelector("#camera-video"));
   } catch (error) {
     camera.stop();
     const status = error?.name === "NotAllowedError" ? "denied" : "unavailable";

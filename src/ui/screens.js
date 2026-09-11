@@ -263,25 +263,28 @@ function cameraView(state) {
   const stop = stopByOrder(2);
   const clue = stop.cameraClue;
   const place = clue.overlay.placement;
+  const live = state.cameraStatus === "active";
+  const fallback = ["fallback", "skipped", "denied", "unavailable"].includes(state.cameraStatus);
   return `
     <main id="main" class="screen camera-screen">
       ${chrome(state, { showExit: true, showNotebook: true })}
       <h1>${ico("📷", "카메라 단서")}</h1>
       <p>${clue.framingInstruction}</p>
       <p class="note">${ico("🛑", cameraCopy.standStill)}</p>
-      <p class="live ${state.cameraStatus === "active" ? "is-on" : ""}">${ico(state.cameraStatus === "active" ? "🔴" : "📷", state.cameraStatus === "active" ? cameraCopy.active : cameraStatusLabel(state.cameraStatus))}</p>
+      <p class="live ${live ? "is-on" : ""}">${ico(live ? "🔴" : "📷", live ? cameraCopy.active : cameraStatusLabel(state.cameraStatus))}</p>
+      <p class="note">${ico("ℹ️", live ? cameraCopy.overlayHint : fallback ? cameraCopy.fallbackHint : cameraCopy.beforeStartHint)}</p>
       <div class="viewfinder">
         <video id="camera-video" class="camera-video" playsinline muted autoplay></video>
         <div class="frame-guide" aria-hidden="true"></div>
         ${
-          ["active", "fallback", "skipped", "denied", "unavailable"].includes(state.cameraStatus)
+          live || fallback
             ? `<button type="button" class="overlay-clue" data-action="collect-camera" style="top:${place.top};left:${place.left}">
                 <span class="umbrella" aria-hidden="true"></span>
                 <span>남색 우산 · ${clue.overlay.timestamp}</span>
               </button>`
             : ""
         }
-        ${["fallback", "skipped", "denied", "unavailable"].includes(state.cameraStatus) ? `<div class="static-clue"><p>${clue.fallbackTitle}</p><p>${clue.fallbackClue}</p></div>` : ""}
+        ${fallback ? `<div class="static-clue"><p>${clue.fallbackTitle}</p><p>${clue.fallbackClue}</p></div>` : ""}
       </div>
       ${state.cameraStatus === "idle" || state.cameraStatus === "stopped" || state.cameraStatus === "interrupted" ? btn("start-camera", `📷 ${cameraCopy.start}`) : ""}
       ${btn("skip-camera", `👁️ ${cameraCopy.skip}`, "btn--ghost")}

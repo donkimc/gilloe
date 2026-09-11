@@ -13,6 +13,19 @@ describe("camera tracks", () => {
     camera.stop();
     expect(camera.hasActiveStream()).toBe(false);
   });
+
+  it("re-attaches the live stream to a new video element after a UI remount", async () => {
+    const media = createSimulatedMedia("ok");
+    const camera = createCameraService({ mediaDevices: media });
+    const first = { srcObject: null, play: vi.fn(async () => {}) };
+    const second = { srcObject: null, play: vi.fn(async () => {}) };
+    await camera.start(first);
+    expect(first.srcObject).toBeTruthy();
+    camera.attach(second);
+    expect(second.srcObject).toBe(first.srcObject);
+    expect(second.play).toHaveBeenCalled();
+    camera.stop();
+  });
 });
 
 describe("location service", () => {

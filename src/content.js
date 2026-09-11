@@ -128,6 +128,9 @@ export const cameraCopy = {
   interrupted: "카메라가 중단되었습니다. 다시 시도하거나 정적 단서를 보세요.",
   stopped: "카메라를 종료했습니다.",
   standStill: "완전히 멈춘 뒤, 사람·집·차량이 아닌 공개된 시각 기준만 담으세요.",
+  beforeStartHint: "후면 카메라를 켠 뒤, 화면 위에 고정된 남색 우산 오버레이를 탭하세요. 진짜 AR 추적은 없습니다.",
+  overlayHint: "실시간 카메라 위에 남색 우산이 겹쳐 보입니다. 우산을 탭해 단서를 수집하세요.",
+  fallbackHint: "카메라 대신 같은 남색 우산 단서를 정적으로 보여 줍니다. 우산을 탭하세요.",
 };
 
 export const duoCopy = {

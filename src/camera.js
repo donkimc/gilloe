@@ -19,6 +19,15 @@ export function createCameraService({
     }
   }
 
+  function bind(video) {
+    videoEl = video || null;
+    if (!video || !stream) return;
+    if (video.srcObject !== stream) {
+      video.srcObject = stream;
+    }
+    video.play().catch(() => {});
+  }
+
   return {
     isSupported() {
       return Boolean(mediaDevices && typeof mediaDevices.getUserMedia === "function");
@@ -27,7 +36,6 @@ export function createCameraService({
       return Boolean(stream && stream.getTracks().some((track) => track.readyState === "live"));
     },
     async start(video) {
-      videoEl = video;
       stopTracks();
       if (!this.isSupported()) {
         const error = new Error("unavailable");
@@ -38,11 +46,12 @@ export function createCameraService({
         audio: false,
         video: { facingMode: { ideal: "environment" } },
       });
-      if (video) {
-        video.srcObject = stream;
-        await video.play().catch(() => {});
-      }
+      bind(video);
       return stream;
+    },
+    /** Re-attach the live stream after UI re-renders replace the <video> node. */
+    attach(video) {
+      bind(video);
     },
     stop() {
       stopTracks();
