@@ -280,22 +280,69 @@ body {
   inset: 12%;
   border: 2px dashed rgba(243, 239, 228, 0.55);
 }
-.overlay-clue {
+.ar-hint {
   position: absolute;
-  background: rgba(10, 16, 32, 0.82);
+  left: 8px;
+  right: 8px;
+  top: 8px;
+  z-index: 3;
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  background: rgba(7, 11, 20, 0.55);
   color: var(--text);
-  border: 1px solid var(--amber);
-  border-radius: 12px;
-  padding: 0.55rem 0.7rem;
-  min-height: 44px;
+  font-size: 0.85rem;
+  text-align: center;
+  pointer-events: none;
+}
+.ar-clue {
+  position: absolute;
+  z-index: 4;
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  min-width: 72px;
+  min-height: 72px;
+  padding: 0.2rem;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  transform-origin: center center;
+  will-change: left, top, transform, opacity;
+}
+.ar-clue.is-fallback {
+  /* Static fallback only — no grey card, still tappable */
+}
+.ar-clue .ar-label {
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(7, 11, 20, 0.45);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+.ar-clue.is-world-locked .umbrella {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
 }
 .umbrella {
   display: block;
-  width: 36px;
-  height: 22px;
-  border-radius: 18px 18px 4px 4px;
+  width: 52px;
+  height: 32px;
+  border-radius: 26px 26px 6px 6px;
   background: #152a4d;
-  margin-bottom: 0.25rem;
+  border: 2px solid #f3efe4;
+  box-sizing: border-box;
+  position: relative;
+}
+.umbrella::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 28px;
+  width: 3px;
+  height: 18px;
+  background: #d8d2c4;
+  transform: translateX(-50%);
+  border-radius: 2px;
 }
 .static-clue {
   position: absolute;

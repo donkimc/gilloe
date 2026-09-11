@@ -9,6 +9,7 @@ import { checkAccusation, checkChoice, checkMatchPuzzle, checkOrder, moveItem } 
 import { render } from "./ui/screens.js";
 import { bindHoldToReveal, downloadJson } from "./ui/components.js";
 import { createSimulatedGeolocation, createSimulatedMedia, parseSim } from "./simulate.js";
+import { applyWorldAnchorStyle, createWorldAnchor } from "./worldAnchor.js";
 
 const ui = document.querySelector("#ui");
 const mapHost = document.querySelector(".map-host");
@@ -47,6 +48,7 @@ const camera = createCameraService({
   },
 });
 const map = createMapService();
+const worldAnchor = createWorldAnchor();
 
 let state = restore();
 let mapReady = false;
@@ -82,7 +84,10 @@ function persistIfNeeded() {
 function syncDevices(prev, next) {
   const leavingCamera = needsCamera(prev.screen) && !needsCamera(next.screen);
   const overlayOnCamera = needsCamera(next.screen) && Boolean(next.overlay);
-  if (leavingCamera || overlayOnCamera) camera.stop();
+  if (leavingCamera || overlayOnCamera) {
+    worldAnchor.stop();
+    camera.stop();
+  }
   if (needsLiveLocation(next.screen) && next.locationPermissionAsked) {
     const restart =
       prev.screen !== next.screen ||
@@ -159,6 +164,7 @@ function paint() {
   if (needsCamera(state.screen) && camera.hasActiveStream()) {
     camera.attach(document.querySelector("#camera-video"));
   }
+  syncWorldAnchor();
 }
 
 function bindUi() {
@@ -323,10 +329,12 @@ function handleAction(action, dataset) {
       startCamera();
       break;
     case "skip-camera":
+      worldAnchor.stop();
       camera.stop();
       dispatch({ type: "CAMERA_STATUS", status: "fallback" });
       break;
     case "collect-camera":
+      worldAnchor.stop();
       camera.stop();
       dispatch({
         type: "COLLECT_CAMERA",
@@ -396,10 +404,12 @@ async function startCamera() {
   try {
     const video = document.querySelector("#camera-video");
     await camera.start(video);
-    // Mark active, then re-bind after paint so the navy-umbrella overlay sits on live video.
+    // Mark active, then re-bind after paint so the navy umbrella sits on live video.
     dispatch({ type: "CAMERA_STATUS", status: "active" });
     camera.attach(document.querySelector("#camera-video"));
+    await syncWorldAnchor(true);
   } catch (error) {
+    worldAnchor.stop();
     camera.stop();
     const status = error?.name === "NotAllowedError" ? "denied" : "unavailable";
     dispatch({ type: "CAMERA_STATUS", status });
@@ -407,8 +417,31 @@ async function startCamera() {
   }
 }
 
+async function syncWorldAnchor(forceStart = false) {
+  const clue = document.querySelector("[data-ar-clue]");
+  const viewfinder = document.querySelector(".viewfinder");
+  const hint = document.querySelector("#ar-hint");
+  const live = needsCamera(state.screen) && state.cameraStatus === "active" && camera.hasActiveStream();
+  if (!live || !clue) {
+    worldAnchor.stop();
+    if (hint) hint.hidden = true;
+    return;
+  }
+  const onPose = (pose) => {
+    applyWorldAnchorStyle(clue, pose, viewfinder);
+    clue.classList.toggle("is-world-locked", Boolean(pose.ready));
+    if (hint) hint.hidden = Boolean(pose.visible);
+  };
+  if (forceStart || !worldAnchor.isListening()) {
+    await worldAnchor.start(onPose);
+  } else {
+    worldAnchor.setHandler(onPose);
+  }
+}
+
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
+    worldAnchor.stop();
     camera.stop();
     location.stop();
     if (needsCamera(state.screen)) {
@@ -421,6 +454,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 window.addEventListener("pagehide", () => {
+  worldAnchor.stop();
   camera.stop();
   location.stop();
 });

@@ -276,11 +276,12 @@ function cameraView(state) {
       <div class="viewfinder">
         <video id="camera-video" class="camera-video" playsinline webkit-playsinline muted autoplay></video>
         <div class="frame-guide" aria-hidden="true"></div>
+        <p class="ar-hint" id="ar-hint" hidden>📱 휴대폰을 천천히 돌려 공간에 고정된 남색 우산을 찾으세요.</p>
         ${
           live || fallback
-            ? `<button type="button" class="overlay-clue" data-action="collect-camera" style="top:${place.top};left:${place.left}">
+            ? `<button type="button" class="ar-clue${fallback ? " is-fallback" : ""}" data-action="collect-camera" data-ar-clue="1" style="${fallback ? `top:${place.top};left:${place.left}` : "top:50%;left:50%"}" aria-label="남색 우산 단서">
                 <span class="umbrella" aria-hidden="true"></span>
-                <span>남색 우산 · ${clue.overlay.timestamp}</span>
+                <span class="ar-label">남색 우산 · ${clue.overlay.timestamp}</span>
               </button>`
             : ""
         }
