@@ -59,6 +59,17 @@ export function gridN(state) {
   return gridSizeForCount(placeCount(state));
 }
 
+export function ensureAssembleKit(state) {
+  if (!state.game) return state;
+  const n = gridN(state);
+  const ids = piecesForGrid(n).map((piece) => piece.id);
+  return {
+    ...state,
+    assembleOrder: state.assembleOrder?.length === ids.length ? state.assembleOrder : shufflePieceOrder(ids),
+    assemblePlacement: state.assemblePlacement?.["piece-1"] !== undefined ? state.assemblePlacement : emptyPlacement(n),
+  };
+}
+
 export function applyPersisted(state, saved) {
   return {
     ...state,
@@ -183,13 +194,13 @@ export function reduce(state, action) {
       const collectedPieceIds = unique(state.collectedPieceIds, action.pieceId);
       const total = placeCount(state);
       const done = collectedPieceIds.length >= total;
-      return {
+      return ensureAssembleKit({
         ...state,
         collectedPieceIds,
         screen: done ? "assemble" : "navigating",
         currentStop: done ? state.currentStop : state.currentStop + 1,
         stoppedWalking: false,
-      };
+      });
     }
     case "USE_HINT":
       return { ...state, hintsUsed: { ...state.hintsUsed, [action.puzzleId]: true } };

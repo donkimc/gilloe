@@ -99,6 +99,34 @@ export function pointAlong(coords, t) {
   return { coord: coords[coords.length - 1] };
 }
 
+/** Fraction along a GeoJSON line nearest to a lat/lng (vertex sample). */
+export function nearestProgress(line, point) {
+  if (!Array.isArray(line) || line.length < 2 || !point) return 0;
+  const total = lineLength(line);
+  if (!total) return 0;
+  let bestT = 0;
+  let best = Infinity;
+  let acc = 0;
+  for (let i = 0; i < line.length; i += 1) {
+    const d = distanceMeters(point, { lng: line[i][0], lat: line[i][1] });
+    if (Number.isFinite(d) && d < best) {
+      best = d;
+      bestT = acc / total;
+    }
+    if (i < line.length - 1) acc += distanceLngLat(line[i], line[i + 1]) || 0;
+  }
+  return bestT;
+}
+
+export function placeProgresses(line, places) {
+  let last = 0;
+  return (places || []).map((place) => {
+    const t = nearestProgress(line, place);
+    last = Math.max(last, t);
+    return last;
+  });
+}
+
 export function sliceLine(coords, t) {
   const target = Math.max(0, Math.min(1, t)) * lineLength(coords);
   if (t <= 0) return [coords[0], coords[0]];

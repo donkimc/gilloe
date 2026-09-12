@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { distanceMeters, formatApproxDistance, isArrivalEligible } from "./geo.js";
+import { distanceMeters, formatApproxDistance, isArrivalEligible, placeProgresses } from "./geo.js";
 
 describe("distanceMeters", () => {
   it("returns ~0 for the same point", () => {
@@ -48,6 +48,24 @@ describe("isArrivalEligible", () => {
         accuracyCeilingMeters: 80,
       }),
     ).toBe(false);
+  });
+});
+
+describe("placeProgresses", () => {
+  it("keeps stop fractions in walking order", () => {
+    const line = [
+      [127.0, 37.0],
+      [127.1, 37.0],
+      [127.2, 37.0],
+    ];
+    const places = [
+      { lng: 127.0, lat: 37.0 },
+      { lng: 127.2, lat: 37.0 },
+    ];
+    const ts = placeProgresses(line, places);
+    expect(ts[0]).toBeCloseTo(0, 5);
+    expect(ts[1]).toBeCloseTo(1, 5);
+    expect(ts[1]).toBeGreaterThanOrEqual(ts[0]);
   });
 });
 

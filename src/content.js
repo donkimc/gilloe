@@ -13,6 +13,7 @@ export const brand = {
 
 export const copy = {
   libraryTitle: "퍼즐 걷기",
+  libraryTagline: "오늘은 어디로? 길로",
   libraryLead: "만든 게임을 고르거나, 네이버 지도 링크로 새 퍼즐을 만드세요.",
   create: "게임 만들기",
   play: "이 게임 걷기",
@@ -46,22 +47,24 @@ export const gps = {
   idle: "위치는 아직 요청하지 않았습니다.",
   approx: "직선 거리 · 대략값",
   arrive: "도착했어요",
-  arriveLocked: "반경 안에 들어오고 정확도가 충분하면 도착이 열립니다.",
-  manual: "GPS가 정확하지 않아요 — 직접 도착 확인",
-  manualConfirmTitle: "안전한 공개 지점에 서 있나요?",
-  manualConfirmBody: "아래 장소의 보행 공간에 멈춰 서 있을 때만 확인하세요. 차도·매장 안·사유지가 아닙니다.",
-  manualConfirm: "여기서 멈춰 서 있습니다",
+  arriveLocked: "장소 가까이에서 정확도가 충분하면 도착이 열립니다.",
+  manual: "GPS가 정확하지 않아요",
+  manualConfirmTitle: "도착하였나요?",
+  manualConfirmBody: "공개된 보행 공간에 멈춰 있을 때만 확인하세요. 차도·매장 안·사유지는 안 됩니다.",
+  manualConfirm: "도착확인",
   retryLocation: "위치 다시 찾기",
   help: "길을 찾기 어려워요",
   exit: "게임 종료",
   directionsExternal: "외부 도보 안내 열기",
   prevPlace: "이전 장소",
+  skipLocate: "위치 없이 계속",
+  locatingHint: "지도에 지금 위치를 올리고 있습니다. 오래 걸리면 위치 없이 계속할 수 있습니다.",
 };
 
 export const trayCopy = {
   title: "모은 조각",
-  open: "조각함",
-  close: "조각함 닫기",
+  open: "모은 조각",
+  close: "닫기",
   empty: "아직 모은 조각이 없습니다.",
   count: (n, total) => `조각 ${n} / ${total}`,
 };
@@ -81,9 +84,11 @@ export const assembleCopy = {
 
 export const previewCopy = {
   title: "오늘 걷는 길",
-  skip: "미리보기 건너뛰기",
+  play: "경로 미리보기",
   startWalk: "걷기 시작",
   playing: "경로를 따라가는 중",
+  closeTour: "미리보기 닫기",
+  nextStop: "탭하면 다음 장소",
 };
 
 export const createCopy = {

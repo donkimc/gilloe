@@ -196,7 +196,19 @@ export function markSvg({ clip = "full", className = "", jigsaw, n = 2 } = {}) {
 }
 
 export function pieceMarkup(pieceId, extraClass = "", jigsaw, n = 2) {
-  const crop = !extraClass.includes("mark-tile--seated");
+  const piece = pieceById(pieceId, n);
+  const row = piece?.row ?? 0;
+  const col = piece?.col ?? 0;
+  const seated = extraClass.includes("mark-tile--seated");
+  if (jigsaw?.imageUrl) {
+    const posX = n <= 1 ? 0 : (col / (n - 1)) * 100;
+    const posY = n <= 1 ? 0 : (row / (n - 1)) * 100;
+    const style = seated
+      ? `left:${(col / n) * 100}%;top:${(row / n) * 100}%;width:${100 / n}%;height:${100 / n}%;background-image:url("${escapeAttr(jigsaw.imageUrl)}");background-size:${n * 100}% ${n * 100}%;background-position:${posX}% ${posY}%`
+      : `background-image:url("${escapeAttr(jigsaw.imageUrl)}");background-size:${n * 100}% ${n * 100}%;background-position:${posX}% ${posY}%`;
+    return `<div class="mark-tile mark-tile--photo ${extraClass}" data-piece="${pieceId}" style="${style}"><span class="mark-num">${piece?.order || ""}</span></div>`;
+  }
+  const crop = !seated;
   return `<div class="mark-tile ${extraClass}" data-piece="${pieceId}">${puzzleSvg({
     jigsaw,
     clip: pieceId,

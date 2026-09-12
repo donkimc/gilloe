@@ -110,12 +110,28 @@ export function createMapService() {
       accuracyCircle.setLatLng([lat, lng]);
       if (Number.isFinite(accuracy)) accuracyCircle.setRadius(accuracy).setStyle({ opacity: 0.6 });
     },
-    setLineProgress(t) {
+    setLineProgress(t, { follow = false } = {}) {
       if (!coords.length || !drawnLine) return;
       const sliced = sliceLine(coords, t);
       drawnLine.setLatLngs(sliced.map(([lng, lat]) => [lat, lng]));
       const { coord } = pointAlong(coords, t);
       walker?.setLatLng([coord[1], coord[0]]);
+      if (follow && map) map.panTo([coord[1], coord[0]], { animate: false, duration: 0 });
+    },
+    prependLine(prefix) {
+      if (!map || !Array.isArray(prefix) || prefix.length < 1) return;
+      const rest = coords;
+      const last = prefix[prefix.length - 1];
+      const first = rest[0];
+      const skipJoin =
+        first && last && Math.abs(last[0] - first[0]) < 1e-5 && Math.abs(last[1] - first[1]) < 1e-5;
+      coords = skipJoin ? prefix.concat(rest.slice(1)) : prefix.concat(rest);
+      const latlngs = geoJsonToLatLngs(coords);
+      ghostLine?.setLatLngs(latlngs);
+      map.fitBounds(L.latLngBounds(latlngs).pad(0.18), { maxZoom: 16, animate: true });
+    },
+    routeCoords() {
+      return coords;
     },
     showWalker(show) {
       walker?.setStyle({ opacity: show ? 1 : 0 });

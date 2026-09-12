@@ -321,6 +321,21 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/route") {
+      const body = await readBody(req);
+      const places = Array.isArray(body.places) ? body.places : [];
+      if (places.length < 2 || places.length > 25) return send(res, 400, { error: "경로를 계산하지 못했습니다." });
+      if (places.some((p) => !Number.isFinite(p?.lat) || !Number.isFinite(p?.lng))) {
+        return send(res, 400, { error: "경로를 계산하지 못했습니다." });
+      }
+      try {
+        send(res, 200, { routeLine: await fetchOsrmLine(places) });
+      } catch {
+        send(res, 200, { routeLine: places.map((p) => [p.lng, p.lat]) });
+      }
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/games") {
       const body = await readBody(req);
       const check = validateGamePayload(body);

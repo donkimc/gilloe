@@ -83,6 +83,51 @@ describe("rendered flow", () => {
     expect(saved.lastFix).toBeUndefined();
   });
 
+  it("shows the library tagline beside Gilloe", () => {
+    const html = render(createInitialState());
+    expect(html).toContain("Gilloe");
+    expect(html).toContain("오늘은 어디로? 길로");
+  });
+
+  it("offers a route preview instead of skip", () => {
+    const html = render({
+      ...createInitialState(),
+      game: sampleGame,
+      screen: "preview",
+      locationPermissionAsked: true,
+      locationStatus: "locating",
+    });
+    expect(html).toContain("경로 미리보기");
+    expect(html).toContain("위치 없이 계속");
+    expect(html).not.toContain("미리보기 건너뛰기");
+  });
+
+  it("uses short GPS wording on the manual button", () => {
+    const html = render({
+      ...createInitialState(),
+      game: sampleGame,
+      screen: "navigating",
+      currentStop: 1,
+      manualAvailable: true,
+    });
+    expect(html).toContain("GPS가 정확하지 않아요");
+    expect(html).not.toContain("직접도착확인");
+    expect(html).toContain('aria-label="모은 조각"');
+    expect(html).toContain('aria-label="게임 종료"');
+  });
+
+  it("still lists assemble pieces when the tray order is empty", () => {
+    const html = render({
+      ...createInitialState(),
+      game: sampleGame,
+      screen: "assemble",
+      assembleOrder: [],
+      assemblePlacement: {},
+    });
+    expect(html).toContain("assemble-piece");
+    expect(html).toContain("piece-1");
+  });
+
   it("lets the simulator panel collapse", () => {
     const open = render({ ...createInitialState(), simPanel: true, simMinimized: false });
     expect(open).toContain("접기");

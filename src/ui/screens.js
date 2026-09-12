@@ -48,21 +48,33 @@ function tile(state, pieceId, extraClass = "") {
   return pieceMarkup(pieceId, extraClass, jigsaw(state), gridN(state));
 }
 
+function iconBtn(action, svg, label, extra = "") {
+  return `<button type="button" class="icon-btn ${extra}" data-action="${action}" aria-label="${label}" title="${label}">${svg}</button>`;
+}
+
+const ICO_PREV = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.7 4.3 7 13l8.7 8.7 1.6-1.6L10.2 13l7.1-7.1z"/></svg>`;
+const ICO_TRAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.2" fill="currentColor"/><rect x="13" y="3" width="8" height="8" rx="1.2" fill="currentColor" opacity=".75"/><rect x="3" y="13" width="8" height="8" rx="1.2" fill="currentColor" opacity=".75"/><rect x="13" y="13" width="8" height="8" rx="1.2" fill="currentColor"/></svg>`;
+const ICO_EXIT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"/></svg>`;
+
 function progress(state) {
   const total = placeCount(state);
   const n = state.collectedPieceIds?.length || 0;
-  return `<p class="progress">${ico("🧩", trayCopy.count(Math.min(n, total), total))}</p>`;
+  return `<span class="tray-badge">${Math.min(n, total)}</span>`;
 }
 
 function chrome(state, { showExit = false, showTray = false, showPrev = false } = {}) {
+  const count = state.collectedPieceIds?.length || 0;
   return `
     <header class="top">
       <p class="brand">${brand.name}</p>
-      ${state.game ? progress(state) : ""}
       <div class="top-actions">
-        ${showPrev && state.currentStop > 1 ? btn("prev-place", `⬅️ ${gps.prevPlace}`, "btn--ghost") : ""}
-        ${showTray && trayAllowed(state.screen) ? btn("notebook", `🧩 ${trayCopy.open}`, "btn--ghost") : ""}
-        ${showExit ? btn("exit", `🚪 ${gps.exit}`, "btn--ghost") : ""}
+        ${showPrev && state.currentStop > 1 ? iconBtn("prev-place", ICO_PREV, gps.prevPlace) : ""}
+        ${
+          showTray && trayAllowed(state.screen)
+            ? `<span class="icon-wrap">${iconBtn("notebook", ICO_TRAY, trayCopy.open)}${count ? progress(state) : ""}</span>`
+            : ""
+        }
+        ${showExit ? iconBtn("exit", ICO_EXIT, gps.exit) : ""}
       </div>
     </header>
   `;
@@ -108,7 +120,7 @@ function libraryView(state) {
   return `
     <main id="main" class="screen card-screen">
       <p class="kicker">${copy.libraryTitle}</p>
-      <h1>${brand.name}</h1>
+      <h1 class="home-title">${brand.name} <span class="tagline">${copy.libraryTagline}</span></h1>
       <p class="lead">${copy.libraryLead}</p>
       <p class="warn">${ico("🚧", brand.notPublicReady)}</p>
       ${state.invalidSave ? `<p class="warn">저장본이 오래되어 목록부터 시작합니다.</p>` : ""}
@@ -205,17 +217,42 @@ function safetyView() {
 
 function previewView(state) {
   const game = state.game;
+  if (state.previewTour) {
+    const place = game.places?.[state.previewStopIndex] || game.places?.[0];
+    return `
+      <main id="main" class="screen map-screen map-screen--tour">
+        <div class="tour-bar">
+          ${iconBtn("close-preview", ICO_EXIT, previewCopy.closeTour)}
+        </div>
+        ${
+          state.previewCard
+            ? `<article class="tour-card" data-action="tour-next">
+            <p class="kicker">${place.order} / ${game.placeCount}</p>
+            <h2>${escapeHtml(place.name)}</h2>
+            ${place.photoUrl ? `<figure class="photo-card"><img src="${escapeHtml(place.photoUrl)}" alt="" /></figure>` : ""}
+            ${place.address ? `<p class="note">${escapeHtml(place.address)}</p>` : ""}
+            <p>${escapeHtml(place.blurb || "")}</p>
+            <p class="muted">${previewCopy.nextStop}</p>
+          </article>`
+            : `<p class="tour-status">${previewCopy.playing}</p>`
+        }
+      </main>
+    `;
+  }
+  const locateStuck = ["denied", "unavailable", "timeout"].includes(state.locationStatus);
+  const locateWait = state.locationPermissionAsked && (state.locationStatus === "locating" || locateStuck);
   return `
     <main id="main" class="screen map-screen">
       ${chrome(state, { showExit: true })}
-      <h1>${ico("🗺️", previewCopy.title)}</h1>
-      <p><strong>${game.title}</strong></p>
+      <h1>${previewCopy.title}</h1>
+      <p><strong>${escapeHtml(game.title)}</strong></p>
       <p class="note">${game.walkLabel} · ${game.placeCount}곳</p>
-      <p class="muted">${state.previewPlaying ? previewCopy.playing : ""}</p>
       ${locationPanel(state)}
+      ${state.locationPermissionAsked && state.locationStatus === "locating" ? `<p class="muted">${gps.locatingHint}</p>` : ""}
+      ${locateWait ? btn("skip-locate", gps.skipLocate, "btn--ghost") : ""}
       ${!state.locationPermissionAsked ? btn("find-location", `📍 ${gps.findMe}`) : ""}
-      ${btn("skip-preview", previewCopy.skip, "btn--ghost")}
-      ${btn("continue", `🚶 ${previewCopy.startWalk}`)}
+      ${btn("start-preview", previewCopy.play)}
+      ${btn("continue", previewCopy.startWalk, "btn--ghost")}
     </main>
   `;
 }
@@ -254,11 +291,11 @@ function navView(state) {
       ${place.address ? `<p class="note">${place.address}</p>` : ""}
       ${state.mapStatus !== "ok" ? `<p class="warn">${place.address || routeMeta.mapFailed}</p>` : ""}
       ${locationPanel(state)}
-      ${btn("arrive", `📍 ${gps.arrive}`, arriveEnabled ? "" : "is-disabled")}
-      ${!arriveEnabled ? `<p class="muted">${ico("ℹ️", gps.arriveLocked)}</p>` : ""}
-      ${state.manualAvailable || ["denied", "unavailable", "timeout", "low-accuracy"].includes(state.locationStatus) ? btn("manual", `✋ ${gps.manual}`, "btn--ghost") : ""}
-      ${btn("help", `❓ ${gps.help}`, "btn--ghost")}
-      ${btn("retry-location", `🔄 ${gps.retryLocation}`, "btn--ghost")}
+      ${btn("arrive", gps.arrive, arriveEnabled ? "" : "is-disabled")}
+      ${!arriveEnabled ? `<p class="muted">${gps.arriveLocked}</p>` : ""}
+      ${state.manualAvailable || ["denied", "unavailable", "timeout", "low-accuracy"].includes(state.locationStatus) ? btn("manual", gps.manual, "btn--ghost") : ""}
+      ${btn("help", gps.help, "btn--ghost")}
+      ${btn("retry-location", gps.retryLocation, "btn--ghost")}
       <a class="ext" href="${osmDirectionsUrl(place)}" target="_blank" rel="noopener noreferrer">${ico("🧭", gps.directionsExternal)}</a>
     </main>
   `;
@@ -286,10 +323,11 @@ function placeView(state) {
 function assembleView(state) {
   const n = gridN(state);
   const pieces = piecesForGrid(n);
-  const placement = state.assemblePlacement;
+  const placement = state.assemblePlacement?.["piece-1"] !== undefined ? state.assemblePlacement : Object.fromEntries(pieces.map((p) => [p.id, null]));
   const hint = state.hintsUsed.assemble ? `<p class="hint">${assembleCopy.hint}</p>` : btn("hint", "💡 힌트", "btn--ghost");
   const seated = new Set(Object.entries(placement).filter(([, cell]) => cell).map(([id]) => id));
-  const tray = (state.assembleOrder || pieces.map((p) => p.id)).filter((id) => !seated.has(id));
+  const order = state.assembleOrder?.length ? state.assembleOrder : pieces.map((p) => p.id);
+  const tray = order.filter((id) => !seated.has(id));
   return `
     <main id="main" class="screen card-screen">
       ${chrome(state, { showExit: true, showTray: true })}

@@ -1,14 +1,15 @@
 import "./styles.css";
 import { brand, createCopy } from "./content.js";
 import { createStorage, STORAGE_KEY } from "./storage.js";
-import { SCREENS, createInitialState, currentPlace, gridN, needsLiveLocation, reduce } from "./state.js";
+import { SCREENS, createInitialState, currentPlace, ensureAssembleKit, gridN, needsLiveLocation, reduce } from "./state.js";
+import { distanceMeters, placeProgresses } from "./geo.js";
 import { createLocationService } from "./location.js";
 import { createMapService } from "./map.js";
 import { placeOnCell, snapPlacement } from "./assemble.js";
 import { pickRandomImage } from "./puzzleImages.js";
 import { render } from "./ui/screens.js";
 import { createSimulatedGeolocation, parseSim } from "./simulate.js";
-import { createGame, deleteGame, getGame, listGames, resolvePlace, updateGame } from "./api.js";
+import { createGame, deleteGame, fetchWalkingLine, getGame, listGames, resolvePlace, updateGame } from "./api.js";
 
 const ui = document.querySelector("#ui");
 const mapHost = document.querySelector(".map-host");
@@ -23,7 +24,13 @@ let createBusy = false;
 let createError = "";
 let previewPlaying = false;
 let previewRaf = 0;
+let previewTour = false;
+let previewStopIndex = 0;
+let previewCard = false;
+let previewStops = [];
+let tourToken = 0;
 let mapReady = false;
+let approachAdded = false;
 
 function emptyRows(n) {
   return Array.from({ length: n }, () => ({ url: "", resolved: null, resolving: false }));
@@ -109,22 +116,23 @@ function syncDevices(prev, next) {
   } else if (!needsLiveLocation(next.screen)) {
     location.stop();
   }
-  const showMap = needsLiveLocation(next.screen) && !mapFail && next.mapStatus !== "failed" && next.game;
+  const showMap =
+    needsLiveLocation(next.screen) && !mapFail && next.mapStatus !== "failed" && next.game;
   mapHost.hidden = !showMap;
+  mapHost.classList.toggle("is-tour", Boolean(previewTour && showMap));
+  document.getElementById("app")?.classList.toggle("is-tour", Boolean(previewTour && showMap));
   if (showMap) {
     ensureMap().then(() => {
       map.invalidate();
       if (next.screen === "preview") {
-        map.focusOverview(next.game.places);
-        if (previewPlaying) return;
-        runPreview();
+        if (!previewTour) map.focusOverview(next.game.places);
       } else {
-        stopPreview();
+        stopPreviewTour();
         map.focusStop(currentPlace(next));
       }
     });
   } else {
-    stopPreview();
+    stopPreviewTour();
   }
 }
 
@@ -192,39 +200,150 @@ location.onChange((payload) => {
 
 location.onFix((fix) => {
   if (mapReady) map.setPlayer(fix.lat, fix.lng, fix.accuracyMeters);
+  addApproach(fix);
 });
 
-function runPreview() {
-  stopPreview();
+async function addApproach(fix) {
+  if (approachAdded || !state.game || !mapReady) return;
+  const first = state.game.places?.[0];
+  if (!first || !Number.isFinite(fix?.lat) || !Number.isFinite(fix?.lng)) return;
+  if (distanceMeters({ lat: fix.lat, lng: fix.lng }, first) < 50) {
+    approachAdded = true;
+    return;
+  }
+  approachAdded = true;
+  try {
+    const line = await fetchWalkingLine([{ lat: fix.lat, lng: fix.lng }, first]);
+    if (!Array.isArray(line) || line.length < 2) return;
+    map.prependLine(line);
+    if (state.screen === "preview" && !previewTour) map.setLineProgress(1);
+  } catch {
+    /* keep the published route without the approach */
+  }
+}
+
+function stopPreviewTour() {
+  tourToken += 1;
+  previewPlaying = false;
+  previewTour = false;
+  previewCard = false;
+  previewStopIndex = 0;
+  previewStops = [];
+  if (previewRaf) cancelAnimationFrame(previewRaf);
+  previewRaf = 0;
+  map.showWalker(false);
+  mapHost.classList.remove("is-tour");
+  document.getElementById("app")?.classList.remove("is-tour");
+}
+
+function startPreviewTour() {
+  if (!state.game || previewTour) return;
+  previewTour = true;
   previewPlaying = true;
-  map.showWalker(true);
-  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  if (reduced) {
-    map.setLineProgress(1);
-    previewPlaying = false;
+  previewCard = false;
+  previewStopIndex = 0;
+  mapHost.classList.add("is-tour");
+  document.getElementById("app")?.classList.add("is-tour");
+  paint();
+  window.requestAnimationFrame(() => {
+    ensureMap().then(() => {
+      if (!previewTour) return;
+      map.invalidate();
+      map.showWalker(true);
+      map.setLineProgress(0, { follow: true });
+      previewStops = placeProgresses(map.routeCoords(), state.game.places);
+      const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      if (reduced) {
+        revealTourStop(0);
+        return;
+      }
+      runTourLeg(0, 0);
+    });
+  });
+}
+
+function revealTourStop(index) {
+  previewStopIndex = index;
+  previewCard = true;
+  previewPlaying = false;
+  map.setLineProgress(previewStops[index] ?? 1, { follow: true });
+  paint();
+  const token = tourToken;
+  window.setTimeout(() => {
+    if (token !== tourToken || !previewTour) return;
+    advanceTour();
+  }, 2400);
+}
+
+function advanceTour() {
+  if (!previewTour || !state.game) return;
+  const next = previewStopIndex + (previewCard ? 1 : 0);
+  if (previewCard && next >= (state.game.places || []).length) {
+    stopPreviewTour();
+    if (mapReady) map.focusOverview(state.game.places);
     paint();
     return;
   }
-  const start = performance.now();
-  const dur = 5200;
-  const tick = (now) => {
-    const t = Math.min(1, (now - start) / dur);
-    map.setLineProgress(t);
-    if (t < 1 && previewPlaying) previewRaf = requestAnimationFrame(tick);
-    else {
-      previewPlaying = false;
-      map.showWalker(false);
-      paint();
-    }
-  };
-  previewRaf = requestAnimationFrame(tick);
+  const from = previewCard ? previewStops[previewStopIndex] ?? 0 : 0;
+  const index = previewCard ? previewStopIndex + 1 : previewStopIndex;
+  previewCard = false;
+  previewPlaying = true;
+  previewStopIndex = index;
   paint();
+  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  if (reduced) {
+    revealTourStop(index);
+    return;
+  }
+  runTourLeg(from, index);
 }
 
-function stopPreview() {
-  previewPlaying = false;
+function runTourLeg(fromT, stopIndex) {
+  const toT = previewStops[stopIndex] ?? 1;
+  const start = performance.now();
+  const span = Math.max(0.04, toT - fromT);
+  const dur = Math.max(900, span * 4800);
+  const tick = (now) => {
+    if (!previewTour) return;
+    const t = Math.min(1, (now - start) / dur);
+    map.setLineProgress(fromT + (toT - fromT) * t, { follow: true });
+    if (t < 1) previewRaf = requestAnimationFrame(tick);
+    else revealTourStop(stopIndex);
+  };
   if (previewRaf) cancelAnimationFrame(previewRaf);
-  previewRaf = 0;
+  previewRaf = requestAnimationFrame(tick);
+}
+
+function flyPieceThen(done) {
+  const from = ui.querySelector(".piece-award");
+  const to = ui.querySelector("[data-action=notebook]");
+  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  if (!from || !to || reduced) {
+    done();
+    return;
+  }
+  const a = from.getBoundingClientRect();
+  const b = to.getBoundingClientRect();
+  const clone = from.cloneNode(true);
+  clone.classList.add("piece-fly");
+  clone.style.left = `${a.left}px`;
+  clone.style.top = `${a.top}px`;
+  clone.style.width = `${a.width}px`;
+  clone.style.height = `${a.height}px`;
+  document.body.appendChild(clone);
+  requestAnimationFrame(() => {
+    clone.style.transform = `translate(${b.left + b.width / 2 - a.left - a.width / 2}px, ${b.top + b.height / 2 - a.top - a.height / 2}px) scale(0.18)`;
+    clone.style.opacity = "0.15";
+  });
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    clone.remove();
+    done();
+  };
+  clone.addEventListener("transitionend", finish, { once: true });
+  window.setTimeout(finish, 700);
 }
 
 function paint() {
@@ -234,6 +353,9 @@ function paint() {
     createBusy,
     createError,
     previewPlaying,
+    previewTour,
+    previewStopIndex,
+    previewCard,
     simPanel: sim.panel,
     simMinimized,
   });
@@ -413,6 +535,7 @@ async function handleAction(action, dataset) {
         const game = await getGame(dataset.id);
         persist.clear();
         mapReady = false;
+        approachAdded = false;
         map.unmount();
         dispatch({ type: "SELECT_GAME", game });
       } catch {
@@ -424,11 +547,31 @@ async function handleAction(action, dataset) {
       break;
     case "accept-safety":
       dispatch({ type: "ACCEPT_SAFETY" });
+      dispatch({ type: "LOCATION_ASKED" });
       break;
     case "continue":
-    case "skip-preview":
-      stopPreview();
+      stopPreviewTour();
       dispatch({ type: "CONTINUE" });
+      break;
+    case "start-preview":
+      startPreviewTour();
+      break;
+    case "close-preview":
+      stopPreviewTour();
+      if (mapReady && state.game) map.focusOverview(state.game.places);
+      paint();
+      break;
+    case "tour-next":
+      tourToken += 1;
+      advanceTour();
+      break;
+    case "skip-locate":
+      location.stop();
+      dispatch({
+        type: "LOCATION_STATUS",
+        status: ["denied", "unavailable", "timeout"].includes(state.locationStatus) ? state.locationStatus : "timeout",
+        manualAvailable: true,
+      });
       break;
     case "notebook":
       dispatch({ type: "OPEN_NOTEBOOK" });
@@ -474,12 +617,14 @@ async function handleAction(action, dataset) {
       break;
     }
     case "collect-piece":
-      dispatch({ type: "COLLECT_PIECE", pieceId: `piece-${state.currentStop}` });
+      flyPieceThen(() => dispatch({ type: "COLLECT_PIECE", pieceId: `piece-${state.currentStop}` }));
       break;
     case "reset":
       location.stop();
       persist.clear();
       mapReady = false;
+      approachAdded = false;
+      stopPreviewTour();
       map.unmount();
       dispatch({ type: "RESET" });
       break;
@@ -551,7 +696,7 @@ async function bootLibrary() {
     if (state.gameId && !state.game) {
       try {
         const game = await getGame(state.gameId);
-        state = { ...state, game };
+        state = ensureAssembleKit({ ...state, game });
       } catch {
         state = reduce(createInitialState(), { type: "GAMES", games });
         persist.clear();

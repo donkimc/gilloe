@@ -30,6 +30,7 @@ body {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 #ui {
@@ -80,8 +81,49 @@ body {
   margin-bottom: 0.6rem;
 }
 .brand { margin: 0; font-weight: 700; letter-spacing: 0.04em; }
+.home-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 0.7rem;
+}
+.home-title .tagline {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--amber);
+}
 .progress { margin: 0 auto 0 0; color: var(--amber); }
-.top-actions { display: flex; gap: 0.35rem; }
+.top-actions { display: flex; align-items: center; gap: 0.2rem; }
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: #141a2e;
+  color: var(--text);
+  display: grid;
+  place-items: center;
+}
+.icon-btn svg { width: 1.35rem; height: 1.35rem; display: block; }
+.icon-wrap { position: relative; display: inline-flex; }
+.tray-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  background: var(--amber);
+  color: #1a1206;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
 
 .btn, .choice, .chip, .hold, .row-actions button, .ext {
   min-height: 44px;
@@ -230,6 +272,80 @@ body {
 }
 .map-host[hidden] {
   display: none !important;
+}
+#app.is-tour {
+  height: 100dvh;
+}
+#app.is-tour #ui {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: transparent;
+}
+#app.is-tour .map-host,
+.map-host.is-tour {
+  position: fixed;
+  inset: 0;
+  height: 100dvh !important;
+  min-height: 100dvh;
+  z-index: 3;
+  border: 0;
+}
+#app.is-tour #map,
+.map-host.is-tour #map {
+  height: 100%;
+}
+#app.is-tour .osm {
+  display: none;
+}
+.map-screen--tour {
+  max-width: none;
+  min-height: 100%;
+  padding: 2.6rem 0.7rem 0.7rem;
+  pointer-events: none;
+}
+.map-screen--tour .tour-bar,
+.map-screen--tour .tour-card,
+.map-screen--tour .tour-status,
+.map-screen--tour .icon-btn {
+  pointer-events: auto;
+}
+.tour-bar {
+  display: flex;
+  justify-content: flex-end;
+}
+.tour-bar .icon-btn {
+  background: rgba(11, 16, 32, 0.82);
+}
+.tour-status {
+  margin: 0.6rem auto 0;
+  max-width: 22rem;
+  text-align: center;
+  background: rgba(11, 16, 32, 0.78);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+}
+.tour-card {
+  position: absolute;
+  left: 0.7rem;
+  right: 0.7rem;
+  bottom: 1.1rem;
+  margin: 0 auto;
+  max-width: 26rem;
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: var(--radius);
+  padding: 0.85rem 0.95rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+.tour-card h2 { margin: 0.15rem 0 0.4rem; font-size: 1.2rem; }
+.piece-fly {
+  position: fixed;
+  z-index: 40;
+  margin: 0;
+  pointer-events: none;
+  transition: transform 0.55s ease, opacity 0.55s ease;
 }
 #map { height: calc(100% - 1.4rem); }
 .osm {
@@ -421,6 +537,9 @@ body {
   inset: 0;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
 }
+.assemble-fit .mark-tile--seated.mark-tile--photo {
+  inset: auto;
+}
 .assemble-slots {
   position: absolute;
   inset: 0;
@@ -458,9 +577,24 @@ body {
   padding: 0;
   border-radius: 8px;
   border: 2px solid transparent;
-  background: transparent;
+  background: #ece2d0;
   touch-action: none;
-  overflow: visible;
+  overflow: hidden;
+}
+.mark-tile--photo {
+  background-color: #ece2d0;
+  background-repeat: no-repeat;
+  border-radius: 8px;
+  position: relative;
+}
+.mark-num {
+  position: absolute;
+  left: 0.25rem;
+  top: 0.15rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1a1206;
+  text-shadow: 0 0 4px #f4ead8;
 }
 .assemble-piece.is-selected {
   border-color: var(--amber);
@@ -619,4 +753,5 @@ legend { font-weight: 700; margin-bottom: 0.35rem; }
 
 @media (min-width: 720px) {
   .map-host { height: 42vh; }
+  .map-host.is-tour { height: 100%; }
 }

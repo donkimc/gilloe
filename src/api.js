@@ -49,3 +49,14 @@ export async function deleteGame(id) {
   if (!res.ok) throw new Error(data.error || "delete");
   return data;
 }
+
+export async function fetchWalkingLine(places) {
+  const res = await fetch("/api/route", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ places }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "route");
+  return data.routeLine;
+}
