@@ -657,11 +657,16 @@ body {
   position: relative;
   overflow: hidden;
   background-color: #ece2d0;
+  background-repeat: no-repeat;
   border-radius: 8px;
 }
 .mark-tile--photo img {
-  position: absolute;
   display: block;
+  position: relative;
+  z-index: 0;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
   max-width: none;
   max-height: none;
   border: 0;
@@ -669,6 +674,7 @@ body {
 }
 .mark-num {
   position: absolute;
+  z-index: 1;
   left: 0.25rem;
   top: 0.15rem;
   font-size: 0.75rem;

@@ -155,8 +155,9 @@ export function isAssembled(placement, n = 2) {
 
 function artInner(jigsaw, n) {
   const size = n * 100;
-  if (jigsaw?.imageUrl) {
-    return `<image href="${escapeAttr(jigsaw.imageUrl)}" x="0" y="0" width="${size}" height="${size}" preserveAspectRatio="xMidYMid slice"/>`;
+  const href = displayImageUrl(jigsaw?.imageUrl);
+  if (href) {
+    return `<image href="${escapeAttr(href)}" x="0" y="0" width="${size}" height="${size}" preserveAspectRatio="xMidYMid slice"/>`;
   }
   const id = jigsaw?.systemImageId || PUZZLE_IMAGES[0].id;
   const scale = size / 200;
@@ -209,6 +210,12 @@ export function markSvg({ clip = "full", className = "", jigsaw, n = 2 } = {}) {
   return puzzleSvg({ jigsaw, clip, crop: clip !== "full", className, n });
 }
 
+function sliceAnchor(row, col, n) {
+  const ox = n <= 1 ? 50 : (col / (n - 1)) * 100;
+  const oy = n <= 1 ? 50 : (row / (n - 1)) * 100;
+  return { ox, oy };
+}
+
 export function pieceMarkup(pieceId, extraClass = "", jigsaw, n = 2) {
   const piece = pieceById(pieceId, n);
   const row = piece?.row ?? 0;
@@ -216,11 +223,17 @@ export function pieceMarkup(pieceId, extraClass = "", jigsaw, n = 2) {
   const seated = extraClass.includes("mark-tile--seated");
   const imageUrl = displayImageUrl(jigsaw?.imageUrl);
   if (imageUrl) {
-    const box = seated
-      ? `left:${(col / n) * 100}%;top:${(row / n) * 100}%;width:${100 / n}%;height:${100 / n}%`
-      : "";
-    const img = `width:${n * 100}%;height:${n * 100}%;left:${-col * 100}%;top:${-row * 100}%`;
-    return `<div class="mark-tile mark-tile--photo ${extraClass}" data-piece="${pieceId}"${box ? ` style="${box}"` : ""}><img src="${escapeAttr(imageUrl)}" alt="" referrerpolicy="no-referrer" style="${img}" /><span class="mark-num">${piece?.order || ""}</span></div>`;
+    const { ox, oy } = sliceAnchor(row, col, n);
+    const styles = [
+      seated ? `left:${(col / n) * 100}%;top:${(row / n) * 100}%;width:${100 / n}%;height:${100 / n}%` : "",
+      `background-image:url("${escapeAttr(imageUrl)}")`,
+      `background-size:${n * 100}% ${n * 100}%`,
+      `background-position:${ox}% ${oy}%`,
+    ]
+      .filter(Boolean)
+      .join(";");
+    const imgStyle = `width:${n * 100}%;margin-left:${-col * 100}%;margin-top:${-row * 100}%`;
+    return `<div class="mark-tile mark-tile--photo ${extraClass}" data-piece="${pieceId}" data-photo="${escapeAttr(imageUrl)}" data-grid="${n}" data-col="${col}" data-row="${row}" style="${styles}"><img src="${escapeAttr(imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async" style="${imgStyle}" /><span class="mark-num">${piece?.order || ""}</span></div>`;
   }
   const crop = !seated;
   return `<div class="mark-tile ${extraClass}" data-piece="${pieceId}">${puzzleSvg({

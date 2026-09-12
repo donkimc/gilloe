@@ -397,6 +397,68 @@ function flyPieceThen(done) {
   window.setTimeout(finish, 700);
 }
 
+const mediaBlobUrls = new Map();
+
+async function blobForMedia(src) {
+  if (mediaBlobUrls.has(src)) return mediaBlobUrls.get(src);
+  const res = await fetch(src);
+  if (!res.ok) throw new Error("media");
+  const blob = await res.blob();
+  if (blob.size < 32) throw new Error("media");
+  const url = URL.createObjectURL(blob);
+  mediaBlobUrls.set(src, url);
+  return url;
+}
+
+function layoutPhotoTiles(root) {
+  root.querySelectorAll(".mark-tile--photo").forEach((tile) => {
+    const img = tile.querySelector("img");
+    if (!img) return;
+    const n = Number(tile.dataset.grid) || 2;
+    const col = Number(tile.dataset.col) || 0;
+    const row = Number(tile.dataset.row) || 0;
+    const w = tile.clientWidth;
+    const h = tile.clientHeight;
+    if (w < 8 || h < 8) return;
+    img.style.position = "absolute";
+    img.style.left = `${-col * w}px`;
+    img.style.top = `${-row * h}px`;
+    img.style.width = `${n * w}px`;
+    img.style.height = `${n * h}px`;
+    img.style.margin = "0";
+    img.style.maxWidth = "none";
+    img.style.maxHeight = "none";
+    img.style.objectFit = "cover";
+  });
+}
+
+async function hydrateMediaImages(root) {
+  const images = [...root.querySelectorAll("img")].filter((img) => (img.getAttribute("src") || "").includes("/api/media"));
+  const tiles = [...root.querySelectorAll(".mark-tile--photo[data-photo]")];
+  const srcs = new Set([...images.map((img) => img.getAttribute("src")), ...tiles.map((tile) => tile.dataset.photo)]);
+  await Promise.all(
+    [...srcs].map(async (src) => {
+      if (!src) return;
+      try {
+        const url = await blobForMedia(src);
+        images.filter((img) => img.getAttribute("src") === src).forEach((img) => {
+          img.src = url;
+        });
+        tiles
+          .filter((tile) => tile.dataset.photo === src)
+          .forEach((tile) => {
+            tile.style.backgroundImage = `url("${url}")`;
+            const img = tile.querySelector("img");
+            if (img) img.src = url;
+          });
+      } catch {
+        /* keep original src */
+      }
+    }),
+  );
+  layoutPhotoTiles(root);
+}
+
 function paint() {
   ui.innerHTML = render({
     ...state,
@@ -413,6 +475,8 @@ function paint() {
   });
   bindUi();
   bindAssemble();
+  layoutPhotoTiles(ui);
+  void hydrateMediaImages(ui);
 }
 
 function bindUi() {
