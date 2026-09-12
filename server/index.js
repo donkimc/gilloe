@@ -55,6 +55,43 @@ async function writeGames(games) {
   await fs.writeFile(GAMES_FILE, JSON.stringify(games, null, 2));
 }
 
+function isAllowedMediaHost(hostname) {
+  return hostname === "pstatic.net" || hostname.endsWith(".pstatic.net");
+}
+
+async function proxyMedia(res, target) {
+  let parsed;
+  try {
+    parsed = new URL(target);
+  } catch {
+    return send(res, 400, { error: "image" });
+  }
+  if ((parsed.protocol !== "https:" && parsed.protocol !== "http:") || !isAllowedMediaHost(parsed.hostname)) {
+    return send(res, 400, { error: "image" });
+  }
+  const upstream = await fetch(parsed.href, {
+    headers: {
+      accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+      referer: "https://map.naver.com/",
+      "user-agent": "Mozilla/5.0 (compatible; Gilloe/0.1)",
+    },
+    redirect: "follow",
+  });
+  if (!upstream.ok) {
+    res.writeHead(upstream.status || 502);
+    res.end();
+    return;
+  }
+  const type = upstream.headers.get("content-type") || "image/jpeg";
+  const buf = Buffer.from(await upstream.arrayBuffer());
+  res.writeHead(200, {
+    "content-type": type.startsWith("image/") ? type : "image/jpeg",
+    "cache-control": "public, max-age=86400",
+    "access-control-allow-origin": "*",
+  });
+  res.end(buf);
+}
+
 function send(res, status, body, headers = {}) {
   const json = JSON.stringify(body);
   res.writeHead(status, {
@@ -278,6 +315,11 @@ const server = http.createServer(async (req, res) => {
       const type = name.endsWith(".png") ? "image/png" : name.endsWith(".webp") ? "image/webp" : "image/jpeg";
       res.writeHead(200, { "content-type": type, "cache-control": "public, max-age=86400" });
       res.end(data);
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/media") {
+      await proxyMedia(res, url.searchParams.get("u") || "");
       return;
     }
 

@@ -69,3 +69,14 @@ describe("puzzle images", () => {
     expect(next).not.toBe("station");
   });
 });
+
+describe("photo pieces", () => {
+  it("draws Naver photos as sliced images", async () => {
+    const { pieceMarkup } = await import("./assemble.js");
+    const html = pieceMarkup("piece-2", "mark-tile--large", { imageUrl: "https://ldb-phinf.pstatic.net/a.jpg" }, 2);
+    expect(html).toContain("<img");
+    expect(html).toContain("/api/media?u=");
+    expect(html).toContain("mark-num");
+    expect(html).toContain("2");
+  });
+});

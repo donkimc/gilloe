@@ -15,7 +15,7 @@ import {
   screens as screenList,
   trayCopy,
 } from "../content.js";
-import { gridSizeForCount, outlinePreview, pieceMarkup, piecesForGrid } from "../assemble.js";
+import { gridSizeForCount, outlinePreview, pieceMarkup, piecesForGrid, displayImageUrl } from "../assemble.js";
 import { formatApproxDistance } from "../geo.js";
 import { currentPlace, gridN, placeCount, trayAllowed } from "../state.js";
 
@@ -236,7 +236,7 @@ function previewView(state) {
             ${
               place.photoUrl
                 ? `<a class="tour-naver" href="${escapeHtml(naverMapAppUrl(place))}" data-web="${escapeHtml(naverPlaceUrl(place))}">
-                    <figure class="photo-card"><img src="${escapeHtml(place.photoUrl)}" alt="${escapeHtml(place.name)}" /></figure>
+                    <figure class="photo-card"><img src="${escapeHtml(displayImageUrl(place.photoUrl))}" alt="${escapeHtml(place.name)}" referrerpolicy="no-referrer" /></figure>
                   </a>`
                 : ""
             }
@@ -322,7 +322,7 @@ function placeView(state) {
       ${chrome(state, { showExit: true, showTray: true, showPrev: true })}
       <h1>${place.order}. ${place.name}</h1>
       ${!state.stoppedWalking ? `<p class="warn">${ico("🛑", "길을 멈춘 뒤에 안내를 보세요.")}</p>${btn("stopped", "🛑 멈췄어요")}` : `
-        ${place.photoUrl ? `<figure class="photo-card"><img src="${escapeHtml(place.photoUrl)}" alt="${escapeHtml(place.name)}" /></figure>` : `<p class="muted">등록된 사진이 없습니다.</p>`}
+        ${place.photoUrl ? `<figure class="photo-card"><img src="${escapeHtml(displayImageUrl(place.photoUrl))}" alt="${escapeHtml(place.name)}" referrerpolicy="no-referrer" /></figure>` : `<p class="muted">등록된 사진이 없습니다.</p>`}
         ${place.address ? `<p class="note">${place.address}</p>` : ""}
         <p>${place.blurb || ""}</p>
         <a class="ext" href="${naverPlaceUrl(place)}" target="_blank" rel="noopener noreferrer">${createCopy.naverLink}</a>

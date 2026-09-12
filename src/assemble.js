@@ -167,6 +167,20 @@ function escapeAttr(value) {
   return String(value).replace(/"/g, "&quot;");
 }
 
+export function displayImageUrl(href) {
+  const src = String(href || "").trim();
+  if (!src) return "";
+  try {
+    const host = new URL(src).hostname;
+    if (host === "pstatic.net" || host.endsWith(".pstatic.net")) {
+      return `/api/media?u=${encodeURIComponent(src)}`;
+    }
+  } catch {
+    /* keep original */
+  }
+  return src;
+}
+
 export function puzzleSvg({ jigsaw, clip = "full", crop = false, className = "", n = 2 } = {}) {
   const size = n * 100;
   const art = artInner(jigsaw, n);
@@ -200,13 +214,13 @@ export function pieceMarkup(pieceId, extraClass = "", jigsaw, n = 2) {
   const row = piece?.row ?? 0;
   const col = piece?.col ?? 0;
   const seated = extraClass.includes("mark-tile--seated");
-  if (jigsaw?.imageUrl) {
-    const posX = n <= 1 ? 0 : (col / (n - 1)) * 100;
-    const posY = n <= 1 ? 0 : (row / (n - 1)) * 100;
-    const style = seated
-      ? `left:${(col / n) * 100}%;top:${(row / n) * 100}%;width:${100 / n}%;height:${100 / n}%;background-image:url("${escapeAttr(jigsaw.imageUrl)}");background-size:${n * 100}% ${n * 100}%;background-position:${posX}% ${posY}%`
-      : `background-image:url("${escapeAttr(jigsaw.imageUrl)}");background-size:${n * 100}% ${n * 100}%;background-position:${posX}% ${posY}%`;
-    return `<div class="mark-tile mark-tile--photo ${extraClass}" data-piece="${pieceId}" style="${style}"><span class="mark-num">${piece?.order || ""}</span></div>`;
+  const imageUrl = displayImageUrl(jigsaw?.imageUrl);
+  if (imageUrl) {
+    const box = seated
+      ? `left:${(col / n) * 100}%;top:${(row / n) * 100}%;width:${100 / n}%;height:${100 / n}%`
+      : "";
+    const img = `width:${n * 100}%;height:${n * 100}%;left:${-col * 100}%;top:${-row * 100}%`;
+    return `<div class="mark-tile mark-tile--photo ${extraClass}" data-piece="${pieceId}"${box ? ` style="${box}"` : ""}><img src="${escapeAttr(imageUrl)}" alt="" referrerpolicy="no-referrer" style="${img}" /><span class="mark-num">${piece?.order || ""}</span></div>`;
   }
   const crop = !seated;
   return `<div class="mark-tile ${extraClass}" data-piece="${pieceId}">${puzzleSvg({
