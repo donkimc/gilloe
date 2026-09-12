@@ -27,6 +27,7 @@ let previewRaf = 0;
 let previewTour = false;
 let previewStopIndex = 0;
 let previewCard = false;
+let previewDone = false;
 let previewStops = [];
 let tourToken = 0;
 let mapReady = false;
@@ -228,11 +229,13 @@ function stopPreviewTour() {
   previewPlaying = false;
   previewTour = false;
   previewCard = false;
+  previewDone = false;
   previewStopIndex = 0;
   previewStops = [];
   if (previewRaf) cancelAnimationFrame(previewRaf);
   previewRaf = 0;
   window.visualViewport?.removeEventListener("resize", onTourViewport);
+  map.setPlaceSelect(null);
   map.showWalker(false);
   mapHost.classList.remove("is-tour");
   document.getElementById("app")?.classList.remove("is-tour");
@@ -243,6 +246,7 @@ function startPreviewTour() {
   previewTour = true;
   previewPlaying = true;
   previewCard = false;
+  previewDone = false;
   previewStopIndex = 0;
   mapHost.classList.add("is-tour");
   document.getElementById("app")?.classList.add("is-tour");
@@ -254,6 +258,7 @@ function startPreviewTour() {
     map.showWalker(true);
     map.setLineProgress(0);
     previewStops = placeProgresses(map.routeCoords(), state.game.places);
+    map.setPlaceSelect(onTourPlaceSelect);
     runTourLeg(0, 0);
   };
   window.requestAnimationFrame(() => {
@@ -263,6 +268,29 @@ function startPreviewTour() {
       });
     });
   });
+}
+
+function onTourPlaceSelect(place) {
+  if (!previewTour || previewPlaying || !place) return;
+  tourToken += 1;
+  previewStopIndex = Math.max(0, (place.order || 1) - 1);
+  previewCard = true;
+  map.setActive(place.order);
+  paint();
+}
+
+function finishTourStay() {
+  tourToken += 1;
+  previewPlaying = false;
+  previewCard = false;
+  previewDone = true;
+  if (previewRaf) cancelAnimationFrame(previewRaf);
+  previewRaf = 0;
+  map.setLineProgress(1);
+  map.showWalker(false);
+  map.setActive(null);
+  map.fitTour();
+  paint();
 }
 
 function revealTourStop(index) {
@@ -276,16 +304,14 @@ function revealTourStop(index) {
   window.setTimeout(() => {
     if (token !== tourToken || !previewTour) return;
     advanceTour();
-  }, 2400);
+  }, 4000);
 }
 
 function advanceTour() {
   if (!previewTour || !state.game) return;
   const next = previewStopIndex + (previewCard ? 1 : 0);
   if (previewCard && next >= (state.game.places || []).length) {
-    stopPreviewTour();
-    if (mapReady) map.focusOverview(state.game.places);
-    paint();
+    finishTourStay();
     return;
   }
   const from = previewCard ? previewStops[previewStopIndex] ?? 0 : 0;
@@ -301,7 +327,7 @@ function runTourLeg(fromT, stopIndex) {
   const toT = previewStops[stopIndex] ?? 1;
   const start = performance.now();
   const span = Math.max(0.04, toT - fromT);
-  const dur = Math.max(1100, span * 5200);
+  const dur = Math.max(2600, span * 5200 + 1600);
   const tick = (now) => {
     if (!previewTour) return;
     const t = Math.min(1, (now - start) / dur);
@@ -311,6 +337,19 @@ function runTourLeg(fromT, stopIndex) {
   };
   if (previewRaf) cancelAnimationFrame(previewRaf);
   previewRaf = requestAnimationFrame(tick);
+}
+
+function openNaverMap(app, web) {
+  const https = web || app;
+  const mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || "");
+  if (mobile && app && String(app).startsWith("nmap:")) {
+    window.location.href = app;
+    window.setTimeout(() => {
+      if (document.visibilityState === "visible" && https) window.open(https, "_blank", "noopener,noreferrer");
+    }, 900);
+    return;
+  }
+  if (https) window.open(https, "_blank", "noopener,noreferrer");
 }
 
 function flyPieceThen(done) {
@@ -355,6 +394,7 @@ function paint() {
     previewTour,
     previewStopIndex,
     previewCard,
+    previewDone,
     simPanel: sim.panel,
     simMinimized,
   });
@@ -364,6 +404,13 @@ function paint() {
 
 function bindUi() {
   ui.onclick = (event) => {
+    const naver = event.target.closest("a.tour-naver");
+    if (naver) {
+      event.preventDefault();
+      event.stopPropagation();
+      openNaverMap(naver.getAttribute("href"), naver.getAttribute("data-web"));
+      return;
+    }
     const simBtn = event.target.closest("[data-sim]");
     if (simBtn) {
       handleSim(simBtn.dataset.sim, simBtn.dataset.value);

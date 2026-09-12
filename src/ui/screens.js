@@ -7,6 +7,7 @@ import {
   gps,
   osmDirectionsUrl,
   naverPlaceUrl,
+  naverMapAppUrl,
   pieceCopy,
   previewCopy,
   routeMeta,
@@ -219,22 +220,32 @@ function previewView(state) {
   const game = state.game;
   if (state.previewTour) {
     const place = game.places?.[state.previewStopIndex] || game.places?.[0];
+    const skippable = Boolean(state.previewCard && !state.previewDone);
     return `
       <main id="main" class="screen map-screen map-screen--tour">
         <div class="tour-bar">
-          ${iconBtn("close-preview", ICO_EXIT, previewCopy.closeTour)}
+          ${iconBtn("close-preview", ICO_PREV, previewCopy.closeTour, "icon-btn--back")}
         </div>
         ${
-          state.previewCard
-            ? `<article class="tour-card" data-action="tour-next">
+          state.previewCard && place
+            ? `<article class="tour-card"${skippable ? ` data-action="tour-next"` : ""}>
             <p class="kicker">${place.order} / ${game.placeCount}</p>
             <h2>${escapeHtml(place.name)}</h2>
-            ${place.photoUrl ? `<figure class="photo-card"><img src="${escapeHtml(place.photoUrl)}" alt="" /></figure>` : ""}
+            ${
+              place.photoUrl
+                ? `<a class="tour-naver" href="${escapeHtml(naverMapAppUrl(place))}" data-web="${escapeHtml(naverPlaceUrl(place))}">
+                    <figure class="photo-card"><img src="${escapeHtml(place.photoUrl)}" alt="${escapeHtml(place.name)}" /></figure>
+                  </a>`
+                : ""
+            }
             ${place.address ? `<p class="note">${escapeHtml(place.address)}</p>` : ""}
             ${place.blurb ? `<p>${escapeHtml(place.blurb)}</p>` : ""}
-            <p class="muted">${previewCopy.nextStop}</p>
+            <a class="tour-naver tour-naver--text" href="${escapeHtml(naverMapAppUrl(place))}" data-web="${escapeHtml(naverPlaceUrl(place))}">${previewCopy.openNaver}</a>
+            ${skippable ? `<p class="muted">${previewCopy.nextStop}</p>` : ""}
           </article>`
-            : `<p class="tour-status">${previewCopy.playing}</p>`
+            : state.previewDone
+              ? ""
+              : `<p class="tour-status">${previewCopy.playing}</p>`
         }
       </main>
     `;

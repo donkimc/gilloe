@@ -89,6 +89,24 @@ describe("rendered flow", () => {
     expect(html).toContain("오늘은 어디로? 길로");
   });
 
+  it("keeps the preview map after the tour with a back control", () => {
+    const html = render({
+      ...createInitialState(),
+      game: sampleGame,
+      screen: "preview",
+      previewTour: true,
+      previewDone: true,
+      previewCard: true,
+      previewStopIndex: 0,
+    });
+    expect(html).toContain('data-action="close-preview"');
+    expect(html).toContain("게임으로");
+    expect(html).toContain("네이버 지도");
+    expect(html).toContain("nmap://place");
+    expect(html).not.toContain("탭하면 다음 장소");
+    expect(html).not.toContain("경로 미리보기");
+  });
+
   it("offers a route preview instead of skip", () => {
     const html = render({
       ...createInitialState(),

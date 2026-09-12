@@ -19,6 +19,7 @@ export function createMapService() {
   let tileLayer = null;
   let onTileError = null;
   let coords = [];
+  let placeSelect = null;
 
   function pinIcon(num, active) {
     return L.divIcon({
@@ -60,12 +61,14 @@ export function createMapService() {
           lineJoin: "round",
         }).addTo(map);
 
-        markers = places.map((place) =>
-          L.marker([place.lat, place.lng], {
+        markers = places.map((place) => {
+          const marker = L.marker([place.lat, place.lng], {
             icon: pinIcon(place.order, false),
             title: place.name,
-          }).addTo(map),
-        );
+          }).addTo(map);
+          marker.on("click", () => placeSelect?.(place));
+          return marker;
+        });
 
         playerMarker = L.circleMarker([places[0].lat, places[0].lng], {
           radius: 7,
@@ -158,6 +161,9 @@ export function createMapService() {
     routeCoords() {
       return coords;
     },
+    setPlaceSelect(fn) {
+      placeSelect = fn;
+    },
     showWalker(show) {
       walker?.setStyle({ opacity: show ? 1 : 0 });
     },
@@ -173,6 +179,7 @@ export function createMapService() {
       walker = null;
       tileLayer = null;
       coords = [];
+      placeSelect = null;
     },
   };
 }

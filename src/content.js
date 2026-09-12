@@ -87,8 +87,9 @@ export const previewCopy = {
   play: "경로 미리보기",
   startWalk: "걷기 시작",
   playing: "경로를 따라가는 중",
-  closeTour: "미리보기 닫기",
+  closeTour: "게임으로",
   nextStop: "탭하면 다음 장소",
+  openNaver: "네이버 지도",
 };
 
 export const createCopy = {
@@ -146,4 +147,12 @@ export function osmDirectionsUrl(place) {
 
 export function naverPlaceUrl(place) {
   return place.naverUrl || `https://map.naver.com/p?c=16,${place.lng},${place.lat},0,0,0,dh`;
+}
+
+export function naverMapAppUrl(place) {
+  if (Number.isFinite(place?.lat) && Number.isFinite(place?.lng)) {
+    const name = encodeURIComponent(place.name || "장소");
+    return `nmap://place?lat=${place.lat}&lng=${place.lng}&name=${name}&appname=gilloe`;
+  }
+  return naverPlaceUrl(place);
 }
