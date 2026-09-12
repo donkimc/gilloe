@@ -74,13 +74,11 @@ describe("photo pieces", () => {
   it("draws Naver photos as sliced images", async () => {
     const { pieceMarkup } = await import("./assemble.js");
     const html = pieceMarkup("piece-2", "mark-tile--large", { imageUrl: "https://ldb-phinf.pstatic.net/a.jpg" }, 2);
-    expect(html).toContain("<img");
+    expect(html).toContain("<canvas");
     expect(html).toContain("/api/media?u=");
-    expect(html).toContain("background-image:url(");
-    expect(html).toContain("background-size:200% 200%");
-    expect(html).toContain("background-position:100% 0%");
-    expect(html).toContain("data-photo=");
-    expect(html).toContain("margin-left:-100%");
+    expect(html).not.toContain("background-image");
+    expect(html).toContain('data-col="1"');
+    expect(html).toContain('data-row="0"');
     expect(html).toContain("mark-num");
     expect(html).toContain("2");
   });

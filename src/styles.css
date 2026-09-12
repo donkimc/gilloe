@@ -660,17 +660,10 @@ body {
   background-repeat: no-repeat;
   border-radius: 8px;
 }
-.mark-tile--photo img {
+.mark-photo-canvas {
   display: block;
-  position: relative;
-  z-index: 0;
-  height: auto;
-  aspect-ratio: 1;
-  object-fit: cover;
-  max-width: none;
-  max-height: none;
-  border: 0;
-  pointer-events: none;
+  width: 100%;
+  height: 100%;
 }
 .mark-num {
   position: absolute;

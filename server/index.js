@@ -318,7 +318,12 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (req.method === "GET" && url.pathname === "/api/media") {
+    if ((req.method === "GET" || req.method === "HEAD") && url.pathname === "/api/media") {
+      if (req.method === "HEAD") {
+        res.writeHead(200, { "content-type": "image/jpeg", "cache-control": "public, max-age=86400" });
+        res.end();
+        return;
+      }
       await proxyMedia(res, url.searchParams.get("u") || "");
       return;
     }
