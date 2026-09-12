@@ -148,6 +148,20 @@ describe("rendered flow", () => {
     expect(html).toContain("piece-1");
   });
 
+  it("shows the completed photo on the ending screen", () => {
+    const html = render({
+      ...createInitialState(),
+      game: {
+        ...sampleGame,
+        jigsaw: { source: "final-place", imageUrl: "https://ldb-phinf.pstatic.net/a.jpg" },
+      },
+      screen: "resolution",
+    });
+    expect(html).toContain("완성");
+    expect(html).toContain("/api/media?u=");
+    expect(html).not.toContain("맞춘 그림은 바로 앞");
+  });
+
   it("lets the simulator panel collapse", () => {
     const open = render({ ...createInitialState(), simPanel: true, simMinimized: false });
     expect(open).toContain("접기");

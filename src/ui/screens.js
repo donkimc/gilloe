@@ -15,7 +15,7 @@ import {
   screens as screenList,
   trayCopy,
 } from "../content.js";
-import { gridSizeForCount, outlinePreview, pieceMarkup, piecesForGrid, displayImageUrl } from "../assemble.js";
+import { gridSizeForCount, assembledPreview, pieceMarkup, piecesForGrid, displayImageUrl } from "../assemble.js";
 import { formatApproxDistance } from "../geo.js";
 import { currentPlace, gridN, placeCount, trayAllowed } from "../state.js";
 
@@ -384,8 +384,7 @@ function resolutionView(state) {
     <main id="main" class="screen card-screen">
       ${chrome(state)}
       <h1>${ending.title}</h1>
-      <div class="mark-preview mark-preview--done">${outlinePreview(n)}</div>
-      <p class="note">맞춘 그림은 바로 앞 화면의 조각판에 있습니다. 시작 전에는 전체를 보여 주지 않습니다.</p>
+      <div class="mark-preview mark-preview--done">${assembledPreview(jigsaw(state), n)}</div>
       <p>${ending.thanks}</p>
       ${btn("reset", copy.backLibrary)}
     </main>

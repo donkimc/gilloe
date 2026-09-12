@@ -71,15 +71,24 @@ describe("puzzle images", () => {
 });
 
 describe("photo pieces", () => {
-  it("draws Naver photos as sliced images", async () => {
+  it("clips Naver photos to a jigsaw piece", async () => {
     const { pieceMarkup } = await import("./assemble.js");
     const html = pieceMarkup("piece-2", "mark-tile--large", { imageUrl: "https://ldb-phinf.pstatic.net/a.jpg" }, 2);
-    expect(html).toContain("<canvas");
+    expect(html).toContain("<image");
     expect(html).toContain("/api/media?u=");
-    expect(html).not.toContain("background-image");
-    expect(html).toContain('data-col="1"');
-    expect(html).toContain('data-row="0"');
+    expect(html).toContain("clipPath");
     expect(html).toContain("mark-num");
     expect(html).toContain("2");
+  });
+});
+
+describe("jigsaw edges", () => {
+  it("interlocks piece 2 with piece 4 instead of leaving a circle", async () => {
+    const { jigsawCellPath } = await import("./assemble.js");
+    const two = jigsawCellPath(0, 1, 2);
+    const four = jigsawCellPath(1, 1, 2);
+    expect(four).toContain("134,82");
+    expect(four).not.toContain("134,118");
+    expect(two).toContain("166,82");
   });
 });

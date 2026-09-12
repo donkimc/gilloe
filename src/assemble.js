@@ -62,9 +62,9 @@ export function jigsawCellPath(row, col, n) {
   if (row === 0) {
     parts.push(`H${x1}`);
   } else if (southIsTab(row - 1, col)) {
-    parts.push(`H${mx - 16}`, `C${mx - 16},${y0 - tab} ${mx + 16},${y0 - tab} ${mx + 16},${y0}`, `H${x1}`);
-  } else {
     parts.push(`H${mx - 16}`, `C${mx - 16},${y0 + tab} ${mx + 16},${y0 + tab} ${mx + 16},${y0}`, `H${x1}`);
+  } else {
+    parts.push(`H${mx - 16}`, `C${mx - 16},${y0 - tab} ${mx + 16},${y0 - tab} ${mx + 16},${y0}`, `H${x1}`);
   }
 
   if (col === n - 1) {
@@ -212,24 +212,26 @@ export function markSvg({ clip = "full", className = "", jigsaw, n = 2 } = {}) {
 
 export function pieceMarkup(pieceId, extraClass = "", jigsaw, n = 2) {
   const piece = pieceById(pieceId, n);
-  const row = piece?.row ?? 0;
-  const col = piece?.col ?? 0;
   const seated = extraClass.includes("mark-tile--seated");
   const imageUrl = displayImageUrl(jigsaw?.imageUrl);
-  if (imageUrl) {
-    const box = seated
-      ? `left:${(col / n) * 100}%;top:${(row / n) * 100}%;width:${100 / n}%;height:${100 / n}%`
-      : "";
-    return `<div class="mark-tile mark-tile--photo ${extraClass}" data-piece="${pieceId}" data-photo="${escapeAttr(imageUrl)}" data-grid="${n}" data-col="${col}" data-row="${row}"${box ? ` style="${box}"` : ""}><canvas class="mark-photo-canvas" width="256" height="256"></canvas><span class="mark-num">${piece?.order || ""}</span></div>`;
-  }
-  const crop = !seated;
-  return `<div class="mark-tile ${extraClass}" data-piece="${pieceId}">${puzzleSvg({
+  const photoAttr = imageUrl ? ` data-photo="${escapeAttr(imageUrl)}"` : "";
+  return `<div class="mark-tile${imageUrl ? " mark-tile--photo" : ""} ${extraClass}" data-piece="${pieceId}"${photoAttr}>${puzzleSvg({
     jigsaw,
     clip: pieceId,
-    crop,
+    crop: !seated,
     className: extraClass,
     n,
-  })}</div>`;
+  })}${imageUrl ? `<span class="mark-num">${piece?.order || ""}</span>` : ""}</div>`;
+}
+
+export function assembledPreview(jigsaw, n = 2) {
+  const size = n * 100;
+  const art = artInner(jigsaw, n);
+  const lines = piecesForGrid(n)
+    .map((p) => `<path d="${jigsawCellPath(p.row, p.col, n)}" fill="none" stroke="#d4a054" stroke-width="1.6"/>`)
+    .join("");
+  const photo = displayImageUrl(jigsaw?.imageUrl);
+  return `<svg class="mark-svg" viewBox="0 0 ${size} ${size}" role="img" aria-label="완성한 그림"${photo ? ` data-photo="${escapeAttr(photo)}"` : ""}>${art}${lines}</svg>`;
 }
 
 export function outlinePreview(n = 2) {

@@ -411,40 +411,36 @@ async function mediaBlob(src) {
   return blob;
 }
 
-function drawPieceCanvas(canvas, bitmap, col, row, n) {
-  const size = 256;
-  canvas.width = size;
-  canvas.height = size;
-  const sw = bitmap.width / n;
-  const sh = bitmap.height / n;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(bitmap, col * sw, row * sh, sw, sh, 0, 0, size, size);
-}
-
 async function hydrateMediaImages(root) {
-  const tiles = [...root.querySelectorAll(".mark-tile--photo[data-photo]")];
-  const images = [...root.querySelectorAll("img")].filter((img) => (img.getAttribute("src") || "").includes("/api/media"));
-  const srcs = new Set([...tiles.map((tile) => tile.dataset.photo), ...images.map((img) => img.getAttribute("src"))]);
+  const mediaNodes = [
+    ...root.querySelectorAll("img"),
+    ...root.querySelectorAll("image"),
+  ].filter((node) => {
+    const href = node.getAttribute("src") || node.getAttribute("href") || "";
+    return href.includes("/api/media");
+  });
+  const tiles = [...root.querySelectorAll("[data-photo]")];
+  const srcs = new Set([
+    ...mediaNodes.map((node) => node.getAttribute("src") || node.getAttribute("href")),
+    ...tiles.map((tile) => tile.dataset.photo),
+  ]);
   await Promise.all(
     [...srcs].map(async (src) => {
       if (!src) return;
       try {
-        const blob = await mediaBlob(src);
+        await mediaBlob(src);
         const url = mediaBlobUrls.get(src);
-        images.filter((img) => img.getAttribute("src") === src).forEach((img) => {
-          img.src = url;
-        });
-        const match = tiles.filter((tile) => tile.dataset.photo === src);
-        if (!match.length) return;
-        const bitmap = await createImageBitmap(blob);
-        match.forEach((tile) => {
-          const canvas = tile.querySelector("canvas");
-          if (!canvas) return;
-          const n = Number(tile.dataset.grid) || 2;
-          drawPieceCanvas(canvas, bitmap, Number(tile.dataset.col) || 0, Number(tile.dataset.row) || 0, n);
-        });
+        mediaNodes
+          .filter((node) => (node.getAttribute("src") || node.getAttribute("href")) === src)
+          .forEach((node) => {
+            if (node.tagName.toLowerCase() === "img") node.src = url;
+            else {
+              node.setAttribute("href", url);
+              node.setAttributeNS("http://www.w3.org/1999/xlink", "href", url);
+            }
+          });
       } catch {
-        /* cream tile remains */
+        /* keep original src */
       }
     }),
   );
