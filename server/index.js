@@ -16,7 +16,8 @@ import {
 import { fetchOsrmLine, withWalkingLine } from "./osrm.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, "data");
+const SEED_FILE = path.join(__dirname, "data", "games.json");
+const DATA_DIR = process.env.GILLOE_DATA_DIR || path.join(__dirname, "data");
 const GAMES_FILE = path.join(DATA_DIR, "games.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const DIST_DIR = path.join(__dirname, "..", "dist");
@@ -40,19 +41,33 @@ const MIME = {
   ".woff2": "font/woff2",
 };
 
-async function readGames() {
+async function readJsonArray(file) {
   try {
-    const raw = await fs.readFile(GAMES_FILE, "utf8");
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(await fs.readFile(file, "utf8"));
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
 }
 
+async function readGames() {
+  return readJsonArray(GAMES_FILE);
+}
+
 async function writeGames(games) {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(GAMES_FILE, JSON.stringify(games, null, 2));
+}
+
+/** Copy shipped hunts into the persist folder when it is empty (new volume / first boot). */
+async function ensureGamesFile() {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.mkdir(UPLOAD_DIR, { recursive: true });
+  const existing = await readJsonArray(GAMES_FILE);
+  if (existing.length) return;
+  const seed = await readJsonArray(SEED_FILE);
+  if (!seed.length || GAMES_FILE === SEED_FILE) return;
+  await fs.writeFile(GAMES_FILE, JSON.stringify(seed, null, 2));
 }
 
 function isAllowedMediaHost(hostname) {
@@ -429,7 +444,8 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-export function startApi() {
+export async function startApi() {
+  await ensureGamesFile();
   server.on("error", (error) => {
     if (error.code === "EADDRINUSE") {
       console.log(`Gilloe API already running on ${PORT}`);
