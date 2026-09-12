@@ -88,6 +88,7 @@ export const previewCopy = {
   startWalk: "걷기 시작",
   playing: "경로를 따라가는 중",
   closeTour: "게임으로",
+  replay: "다시 보기",
   nextStop: "탭하면 다음 장소",
   openNaver: "네이버 지도",
 };

@@ -242,25 +242,38 @@ function stopPreviewTour() {
 }
 
 function startPreviewTour() {
-  if (!state.game || previewTour) return;
+  if (!state.game) return;
+  const firstOpen = !previewTour;
   previewTour = true;
+  mapHost.classList.add("is-tour");
+  document.getElementById("app")?.classList.add("is-tour");
+  if (firstOpen) window.visualViewport?.addEventListener("resize", onTourViewport);
+  restartTourTrace(firstOpen);
+}
+
+function restartTourTrace(waitLayout) {
+  tourToken += 1;
   previewPlaying = true;
   previewCard = false;
   previewDone = false;
   previewStopIndex = 0;
-  mapHost.classList.add("is-tour");
-  document.getElementById("app")?.classList.add("is-tour");
-  window.visualViewport?.addEventListener("resize", onTourViewport);
+  if (previewRaf) cancelAnimationFrame(previewRaf);
+  previewRaf = 0;
   paint();
   const startTrace = () => {
     if (!previewTour) return;
     map.fitTour();
     map.showWalker(true);
     map.setLineProgress(0);
+    map.setActive(null);
     previewStops = placeProgresses(map.routeCoords(), state.game.places);
     map.setPlaceSelect(onTourPlaceSelect);
     runTourLeg(0, 0);
   };
+  if (!waitLayout && mapReady) {
+    startTrace();
+    return;
+  }
   window.requestAnimationFrame(() => {
     ensureMap().then(() => {
       window.requestAnimationFrame(() => {
@@ -601,6 +614,10 @@ async function handleAction(action, dataset) {
       break;
     case "start-preview":
       startPreviewTour();
+      break;
+    case "replay-preview":
+      if (previewTour) restartTourTrace(false);
+      else startPreviewTour();
       break;
     case "close-preview":
       stopPreviewTour();

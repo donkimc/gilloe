@@ -133,7 +133,7 @@ export function createMapService() {
       map.fitBounds(L.latLngBounds(latlngs), {
         animate: false,
         maxZoom: 16,
-        paddingTopLeft: [14, 92],
+        paddingTopLeft: [14, 120],
         paddingBottomRight: [side, 24],
       });
       drawnLine?.bringToFront();

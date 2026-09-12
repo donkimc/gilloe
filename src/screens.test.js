@@ -100,7 +100,9 @@ describe("rendered flow", () => {
       previewStopIndex: 0,
     });
     expect(html).toContain('data-action="close-preview"');
+    expect(html).toContain('data-action="replay-preview"');
     expect(html).toContain("게임으로");
+    expect(html).toContain("다시 보기");
     expect(html).toContain("네이버 지도");
     expect(html).toContain("nmap://place");
     expect(html).not.toContain("탭하면 다음 장소");

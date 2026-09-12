@@ -54,6 +54,7 @@ function iconBtn(action, svg, label, extra = "") {
 }
 
 const ICO_PREV = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.7 4.3 7 13l8.7 8.7 1.6-1.6L10.2 13l7.1-7.1z"/></svg>`;
+const ICO_REPLAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 6V3L7 8l5 5V10c3.3 0 6 2.7 6 6a6 6 0 0 1-10.2 4.3l-1.5 1.6A8 8 0 0 0 20 16c0-4.4-3.6-8-8-8z"/></svg>`;
 const ICO_TRAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.2" fill="currentColor"/><rect x="13" y="3" width="8" height="8" rx="1.2" fill="currentColor" opacity=".75"/><rect x="3" y="13" width="8" height="8" rx="1.2" fill="currentColor" opacity=".75"/><rect x="13" y="13" width="8" height="8" rx="1.2" fill="currentColor"/></svg>`;
 const ICO_EXIT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z"/></svg>`;
 
@@ -224,6 +225,7 @@ function previewView(state) {
     return `
       <main id="main" class="screen map-screen map-screen--tour">
         <div class="tour-bar">
+          ${iconBtn("replay-preview", ICO_REPLAY, previewCopy.replay, "icon-btn--back")}
           ${iconBtn("close-preview", ICO_PREV, previewCopy.closeTour, "icon-btn--back")}
         </div>
         ${
