@@ -45,8 +45,20 @@ export function createMapService() {
 
         coords = Array.isArray(routeLine) && routeLine.length >= 2 ? routeLine : places.map((p) => [p.lng, p.lat]);
         const latlngs = geoJsonToLatLngs(coords);
-        ghostLine = L.polyline(latlngs, { color: "#8a7044", weight: 6, opacity: 0.45 }).addTo(map);
-        drawnLine = L.polyline([], { color: "#d4a054", weight: 5, opacity: 1 }).addTo(map);
+        ghostLine = L.polyline(latlngs, {
+          color: "#8a7044",
+          weight: 7,
+          opacity: 0.4,
+          lineCap: "round",
+          lineJoin: "round",
+        }).addTo(map);
+        drawnLine = L.polyline([], {
+          color: "#d4a054",
+          weight: 6,
+          opacity: 1,
+          lineCap: "round",
+          lineJoin: "round",
+        }).addTo(map);
 
         markers = places.map((place) =>
           L.marker([place.lat, place.lng], {
@@ -110,13 +122,26 @@ export function createMapService() {
       accuracyCircle.setLatLng([lat, lng]);
       if (Number.isFinite(accuracy)) accuracyCircle.setRadius(accuracy).setStyle({ opacity: 0.6 });
     },
-    setLineProgress(t, { follow = false } = {}) {
+    fitTour() {
+      if (!map || !coords.length) return;
+      map.invalidateSize({ animate: false });
+      const latlngs = geoJsonToLatLngs(coords);
+      const side = Math.min(200, Math.max(108, Math.round(window.innerWidth * 0.36)));
+      map.fitBounds(L.latLngBounds(latlngs), {
+        animate: false,
+        maxZoom: 16,
+        paddingTopLeft: [14, 92],
+        paddingBottomRight: [side, 24],
+      });
+      drawnLine?.bringToFront();
+      walker?.bringToFront();
+    },
+    setLineProgress(t) {
       if (!coords.length || !drawnLine) return;
       const sliced = sliceLine(coords, t);
       drawnLine.setLatLngs(sliced.map(([lng, lat]) => [lat, lng]));
       const { coord } = pointAlong(coords, t);
       walker?.setLatLng([coord[1], coord[0]]);
-      if (follow && map) map.panTo([coord[1], coord[0]], { animate: false, duration: 0 });
     },
     prependLine(prefix) {
       if (!map || !Array.isArray(prefix) || prefix.length < 1) return;

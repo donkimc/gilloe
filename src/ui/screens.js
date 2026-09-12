@@ -231,7 +231,7 @@ function previewView(state) {
             <h2>${escapeHtml(place.name)}</h2>
             ${place.photoUrl ? `<figure class="photo-card"><img src="${escapeHtml(place.photoUrl)}" alt="" /></figure>` : ""}
             ${place.address ? `<p class="note">${escapeHtml(place.address)}</p>` : ""}
-            <p>${escapeHtml(place.blurb || "")}</p>
+            ${place.blurb ? `<p>${escapeHtml(place.blurb)}</p>` : ""}
             <p class="muted">${previewCopy.nextStop}</p>
           </article>`
             : `<p class="tour-status">${previewCopy.playing}</p>`

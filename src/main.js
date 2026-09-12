@@ -123,15 +123,12 @@ function syncDevices(prev, next) {
   document.getElementById("app")?.classList.toggle("is-tour", Boolean(previewTour && showMap));
   if (showMap) {
     ensureMap().then(() => {
+      if (next.screen === "preview" && previewTour) return;
       map.invalidate();
-      if (next.screen === "preview") {
-        if (!previewTour) map.focusOverview(next.game.places);
-      } else {
-        stopPreviewTour();
-        map.focusStop(currentPlace(next));
-      }
+      if (next.screen === "preview") map.focusOverview(next.game.places);
+      else map.focusStop(currentPlace(next));
     });
-  } else {
+  } else if (previewTour) {
     stopPreviewTour();
   }
 }
@@ -204,7 +201,7 @@ location.onFix((fix) => {
 });
 
 async function addApproach(fix) {
-  if (approachAdded || !state.game || !mapReady) return;
+  if (approachAdded || previewTour || !state.game || !mapReady) return;
   const first = state.game.places?.[0];
   if (!first || !Number.isFinite(fix?.lat) || !Number.isFinite(fix?.lng)) return;
   if (distanceMeters({ lat: fix.lat, lng: fix.lng }, first) < 50) {
@@ -222,6 +219,10 @@ async function addApproach(fix) {
   }
 }
 
+function onTourViewport() {
+  if (previewTour && mapReady) map.fitTour();
+}
+
 function stopPreviewTour() {
   tourToken += 1;
   previewPlaying = false;
@@ -231,6 +232,7 @@ function stopPreviewTour() {
   previewStops = [];
   if (previewRaf) cancelAnimationFrame(previewRaf);
   previewRaf = 0;
+  window.visualViewport?.removeEventListener("resize", onTourViewport);
   map.showWalker(false);
   mapHost.classList.remove("is-tour");
   document.getElementById("app")?.classList.remove("is-tour");
@@ -244,20 +246,21 @@ function startPreviewTour() {
   previewStopIndex = 0;
   mapHost.classList.add("is-tour");
   document.getElementById("app")?.classList.add("is-tour");
+  window.visualViewport?.addEventListener("resize", onTourViewport);
   paint();
+  const startTrace = () => {
+    if (!previewTour) return;
+    map.fitTour();
+    map.showWalker(true);
+    map.setLineProgress(0);
+    previewStops = placeProgresses(map.routeCoords(), state.game.places);
+    runTourLeg(0, 0);
+  };
   window.requestAnimationFrame(() => {
     ensureMap().then(() => {
-      if (!previewTour) return;
-      map.invalidate();
-      map.showWalker(true);
-      map.setLineProgress(0, { follow: true });
-      previewStops = placeProgresses(map.routeCoords(), state.game.places);
-      const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-      if (reduced) {
-        revealTourStop(0);
-        return;
-      }
-      runTourLeg(0, 0);
+      window.requestAnimationFrame(() => {
+        window.setTimeout(startTrace, 120);
+      });
     });
   });
 }
@@ -266,7 +269,8 @@ function revealTourStop(index) {
   previewStopIndex = index;
   previewCard = true;
   previewPlaying = false;
-  map.setLineProgress(previewStops[index] ?? 1, { follow: true });
+  map.setLineProgress(previewStops[index] ?? 1);
+  map.setActive((state.game.places?.[index]?.order) ?? index + 1);
   paint();
   const token = tourToken;
   window.setTimeout(() => {
@@ -290,11 +294,6 @@ function advanceTour() {
   previewPlaying = true;
   previewStopIndex = index;
   paint();
-  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  if (reduced) {
-    revealTourStop(index);
-    return;
-  }
   runTourLeg(from, index);
 }
 
@@ -302,11 +301,11 @@ function runTourLeg(fromT, stopIndex) {
   const toT = previewStops[stopIndex] ?? 1;
   const start = performance.now();
   const span = Math.max(0.04, toT - fromT);
-  const dur = Math.max(900, span * 4800);
+  const dur = Math.max(1100, span * 5200);
   const tick = (now) => {
     if (!previewTour) return;
     const t = Math.min(1, (now - start) / dur);
-    map.setLineProgress(fromT + (toT - fromT) * t, { follow: true });
+    map.setLineProgress(fromT + (toT - fromT) * t);
     if (t < 1) previewRaf = requestAnimationFrame(tick);
     else revealTourStop(stopIndex);
   };
