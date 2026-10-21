@@ -824,3 +824,76 @@ legend { font-weight: 700; margin-bottom: 0.35rem; }
   .map-host { height: 42vh; }
   .map-host.is-tour { height: 100%; }
 }
+
+/* Gilloe: warm cartographic identity, shared across the walking experience. */
+:root { --bg:#101e2b; --paper:#f4efdf; --amber:#e5b35d; --text:#f6f2e8; --muted:#b4bfc4; --radius:20px; }
+body { background:radial-gradient(ellipse at 80% 0%,#203545 0%,#101e2b 65%); }
+button, input { font:inherit; }
+button { cursor:pointer; }
+button:disabled { cursor:default; }
+.btn { min-height:52px; padding:14px 20px; border-radius:12px; transition:background .18s,transform .18s; }
+.btn:hover { background:#efc984; }
+.btn--ghost { border-color:#64717b; }
+.btn--ghost:hover { background:#263b4b; }
+.screen { max-width:34rem; padding:28px 24px 64px; }
+.screen h1 { letter-spacing:-.045em; font-size:1.85rem; line-height:1.35; }
+.screen p { line-height:1.7; word-break:keep-all; }
+.proto-banner { background:#24333d; border-bottom:1px solid #40505a; color:#e6c791; font-size:12px; padding:9px 16px; }
+.top { justify-content:space-between; padding-bottom:18px; margin-bottom:24px; border-bottom:1px solid #3b4a54; }
+.brand { font-size:1.35rem; }
+.icon-btn { background:#243746; border:1px solid #3b4d59; }
+.loc { background:#203341; border:1px solid #40515c; padding:16px 20px; }
+.loc p { margin:5px 0; }
+.field { margin:24px 0; }
+.field span,legend { font-size:14px; color:#e2d3b7; margin-bottom:10px; }
+.field input[type="text"],.field input[type="url"] { min-height:54px; padding:14px; background:#192c3b; border-color:#52616a; }
+fieldset { padding:18px; border:1px solid #43515c; border-radius:16px; margin:22px 0; }
+.chip { background:#243746; border-radius:10px; padding:10px 14px; }
+input { accent-color:var(--amber); }
+.safety li { background:#203341; border:1px solid #3d4e59; padding:16px; border-radius:12px; margin:12px 0; line-height:1.65; }
+.overlay-card { padding:28px; box-shadow:0 24px 100px #0008; }
+.overlay-card p { line-height:1.7; }
+.overlay-card .muted { color:#655c4b; }
+.library-screen { max-width:1200px; padding:0 48px; }
+.home-nav { display:flex; justify-content:space-between; align-items:center; padding:28px 0; border-bottom:1px solid #ffffff20; }
+.wordmark { color:var(--text); text-decoration:none; font-size:27px; letter-spacing:-1.5px; font-weight:800; display:inline-flex; align-items:center; gap:10px; }
+.brand-mark { background:var(--amber); color:var(--bg); width:36px; height:36px; border-radius:11px; text-align:center; line-height:32px; font-size:29px; }
+.nav-caption { font-size:13px; color:var(--muted); }
+.home-hero { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:56px; padding:68px 0 54px; }
+.kicker { color:var(--amber); font-size:12px; font-weight:700; letter-spacing:.1em; }
+.library-screen .home-title { font-size:15px; margin:0; color:var(--muted); gap:8px; }
+.home-title .tagline { font-size:13px; font-weight:400; color:var(--muted); }
+.library-screen .hero-heading { font-size:clamp(32px,3.6vw,48px); font-weight:750; letter-spacing:-.065em; line-height:1.25; margin:24px 0; }
+.hero-copy .lead { font-size:15px; line-height:1.9; color:var(--muted); margin-bottom:28px; }
+.hero-cta { max-width:240px; display:flex; align-items:center; justify-content:space-between; }
+.hero-cta span { font-size:22px; }
+.hero-footnote { font-size:11px; color:var(--muted); margin-top:10px; }
+.walk-art { position:relative; padding:20px; background:#e9e3d4; border-radius:120px 20px 20px 20px; transform:rotate(-3deg); box-shadow:0 24px 60px #0003; overflow:hidden; }
+.walk-art svg { width:100%; height:auto; display:block; margin:20px 0 40px; }
+.art-label { position:absolute; top:25px; right:25px; font-size:11px; color:#596353; letter-spacing:.08em; }
+.art-ticket { position:absolute; bottom:20px; left:20px; right:20px; padding:15px 20px; background:#fffaf0; color:#142839; border-radius:12px; box-shadow:0 4px 12px #14283915; transform:rotate(3deg); }
+.art-ticket span:first-child { display:block; font-size:10px; margin-bottom:5px; color:#67716a; }
+.art-ticket strong { font-size:15px; }
+.ticket-arrow { position:absolute; right:18px; top:19px; font-size:26px; }
+.how-strip { display:flex; justify-content:space-between; gap:16px; padding:24px 0; border-top:1px solid #ffffff20; border-bottom:1px solid #ffffff20; }
+.how-strip span { font-size:13px; color:#c8d0d3; }
+.how-strip b { margin-right:12px; color:var(--amber); font-size:11px; }
+.section-heading { display:flex; align-items:end; justify-content:space-between; margin-top:48px; }
+.section-heading h2 { font-size:25px; letter-spacing:-.045em; margin:10px 0; }
+.section-heading .kicker { margin:0; }
+.collection-count { color:var(--muted); font-size:12px; padding-bottom:12px; }
+.library-screen>.warn { font-size:12px; color:#d5bd91; }
+.game-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; margin:22px 0 48px; }
+.game-list li { margin:0; padding:22px; border:1px solid #4c5b62; border-radius:20px; background:#20323e; }
+.game-item .choice { position:relative; min-height:130px; border:0; padding:0 35px 20px 0; background:transparent; }
+.game-item .choice strong { font-size:21px; letter-spacing:-.04em; line-height:1.5; }
+.game-item .choice .game-card-tag { color:var(--amber); font-size:11px; margin:0 0 12px; }
+.game-item .choice .game-card-index { position:absolute; right:0; top:0; font-size:26px; color:var(--amber); margin:0; }
+.game-item .choice>span:last-child { font-size:12px; }
+.game-item .row-actions { border-top:1px solid #ffffff20; padding-top:12px; }
+.game-item .row-actions .btn { background:transparent; border:0; color:var(--muted); font-size:12px; min-height:44px; padding:10px; }
+.game-item .row-actions .btn:hover { background:#ffffff10; color:var(--text); }
+.home-footer { border-top:1px solid #ffffff20; padding:28px 0; display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:12px; }
+.home-footer .wordmark { font-size:21px; }
+@media(max-width:760px) { .library-screen { padding:0 22px; } .home-nav { padding:22px 0; } .home-hero { grid-template-columns:1fr; gap:30px; padding:36px 0; } .library-screen .hero-heading { font-size:39px; } .walk-art { max-width:440px; width:100%; margin:0 auto; border-top-left-radius:85px; } .walk-art svg { max-height:260px; } .how-strip { flex-direction:column; gap:16px; } .game-list { grid-template-columns:1fr; gap:16px; } .section-heading { margin-top:36px; } .section-heading h2 { font-size:22px; } .collection-count { font-size:10px; } .nav-caption { font-size:11px; } }
+@media(prefers-reduced-motion:reduce) { .btn { transition:none; } }

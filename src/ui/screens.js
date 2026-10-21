@@ -120,22 +120,33 @@ function view(state) {
 function libraryView(state) {
   const games = state.games || [];
   return `
-    <main id="main" class="screen card-screen">
-      <p class="kicker">${copy.libraryTitle}</p>
+    <main id="main" class="screen card-screen library-screen">
+      <nav class="home-nav" aria-label="주 메뉴"><a class="wordmark" href="/" aria-label="Gilloe 홈"><span class="brand-mark" aria-hidden="true">g.</span>Gilloe</a><span class="nav-caption">걸어서 완성하는 하루</span></nav>
+      <div class="home-hero"><div class="hero-copy"><p class="kicker">${copy.libraryTitle} · 작은 동네 모험</p>
       <h1 class="home-title">${brand.name} <span class="tagline">${copy.libraryTagline}</span></h1>
-      <p class="lead">${copy.libraryLead}</p>
+      <p class="hero-heading">익숙한 길에서,<br>새로운 조각을.</p>
+      <p class="lead">동네를 걷고, 장소마다 숨은 조각을 모으세요.<br>한 걸음씩 나만의 그림이 완성됩니다.</p>
+      ${btn("open-create", `${copy.create} <span aria-hidden="true">↗</span>`, "hero-cta")}
+      <p class="hero-footnote">네이버 지도 링크로 나만의 산책 만들기</p></div>
+      <div class="walk-art" role="img" aria-label="네 곳을 잇는 산책길 일러스트. 실제 경로가 아닙니다.">
+        <span class="art-label">오늘의 작은 발견</span>
+        <svg viewBox="0 0 560 420" aria-hidden="true"><defs><pattern id="street-grid" width="56" height="56" patternUnits="userSpaceOnUse"><path d="M56 0H0V56" fill="none" stroke="#d2c9b6" stroke-width="1"/></pattern></defs><rect width="560" height="420" fill="#e9e3d4"/><rect width="560" height="420" fill="url(#street-grid)"/><path d="M-20 300L140 210 245 240 380 140 590 180" stroke="#f8f5ec" stroke-width="48" fill="none"/><path d="M130 -20L180 140 140 210 190 450M390 -20L380 140 440 300 600 360" stroke="#f8f5ec" stroke-width="30" fill="none"/><path d="M55 330Q140 350 155 260T270 240T380 150T485 110" stroke="#b47b29" stroke-width="5" stroke-dasharray="2 11" stroke-linecap="round" fill="none"/><g fill="#b9c8ad"><rect x="28" y="55" width="88" height="102" rx="24"/><rect x="424" y="248" width="100" height="80" rx="25"/></g><g fill="#d7c9af"><rect x="229" y="43" width="80" height="100" rx="9"/><rect x="236" y="315" width="108" height="65" rx="9"/></g><g fill="#142839" stroke="#f7f0df" stroke-width="5"><circle cx="55" cy="330" r="23"/><circle cx="169" cy="220" r="23"/><circle cx="342" cy="192" r="23"/></g><g fill="#f5f0e5" font-size="17" font-family="sans-serif" text-anchor="middle"><text x="55" y="336">1</text><text x="169" y="226">2</text><text x="342" y="198">3</text></g><circle cx="485" cy="110" r="30" fill="#d9a54b" stroke="#f7f0df" stroke-width="5"/><path d="M475 110l7 7 13-15" stroke="#142839" stroke-width="3" fill="none"/></svg>
+        <span class="art-ticket"><span>발걸음이 모이면</span><strong>하나의 그림이 되는 산책</strong><span class="ticket-arrow" aria-hidden="true">↗</span></span>
+      </div></div>
+      <div class="how-strip" aria-label="플레이 방법"><span><b>01</b> 걷고 싶은 게임 고르기</span><span><b>02</b> 장소마다 조각 모으기</span><span><b>03</b> 나만의 그림 완성하기</span></div>
+      <div class="section-heading"><div><p class="kicker">당신의 다음 산책</p><h2>어디부터 걸어볼까요?</h2></div><span class="collection-count">${games.length}개의 게임</span></div>
       <p class="warn">${ico("🚧", brand.notPublicReady)}</p>
       ${state.invalidSave ? `<p class="warn">저장본이 오래되어 목록부터 시작합니다.</p>` : ""}
       ${state.createNotice ? `<p class="ok">${state.createNotice}</p>` : ""}
       ${state.gamesError ? `<p class="warn">${state.gamesError === "list" ? "목록을 불러오지 못했습니다. API가 켜져 있는지 확인하세요." : "게임을 수정하거나 삭제하지 못했습니다."}</p>` : ""}
-      ${btn("open-create", `➕ ${copy.create}`)}
+
       <ul class="game-list">
         ${games
           .map(
             (g) => `
           <li class="game-item">
             <button type="button" class="choice" data-action="select-game" data-id="${escapeHtml(g.id)}">
-              <strong>${escapeHtml(g.title)}</strong>
+              <span class="game-card-index" aria-hidden="true">↗</span><span class="game-card-tag">동네 퍼즐 산책 · ${g.placeCount}개의 발견</span><strong>${escapeHtml(g.title)}</strong>
               <span>${g.placeCount}곳 · ${escapeHtml(g.walkLabel || "")}</span>
             </button>
             <div class="row-actions">
@@ -146,6 +157,7 @@ function libraryView(state) {
           )
           .join("")}
       </ul>
+      <footer class="home-footer"><span class="wordmark">Gilloe</span><span>오늘은 어디로? 길로.</span></footer>
     </main>
   `;
 }
