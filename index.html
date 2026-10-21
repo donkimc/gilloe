@@ -8,14 +8,18 @@
     <title>Gilloe · 퍼즐 걷기</title>
     <meta
       name="description"
-      content="네이버 지도 링크로 퍼즐 걷기를 만들고 플레이하는 Gilloe 프로토타입. 현장 검증 전이며 공개 플레이용이 아닙니다."
+      content="GPS와 OpenStreetMap으로 퍼즐 걷기를 만들고 플레이하는 Gilloe 프로토타입. 현장 검증 전이며 공개 플레이용이 아닙니다."
     />
   </head>
   <body>
     <div id="app">
       <div id="ui"></div>
       <div class="map-host" hidden>
-        <div id="map" role="img" aria-label="천호 임시 보행 경로 지도"></div>
+        <div id="map" role="img" aria-label="보행 경로 지도"></div>
+        <p class="osm">© OpenStreetMap contributors</p>
+      </div>
+      <div class="editor-host" hidden>
+        <div id="route-editor" role="img" aria-label="경로 편집 지도"></div>
         <p class="osm">© OpenStreetMap contributors</p>
       </div>
     </div>

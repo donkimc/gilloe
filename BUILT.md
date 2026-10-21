@@ -2,16 +2,17 @@
 
 ## Build status
 
-This repository currently contains planning documents. Build the first disposable experience prototype described here. The prototype is for field testing and learning; it is not a reusable marketplace or production platform.
+Compliant route creation is implemented: GPS recording, OpenStreetMap drawing, optional GPX, and strict AI JSON import. Proprietary consumer-map ingestion, media proxying, and public OSRM calls are removed. Field verification still requires a real walk; OSM/AI drafts cannot be marked field-verified from the desk.
 
 Read these documents before changing code:
 
-1. `BUILT.md` — implementation source of truth
-2. `AGENT.md` — working rules for the coding agent
-3. `docs/GILLOE_MVP_01_CHEONHO_MURDER_MYSTERY_PLAN.md` — original route/safety notes; playable content is now the piece hunt in `BUILT.md`
-4. `docs/GILLOE_SAFETY_SECURITY_RISK_GUIDE.md` — broader safety reference
+1. `docs/MVP_MAP_CREATION_COMPLIANCE_PLAN.md` — current map-creation decision and next milestone
+2. `BUILT.md` — prototype behavior and implementation requirements
+3. `AGENT.md` — working rules for the coding agent
+4. `docs/GILLOE_MVP_01_CHEONHO_MURDER_MYSTERY_PLAN.md` — original route and safety notes
+5. `docs/GILLOE_SAFETY_SECURITY_RISK_GUIDE.md` — broader safety reference
 
-If the documents conflict, follow `BUILT.md` for this prototype and preserve the safety constraints from the MVP plan.
+If the documents conflict about map creation or source data, follow `docs/MVP_MAP_CREATION_COMPLIANCE_PLAN.md`. Preserve the safety constraints from the MVP plan.
 
 ## Product to build
 
@@ -24,7 +25,9 @@ Build a Korean-language, mobile-first walking puzzle:
 - **Camera overlay:** on hold
 - **Feedback form:** removed
 
-Creators paste Naver Map URLs. The API stores games on disk. Players pick a game, preview the route, visit each public stop, collect a tile, and assemble the picture. The completed jigsaw is not shown before play. GPS still gates arrival; permission denial never blocks completion (manual confirm).
+Creators choose between recording their own walk with browser GPS, drawing four stops and a route on an attributed OpenStreetMap-based editor, or importing an AI-generated draft created with Gilloe's controlled prompt. GPS-recorded tracks are field observed. Map-drawn and AI-imported routes remain `fieldVerified: false` until physically walked. All methods save GeoJSON and may include creator-owned photographs. AI may generate story and clue content from the creator's prompt and notes, but it must not invent unsupported coordinates or copy geographic facts from proprietary map pages. Players pick a game, preview the route, visit each public stop, collect a tile, and assemble the picture. GPS still gates arrival; permission denial never blocks completion through a confirmed manual fallback.
+
+Do not accept, fetch, parse, or save Naver, Kakao, or Google consumer-map URLs. Do not extract coordinates, names, descriptions, route geometry, screenshots, or photographs from those services. Do not proxy provider-hosted media.
 
 The experience must use browser GPS to show the player's live location and help determine arrival. At Stop 2, it must use the rear camera to show a deterministic puzzle-tile overlay on the live view. There are no QR codes, installed markers, image recognition, object recognition, facial recognition, photo capture, or video recording.
 
@@ -153,15 +156,17 @@ The planned corridor is:
 
 **Cheonho Station Exit 5 → Cheonho Rodeo Street → Stationery and Toy Street area → Naengmyeon Street area**
 
-Final stop coordinates and pedestrian route geometry require a physical field survey. Do not present guessed coordinates as approved route data.
+Final stop coordinates and pedestrian route geometry come from a creator-recorded GPS walk and require a physical field survey. Do not present guessed, AI-generated, or proprietary-provider-derived coordinates as approved route data.
 
-Until verified coordinates are supplied:
+Until a creator-recorded route is supplied:
 
-- create a clearly labelled `route.geojson` prototype route only if coordinates can be taken from an existing reviewed local source;
+- use only clearly labelled internal placeholder geometry;
 - mark every provisional coordinate with `fieldVerified: false` in content data;
 - show a development-only banner stating `현장 검증 전 임시 경로`;
 - keep all radii and coordinate values in data, not UI code;
 - do not describe the build as ready for public play.
+
+The approved creation methods are defined in `docs/MVP_MAP_CREATION_COMPLIANCE_PLAN.md`: record the route on a phone, draw it in the OpenStreetMap-based editor, import a controlled AI draft JSON, or upload a creator-recorded GPX file. Drawn and AI-assisted routes must retain their source and licence provenance and remain unverified until walked. Automatic public routing may not replace creator-created or reviewed pedestrian geometry.
 
 Each stop definition needs:
 

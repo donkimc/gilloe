@@ -10,17 +10,6 @@ export async function getGame(id) {
   return res.json();
 }
 
-export async function resolvePlace(url) {
-  const res = await fetch("/api/places/resolve", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ url }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "resolve");
-  return data;
-}
-
 export async function createGame(payload) {
   const res = await fetch("/api/games", {
     method: "POST",
@@ -50,13 +39,11 @@ export async function deleteGame(id) {
   return data;
 }
 
-export async function fetchWalkingLine(places) {
-  const res = await fetch("/api/route", {
+export async function validateAiJson(json) {
+  const res = await fetch("/api/ai/validate", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ places }),
+    body: JSON.stringify({ json }),
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "route");
-  return data.routeLine;
+  return res.json();
 }

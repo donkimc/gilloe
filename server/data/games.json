@@ -1,5 +1,334 @@
 [
   {
+    "id": "design-sample-walk",
+    "title": "천호, 네 조각의 작은 발견",
+    "type": "puzzle",
+    "placeCount": 4,
+    "places": [
+      {
+        "order": 1,
+        "name": "천호역 5번 출구 인근",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
+        "lat": 37.53865,
+        "lng": 127.12385,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "공개 인도에서만 이동하세요.",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 2,
+        "name": "로데오거리 인근 인도",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
+        "lat": 37.53891,
+        "lng": 127.12755,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 55,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "공개 인도에서만 이동하세요.",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 3,
+        "name": "문구·완구거리 인근",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
+        "lat": 37.54078,
+        "lng": 127.12936,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "공개 인도에서만 이동하세요.",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 4,
+        "name": "냉면거리 인근",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
+        "lat": 37.54239,
+        "lng": 127.12949,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "공개 인도에서만 이동하세요.",
+        "safeStandingNote": "requires physical verification"
+      }
+    ],
+    "jigsaw": {
+      "source": "system",
+      "imageUrl": "",
+      "systemImageId": "market"
+    },
+    "stats": {
+      "walkingMeters": 1100,
+      "durationMinutes": 25
+    },
+    "walkLabel": "약 1.1km · 약 25분",
+    "routeLine": [
+      [
+        127.123846,
+        37.538648
+      ],
+      [
+        127.123777,
+        37.53875
+      ],
+      [
+        127.123807,
+        37.538752
+      ],
+      [
+        127.123712,
+        37.538951
+      ],
+      [
+        127.123866,
+        37.539374
+      ],
+      [
+        127.123856,
+        37.539416
+      ],
+      [
+        127.12391,
+        37.539442
+      ],
+      [
+        127.124082,
+        37.539462
+      ],
+      [
+        127.1244,
+        37.539386
+      ],
+      [
+        127.124614,
+        37.539325
+      ],
+      [
+        127.125073,
+        37.539291
+      ],
+      [
+        127.125196,
+        37.539331
+      ],
+      [
+        127.125232,
+        37.539341
+      ],
+      [
+        127.125498,
+        37.53931
+      ],
+      [
+        127.125768,
+        37.539273
+      ],
+      [
+        127.126164,
+        37.539239
+      ],
+      [
+        127.126455,
+        37.539214
+      ],
+      [
+        127.126589,
+        37.539163
+      ],
+      [
+        127.126632,
+        37.539137
+      ],
+      [
+        127.126755,
+        37.539063
+      ],
+      [
+        127.126788,
+        37.539044
+      ],
+      [
+        127.12746,
+        37.53898
+      ],
+      [
+        127.12766,
+        37.53947
+      ],
+      [
+        127.127738,
+        37.53974
+      ],
+      [
+        127.12787,
+        37.5402
+      ],
+      [
+        127.127869,
+        37.540321
+      ],
+      [
+        127.12785,
+        37.54042
+      ],
+      [
+        127.12784,
+        37.540451
+      ],
+      [
+        127.127989,
+        37.540458
+      ],
+      [
+        127.12804,
+        37.54046
+      ],
+      [
+        127.12847,
+        37.54053
+      ],
+      [
+        127.128692,
+        37.540573
+      ],
+      [
+        127.12878,
+        37.54059
+      ],
+      [
+        127.12901,
+        37.540656
+      ],
+      [
+        127.12921,
+        37.54072
+      ],
+      [
+        127.129363,
+        37.540775
+      ],
+      [
+        127.129565,
+        37.540871
+      ],
+      [
+        127.129733,
+        37.540964
+      ],
+      [
+        127.129895,
+        37.541055
+      ],
+      [
+        127.12999,
+        37.54111
+      ],
+      [
+        127.1301,
+        37.5412
+      ],
+      [
+        127.13027,
+        37.54133
+      ],
+      [
+        127.130411,
+        37.54145
+      ],
+      [
+        127.13054,
+        37.541569
+      ],
+      [
+        127.13087,
+        37.54201
+      ],
+      [
+        127.13102,
+        37.542212
+      ],
+      [
+        127.131155,
+        37.542393
+      ],
+      [
+        127.130908,
+        37.542405
+      ],
+      [
+        127.130687,
+        37.542439
+      ],
+      [
+        127.130382,
+        37.542487
+      ],
+      [
+        127.130117,
+        37.542528
+      ],
+      [
+        127.130079,
+        37.542534
+      ],
+      [
+        127.129485,
+        37.542585
+      ],
+      [
+        127.12946,
+        37.542506
+      ],
+      [
+        127.129488,
+        37.54239
+      ]
+    ],
+    "fieldVerified": false,
+    "createdAt": 1792567541482,
+    "updatedAt": 1789185923715,
+    "schemaVersion": 1,
+    "source": {
+      "method": "openstreetmap-assisted-drawing",
+      "proprietaryProviderDerived": false,
+      "mapDataAttribution": "© OpenStreetMap contributors",
+      "mapDataLicense": "ODbL-1.0"
+    },
+    "fieldStatus": "verification-required",
+    "quarantined": false,
+    "quarantineReason": null,
+    "playable": true,
+    "warnings": [
+      "현장 검증 전 임시 경로"
+    ],
+    "sources": [
+      {
+        "name": "OpenStreetMap",
+        "url": "https://www.openstreetmap.org/#map=16/37.53865/127.12385",
+        "licence": "ODbL",
+        "licenceUrl": "https://opendatacommons.org/licenses/odbl/",
+        "supports": [
+          "routeLine",
+          "stops"
+        ]
+      }
+    ]
+  },
+  {
     "id": "game-mtx2nyie",
     "title": "건대",
     "type": "puzzle",
@@ -12,9 +341,11 @@
         "blurb": "방문자리뷰 417 · 블로그리뷰 135",
         "lat": 37.5424601,
         "lng": 127.0687794,
-        "naverUrl": "https://naver.me/5ECab622",
-        "photoUrl": "https://ldb-phinf.pstatic.net/20260402_13/1775107044365cuG2R_JPEG/%B0%C7%B9%B0%BB%E7%C1%F81.jpg",
-        "arrivalRadiusMeters": 60
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "photoStripped": true,
+        "fieldVerified": false,
+        "coordinateSource": "unknown"
       },
       {
         "order": 2,
@@ -23,9 +354,11 @@
         "blurb": "방문자리뷰 5,465 · 블로그리뷰 827",
         "lat": 37.5417389,
         "lng": 127.0674549,
-        "naverUrl": "https://naver.me/GxroKQD7",
-        "photoUrl": "https://ldb-phinf.pstatic.net/20260429_215/1777443433754mfX7x_PNG/ChatGPT_Image_2026%B3%E2_4%BF%F9_29%C0%CF_%BF%C0%C8%C4_03_16_57.png",
-        "arrivalRadiusMeters": 60
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "photoStripped": true,
+        "fieldVerified": false,
+        "coordinateSource": "unknown"
       },
       {
         "order": 3,
@@ -34,9 +367,11 @@
         "blurb": "방문자리뷰 481 · 블로그리뷰 93",
         "lat": 37.5446159,
         "lng": 127.0692432,
-        "naverUrl": "https://naver.me/Gi0Alj91",
-        "photoUrl": "https://ldb-phinf.pstatic.net/20260319_107/1773904311984BRrty_JPEG/%BE%EE%B1%B8%BE%EE%B1%B8_-7.jpg",
-        "arrivalRadiusMeters": 60
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "photoStripped": true,
+        "fieldVerified": false,
+        "coordinateSource": "unknown"
       },
       {
         "order": 4,
@@ -45,15 +380,17 @@
         "blurb": "방문자리뷰 1,097 · 블로그리뷰 140",
         "lat": 37.5424242,
         "lng": 127.0713063,
-        "naverUrl": "https://naver.me/GhbGKYcb",
-        "photoUrl": "https://ldb-phinf.pstatic.net/20250211_225/1739272489016GszNL_JPEG/IMG_4379.jpeg",
-        "arrivalRadiusMeters": 60
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "photoStripped": true,
+        "fieldVerified": false,
+        "coordinateSource": "unknown"
       }
     ],
     "jigsaw": {
-      "source": "final-place",
-      "imageUrl": "https://ldb-phinf.pstatic.net/20250211_225/1739272489016GszNL_JPEG/IMG_4379.jpeg",
-      "systemImageId": "market"
+      "source": "system",
+      "imageUrl": "",
+      "systemImageId": "station"
     },
     "stats": {
       "walkingMeters": 802,
@@ -243,7 +580,21 @@
       ]
     ],
     "fieldVerified": false,
-    "createdAt": 1789138158710
+    "createdAt": 1789138158710,
+    "schemaVersion": 1,
+    "source": {
+      "method": "openstreetmap-assisted-drawing",
+      "proprietaryProviderDerived": false,
+      "mapDataAttribution": "© OpenStreetMap contributors",
+      "mapDataLicense": "ODbL-1.0"
+    },
+    "fieldStatus": "draft",
+    "quarantined": true,
+    "quarantineReason": "restricted-source-migration-required",
+    "playable": false,
+    "warnings": [
+      "제한된 지도 출처 데이터가 있어 다시 작성해야 합니다."
+    ]
   },
   {
     "id": "cheonho-pieces",
@@ -254,46 +605,62 @@
       {
         "order": 1,
         "name": "천호역 5번 출구 인근",
-        "address": "서울 강동구 천호동",
-        "blurb": "출구 앞 공개 보행 공간에서 멈춰 첫 조각을 받으세요. 차도로 내려가지 마세요.",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
         "lat": 37.53865,
         "lng": 127.12385,
-        "naverUrl": "https://map.naver.com/p?c=16,127.12385,37.53865,0,0,0,dh",
         "photoUrl": "",
-        "arrivalRadiusMeters": 60
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "공개 인도에서만 이동하세요.",
+        "safeStandingNote": "requires physical verification"
       },
       {
         "order": 2,
-        "name": "레코드피자 바깥 인도",
-        "address": "서울 강동구 천호대로157길 45",
-        "blurb": "가게 간판이 보이는 공개 인도에서 멈추세요. 매장 안으로 들어가지 마세요.",
+        "name": "로데오거리 인근 인도",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
         "lat": 37.53891,
         "lng": 127.12755,
-        "naverUrl": "https://map.naver.com/p?c=16,127.12755,37.53891,0,0,0,dh",
         "photoUrl": "",
-        "arrivalRadiusMeters": 55
+        "arrivalRadiusMeters": 55,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "공개 인도에서만 이동하세요.",
+        "safeStandingNote": "requires physical verification"
       },
       {
         "order": 3,
         "name": "문구·완구거리 인근",
-        "address": "서울 강동구 구천면로 일대",
-        "blurb": "상점 앞을 막지 말고 인도 위 빈 공간에 서세요.",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
         "lat": 37.54078,
         "lng": 127.12936,
-        "naverUrl": "https://map.naver.com/p?c=16,127.12936,37.54078,0,0,0,dh",
         "photoUrl": "",
-        "arrivalRadiusMeters": 60
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "공개 인도에서만 이동하세요.",
+        "safeStandingNote": "requires physical verification"
       },
       {
         "order": 4,
         "name": "냉면거리 인근",
-        "address": "서울 강동구 천중로 18길 일대",
-        "blurb": "큰 가로가 보이는 인도에서 멈추세요. 게임에 필요한 구매는 없습니다.",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
         "lat": 37.54239,
         "lng": 127.12949,
-        "naverUrl": "https://map.naver.com/p?c=16,127.12949,37.54239,0,0,0,dh",
         "photoUrl": "",
-        "arrivalRadiusMeters": 60
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "공개 인도에서만 이동하세요.",
+        "safeStandingNote": "requires physical verification"
       }
     ],
     "jigsaw": {
@@ -302,10 +669,10 @@
       "systemImageId": "station"
     },
     "stats": {
-      "walkingMeters": 769,
-      "durationMinutes": 19
+      "walkingMeters": 1100,
+      "durationMinutes": 25
     },
-    "walkLabel": "약 769m · 약 19분",
+    "walkLabel": "약 1.1km · 약 25분",
     "routeLine": [
       [
         127.123846,
@@ -530,6 +897,32 @@
     ],
     "fieldVerified": false,
     "createdAt": 1789185923715,
-    "updatedAt": 1789185923715
+    "updatedAt": 1789185923715,
+    "schemaVersion": 1,
+    "source": {
+      "method": "openstreetmap-assisted-drawing",
+      "proprietaryProviderDerived": false,
+      "mapDataAttribution": "© OpenStreetMap contributors",
+      "mapDataLicense": "ODbL-1.0"
+    },
+    "fieldStatus": "verification-required",
+    "quarantined": false,
+    "quarantineReason": null,
+    "playable": true,
+    "warnings": [
+      "현장 검증 전 임시 경로"
+    ],
+    "sources": [
+      {
+        "name": "OpenStreetMap",
+        "url": "https://www.openstreetmap.org/#map=16/37.53865/127.12385",
+        "licence": "ODbL",
+        "licenceUrl": "https://opendatacommons.org/licenses/odbl/",
+        "supports": [
+          "routeLine",
+          "stops"
+        ]
+      }
+    ]
   }
 ]

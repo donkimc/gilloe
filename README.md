@@ -1,6 +1,8 @@
 # Gilloe — 퍼즐 걷기
 
-Prototype for **creating** and **playing** walking jigsaws. Paste Naver Map URLs (4 / 9 / 16 / 25 stops). It is **not** public-play ready. The banner **현장 검증 전 임시 경로** stays on.
+Prototype for **creating** and **playing** walking jigsaws. It is **not** public-play ready. The banner **현장 검증 전 임시 경로** stays on.
+
+Creators record a GPS walk, draw on an attributed OpenStreetMap editor, or import unverified AI route JSON (`docs/AI_ROUTE_JSON_PROMPT.md`). Naver/Kakao/Google/Apple ingestion, the image proxy, and public OSRM routing are removed. Review `docs/MVP_MAP_CREATION_COMPLIANCE_PLAN.md`. Routes stay provisional until a physical walk.
 
 ## Setup
 
@@ -11,7 +13,7 @@ npm run dev
 
 Vite (5173) proxies `/api` to the local Node server (8787). Open `http://127.0.0.1:5173/`. Simulator: `http://127.0.0.1:5173/?sim=1`.
 
-Production (`npm run build` then `npm start`) serves the built UI and the API from one Node process so `/api/places/resolve` works on Railway.
+Production (`npm run build` then `npm start`) serves the built UI and the games API from one Node process on Railway. Persistent games live in `GILLOE_DATA_DIR` (volume `/data`).
 
 ## Build and test
 
@@ -53,7 +55,8 @@ Vanilla Vite app. Game progress is an explicit state machine in `src/state.js`. 
 
 | Path | Role |
 | --- | --- |
-| `server/index.js` | Games API, Naver URL resolve, OSRM line, uploads |
+| `server/index.js` | Games API, local uploads, AI JSON validation |
+| `src/routeSchema.js` | Provenance, GPS sampling, AI import, save validation |
 | `src/content.js` | Korean UI copy |
 | `src/state.js` | State machine |
 | `src/storage.js` | Minimal `localStorage` progress (no coordinates) |
@@ -72,7 +75,7 @@ Progress stores only schema, game id, screen/stop, collected pieces, hints, star
 
 1. Edit copy, radii, and overlay placement in `src/content.js`.
 2. Replace `coordinates` on each stop after a physical survey. Keep `fieldVerified: false` until that survey is done.
-3. Replace `public/route.geojson` with a pedestrian line along streets, not a straight line between pins. GeoJSON order is `[longitude, latitude]`. The current file is an OpenStreetMap foot route (FOSSGIS OSRM), still unverified on site.
+3. Draw or record a pedestrian line along streets, not a straight line between pins. GeoJSON order is `[longitude, latitude]`. Seed Cheonho geometry is still unverified on site.
 4. Camera framing copy lives under `stops[1].cameraClue`. Do not point it at people or private interiors.
 
 ## Privacy behaviour

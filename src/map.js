@@ -1,6 +1,7 @@
 import * as Leaflet from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { pointAlong, sliceLine } from "./geo.js";
+import { OSM_ATTRIBUTION, OSM_TILE_MAX_ZOOM, OSM_TILE_URL } from "./mapConfig.js";
 
 const L = Leaflet.default ?? Leaflet;
 
@@ -37,9 +38,9 @@ export function createMapService() {
       try {
         map = L.map(container, { zoomControl: true, attributionControl: true });
         map.attributionControl.setPrefix(false);
-        tileLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        tileLayer = L.tileLayer(OSM_TILE_URL, {
+          maxZoom: OSM_TILE_MAX_ZOOM,
+          attribution: OSM_ATTRIBUTION,
         });
         tileLayer.on("tileerror", () => onTileError?.());
         tileLayer.addTo(map);

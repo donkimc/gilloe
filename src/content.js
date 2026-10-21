@@ -14,7 +14,7 @@ export const brand = {
 export const copy = {
   libraryTitle: "퍼즐 걷기",
   libraryTagline: "오늘은 어디로? 길로",
-  libraryLead: "만든 게임을 고르거나, 네이버 지도 링크로 새 퍼즐을 만드세요.",
+  libraryLead: "만든 게임을 고르거나, GPS·OpenStreetMap으로 새 퍼즐을 만드세요.",
   create: "게임 만들기",
   play: "이 게임 걷기",
   resume: "이어서 걷기",
@@ -90,21 +90,33 @@ export const previewCopy = {
   closeTour: "게임으로",
   replay: "다시 보기",
   nextStop: "탭하면 다음 장소",
-  openNaver: "네이버 지도",
+  openOsm: "OpenStreetMap에서 보기",
 };
 
 export const createCopy = {
   title: "퍼즐 게임 만들기",
   name: "게임 제목",
-  count: "장소 수 (조각 수)",
-  url: "네이버 지도 URL",
-  resolving: "장소를 읽는 중…",
-  needCoords: "위치를 읽지 못했습니다. 지도에서 장소 공유 URL을 다시 붙여 넣으세요.",
-  needServer: "장소 서버에 연결하지 못했습니다. 개발 서버(API)가 켜져 있는지 확인하세요.",
+  landingLead: "외부 지도 링크는 쓰지 않습니다. GPS로 걷거나, OpenStreetMap에서 그리거나, 허용된 공개 자료로 만든 AI 초안을 가져오세요.",
+  methodGps: "GPS로 걸으며 기록",
+  methodOsm: "OpenStreetMap에서 그리기",
+  methodAi: "AI 경로 초안 가져오기",
+  methodGpx: "GPX 가져오기 (선택)",
+  startRecord: "기록 시작",
+  pause: "일시정지",
+  resume: "이어 기록",
+  addStop: "여기가 정류장",
+  cancelRecord: "기록 취소",
+  finishRecord: "기록 마치기",
+  drawStops: "정류장 찍기",
+  drawPath: "경로 그리기",
+  undo: "마지막 점 지우기",
+  copyPrompt: "프롬프트 복사",
+  pasteJson: "JSON 붙여넣기",
+  validateJson: "검사하기",
   jigsaw: "퍼즐 그림",
-  jigsawFinal: "마지막 장소 사진",
   jigsawUpload: "사진 올리기",
   jigsawSystem: "시스템 그림",
+  ownership: "이 사진은 제가 찍었거나 사용할 권한이 있습니다.",
   submit: "게임 만들기",
   save: "저장하기",
   editTitle: "퍼즐 게임 수정",
@@ -115,7 +127,11 @@ export const createCopy = {
   deleteConfirm: "삭제하기",
   deleted: "삭제했습니다.",
   saved: "저장했습니다.",
-  naverLink: "네이버에서 보기",
+  osmLink: "OpenStreetMap에서 보기",
+  quarantined: "제한된 출처 · 다시 작성 필요",
+  unverified: "현장 확인 전",
+  verified: "현장 확인됨",
+  notPlayable: "이 게임은 제한된 지도 데이터 때문에 다시 만들어야 합니다.",
 };
 
 export const ending = {
@@ -141,19 +157,7 @@ export const screens = [
   "resolution",
 ];
 
-export function osmDirectionsUrl(place) {
+export function osmPlaceUrl(place) {
   const { lat, lng } = place;
-  return `https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${lat}%2C${lng}`;
-}
-
-export function naverPlaceUrl(place) {
-  return place.naverUrl || `https://map.naver.com/p?c=16,${place.lng},${place.lat},0,0,0,dh`;
-}
-
-export function naverMapAppUrl(place) {
-  if (Number.isFinite(place?.lat) && Number.isFinite(place?.lng)) {
-    const name = encodeURIComponent(place.name || "장소");
-    return `nmap://place?lat=${place.lat}&lng=${place.lng}&name=${name}&appname=gilloe`;
-  }
-  return naverPlaceUrl(place);
+  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=18/${lat}/${lng}`;
 }

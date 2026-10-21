@@ -5,6 +5,7 @@ function gilloeApiPlugin() {
   return {
     name: "gilloe-api",
     configureServer(server) {
+      if (process.env.VITEST) return;
       const child = spawn(process.execPath, ["server/index.js"], {
         cwd: process.cwd(),
         stdio: "inherit",

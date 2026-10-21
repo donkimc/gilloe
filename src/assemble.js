@@ -171,15 +171,9 @@ function escapeAttr(value) {
 export function displayImageUrl(href) {
   const src = String(href || "").trim();
   if (!src) return "";
-  try {
-    const host = new URL(src).hostname;
-    if (host === "pstatic.net" || host.endsWith(".pstatic.net")) {
-      return `/api/media?u=${encodeURIComponent(src)}`;
-    }
-  } catch {
-    /* keep original */
-  }
-  return src;
+  if (src.startsWith("/uploads/") && !src.includes("..")) return src;
+  if (src.startsWith("data:image/")) return src;
+  return "";
 }
 
 export function puzzleSvg({ jigsaw, clip = "full", crop = false, className = "", n = 2 } = {}) {

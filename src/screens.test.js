@@ -16,7 +16,7 @@ const sampleGame = {
       address: "천호동",
       lat: 37.53865,
       lng: 127.12385,
-      naverUrl: "https://map.naver.com/p?c=16,127.12385,37.53865,0,0,0,dh",
+      coordinateSource: "openstreetmap-assisted-drawing",
     },
   ],
   jigsaw: { source: "system", systemImageId: "station" },
@@ -46,12 +46,13 @@ describe("rendered flow", () => {
     expect(html).toContain('data-action="confirm-delete-game"');
   });
 
-  it("shows a place card with a naver link after arrival", () => {
+  it("shows a place card with an OpenStreetMap link after arrival", () => {
     let state = reduce(createInitialState(), { type: "SELECT_GAME", game: sampleGame });
     state = { ...state, screen: "place", currentStop: 1, stoppedWalking: true };
     const html = render(state);
     expect(html).toContain("조각 받기");
-    expect(html).toContain("네이버에서 보기");
+    expect(html).toContain("OpenStreetMap에서 보기");
+    expect(html).not.toContain("네이버");
     expect(html).not.toContain("소감");
     expect(html).not.toContain("카메라로 조각");
   });
@@ -103,8 +104,9 @@ describe("rendered flow", () => {
     expect(html).toContain('data-action="replay-preview"');
     expect(html).toContain("게임으로");
     expect(html).toContain("다시 보기");
-    expect(html).toContain("네이버 지도");
-    expect(html).toContain("nmap://place");
+    expect(html).toContain("OpenStreetMap에서 보기");
+    expect(html).not.toContain("nmap://");
+    expect(html).not.toContain("네이버");
     expect(html).not.toContain("탭하면 다음 장소");
     expect(html).not.toContain("경로 미리보기");
   });
@@ -153,12 +155,13 @@ describe("rendered flow", () => {
       ...createInitialState(),
       game: {
         ...sampleGame,
-        jigsaw: { source: "final-place", imageUrl: "https://ldb-phinf.pstatic.net/a.jpg" },
+        jigsaw: { source: "upload", imageUrl: "/uploads/a.jpg" },
       },
       screen: "resolution",
     });
     expect(html).toContain("완성");
-    expect(html).toContain("/api/media?u=");
+    expect(html).toContain("/uploads/a.jpg");
+    expect(html).not.toContain("/api/media");
     expect(html).not.toContain("맞춘 그림은 바로 앞");
   });
 

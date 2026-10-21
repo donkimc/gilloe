@@ -2,19 +2,28 @@
 
 ## Mission
 
-Implement the disposable mobile web prototype defined in `BUILT.md`. Creators paste Naver Map URLs to save puzzle walks; players collect tiles and assemble a jigsaw. Camera overlay is deferred.
+Maintain the Gilloe walking-puzzle prototype and the compliance-safe map creation path in `docs/MVP_MAP_CREATION_COMPLIANCE_PLAN.md`. Do not restore Naver/Kakao/Google/Apple ingestion, media proxying, or public routing APIs.
 
 ## Scope discipline
 
-Build:
+After the new map plan is approved, build:
 
 - a small local Node API that stores games;
-- a library and create form (title, 4/9/16/25 Naver Map URLs, jigsaw image);
+- a library and create form using a creator-recorded GPS walk, an OpenStreetMap-assisted drawing editor, a controlled AI draft JSON import, or creator-recorded GPX upload;
+- stop creation from the creator's live GPS position;
+- map-based stop placement and editable user-drawn route lines;
+- provenance and creator-owned image confirmation;
 - live browser GPS;
 - route preview animation;
-- place cards with at most one Naver listing photo;
+- place cards with an optional creator-owned uploaded photo;
 - NxN assemble;
 - the seeded Cheonho game.
+
+Never accept or scrape Naver, Kakao, or Google consumer-map URLs. Never fetch provider place pages, extract provider coordinates or descriptions, proxy provider images, or save provider place IDs. AI may generate creative content but must not generate geographic ground truth.
+
+The open-map editor may use Leaflet and OpenStreetMap for interactive display. Keep attribution visible, store `openstreetmap-assisted-drawing` plus ODbL provenance, provide no tile download or prefetching, and do not add place search or a public routing service in the first MVP. A map-drawn route cannot become field verified until the creator walks it.
+
+AI JSON import is an advanced experimental path. Use the exact schema and prompt in `docs/AI_ROUTE_JSON_PROMPT.md`; parse input as untrusted data; reject missing provenance, proprietary sources, remote images, unsupported fields, invalid geometry, and all attempts to set `fieldVerified: true`. A valid import must open in the OSM editor and cannot be published until physically verified.
 
 Do not add accounts, payments, remote analytics, QR codes, AR frameworks, object recognition, face recognition, or media capture. Camera overlay stays unused in this flow.
 
@@ -22,11 +31,12 @@ Do not add accounts, payments, remote analytics, QR codes, AR frameworks, object
 
 Before editing, read:
 
-1. `BUILT.md`
-2. `docs/GILLOE_MVP_01_CHEONHO_MURDER_MYSTERY_PLAN.md` (route/safety history; content is the piece hunt)
-3. `docs/GILLOE_SAFETY_SECURITY_RISK_GUIDE.md`
+1. `docs/MVP_MAP_CREATION_COMPLIANCE_PLAN.md`
+2. `BUILT.md`
+3. `docs/GILLOE_MVP_01_CHEONHO_MURDER_MYSTERY_PLAN.md`
+4. `docs/GILLOE_SAFETY_SECURITY_RISK_GUIDE.md`
 
-Treat `BUILT.md` as the implementation source of truth. Preserve all safety and privacy constraints even when simplifying another part of the build.
+Treat the compliance plan as the source of truth for map creation and provenance. Preserve all safety and privacy constraints even when simplifying another part of the build.
 
 ## Before coding
 

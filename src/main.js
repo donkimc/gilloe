@@ -2,17 +2,29 @@ import "./styles.css";
 import { brand, createCopy } from "./content.js";
 import { createStorage, STORAGE_KEY } from "./storage.js";
 import { SCREENS, createInitialState, currentPlace, ensureAssembleKit, gridN, needsLiveLocation, reduce } from "./state.js";
-import { distanceMeters, placeProgresses } from "./geo.js";
+import { placeProgresses } from "./geo.js";
 import { createLocationService } from "./location.js";
 import { createMapService } from "./map.js";
 import { placeOnCell, snapPlacement } from "./assemble.js";
 import { pickRandomImage } from "./puzzleImages.js";
 import { render } from "./ui/screens.js";
 import { createSimulatedGeolocation, parseSim } from "./simulate.js";
-import { createGame, deleteGame, fetchWalkingLine, getGame, listGames, resolvePlace, updateGame } from "./api.js";
+import { createGame, deleteGame, getGame, listGames, updateGame, validateAiJson } from "./api.js";
+import { createRouteEditor } from "./routeEditor.js";
+import { defaultDraft, draftPreview } from "./ui/screens.js";
+import { AI_ROUTE_PROMPT } from "./aiPrompt.js";
+import {
+  emptyDrawState,
+  emptyGpsSession,
+  gpsSessionToLine,
+  parseGpxTrack,
+  reduceDrawState,
+  reduceGpsSession,
+} from "./routeSchema.js";
 
 const ui = document.querySelector("#ui");
 const mapHost = document.querySelector(".map-host");
+const editorHost = document.querySelector(".editor-host");
 const persist = createStorage();
 const sim = parseSim(window.location.search);
 
@@ -33,35 +45,34 @@ let tourToken = 0;
 let mapReady = false;
 let approachAdded = false;
 
-function emptyRows(n) {
-  return Array.from({ length: n }, () => ({ url: "", resolved: null, resolving: false }));
-}
-
 function blankDraft() {
-  return { editingId: null, title: "", placeCount: 4, rows: emptyRows(4), jigsawSource: "final-place", imageDataUrl: null };
+  return defaultDraft();
 }
 
 function draftFromGame(game) {
+  const vertices = Array.isArray(game.routeLine) ? game.routeLine : [];
+  const stops = (game.places || []).map((place, i) => ({
+    id: `stop-${i + 1}`,
+    order: i + 1,
+    lat: place.lat,
+    lng: place.lng,
+    title: place.name,
+    directions: place.blurb || place.directions || "",
+    publicStopConfirmed: place.publicStopConfirmed !== false,
+    photoDataUrl: null,
+    coordinateSource: place.coordinateSource,
+  }));
   return {
+    ...defaultDraft(),
     editingId: game.id,
     title: game.title || "",
-    placeCount: game.placeCount || 4,
-    jigsawSource: game.jigsaw?.source || "system",
+    method: game.source?.method || "openstreetmap-assisted-drawing",
+    step: "review",
+    jigsawSource: game.jigsaw?.source === "upload" ? "upload" : "system",
     systemImageId: game.jigsaw?.systemImageId || null,
     imageDataUrl: null,
-    rows: (game.places || []).map((place) => ({
-      url: place.naverUrl || "",
-      resolving: false,
-      resolved: {
-        ok: Number.isFinite(place.lat) && Number.isFinite(place.lng),
-        name: place.name,
-        lat: place.lat,
-        lng: place.lng,
-        address: place.address,
-        photoUrl: place.photoUrl,
-        blurb: place.blurb,
-      },
-    })),
+    draw: { mode: "stops", stops, vertices },
+    gps: { ...emptyGpsSession(), stops, points: vertices.map(([lng, lat]) => ({ lat, lng })) },
   };
 }
 
@@ -82,6 +93,9 @@ function geoApi() {
 
 const location = createLocationService({ geolocation: geoApi() });
 const map = createMapService();
+const editor = createRouteEditor();
+let editorMounted = false;
+let recordWatchId = null;
 let state = restore();
 
 function restore() {
@@ -120,6 +134,7 @@ function syncDevices(prev, next) {
   const showMap =
     needsLiveLocation(next.screen) && !mapFail && next.mapStatus !== "failed" && next.game;
   mapHost.hidden = !showMap;
+  syncEditor();
   mapHost.classList.toggle("is-tour", Boolean(previewTour && showMap));
   document.getElementById("app")?.classList.toggle("is-tour", Boolean(previewTour && showMap));
   if (showMap) {
@@ -137,18 +152,8 @@ function syncDevices(prev, next) {
 async function walkingLineForGame(game) {
   const places = game.places || [];
   const line = game.routeLine;
-  if (Array.isArray(line) && line.length > places.length) return line;
-  if (game.id === "cheonho-pieces") {
-    try {
-      const res = await fetch("/route.geojson");
-      const data = await res.json();
-      const coords = data?.features?.[0]?.geometry?.coordinates;
-      if (Array.isArray(coords) && coords.length > places.length) return coords;
-    } catch {
-      /* keep stored line */
-    }
-  }
-  return line;
+  if (Array.isArray(line) && line.length >= 2) return line;
+  return places.map((p) => [p.lng, p.lat]);
 }
 
 async function ensureMap() {
@@ -201,23 +206,11 @@ location.onFix((fix) => {
   addApproach(fix);
 });
 
-async function addApproach(fix) {
+function addApproach(fix) {
   if (approachAdded || previewTour || !state.game || !mapReady) return;
   const first = state.game.places?.[0];
   if (!first || !Number.isFinite(fix?.lat) || !Number.isFinite(fix?.lng)) return;
-  if (distanceMeters({ lat: fix.lat, lng: fix.lng }, first) < 50) {
-    approachAdded = true;
-    return;
-  }
   approachAdded = true;
-  try {
-    const line = await fetchWalkingLine([{ lat: fix.lat, lng: fix.lng }, first]);
-    if (!Array.isArray(line) || line.length < 2) return;
-    map.prependLine(line);
-    if (state.screen === "preview" && !previewTour) map.setLineProgress(1);
-  } catch {
-    /* keep the published route without the approach */
-  }
 }
 
 function onTourViewport() {
@@ -352,19 +345,6 @@ function runTourLeg(fromT, stopIndex) {
   previewRaf = requestAnimationFrame(tick);
 }
 
-function openNaverMap(app, web) {
-  const https = web || app;
-  const mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || "");
-  if (mobile && app && String(app).startsWith("nmap:")) {
-    window.location.href = app;
-    window.setTimeout(() => {
-      if (document.visibilityState === "visible" && https) window.open(https, "_blank", "noopener,noreferrer");
-    }, 900);
-    return;
-  }
-  if (https) window.open(https, "_blank", "noopener,noreferrer");
-}
-
 function flyPieceThen(done) {
   const from = ui.querySelector(".piece-award");
   const to = ui.querySelector("[data-action=notebook]");
@@ -417,7 +397,7 @@ async function hydrateMediaImages(root) {
     ...root.querySelectorAll("image"),
   ].filter((node) => {
     const href = node.getAttribute("src") || node.getAttribute("href") || "";
-    return href.includes("/api/media");
+    return href.startsWith("/uploads/");
   });
   const tiles = [...root.querySelectorAll("[data-photo]")];
   const srcs = new Set([
@@ -446,6 +426,93 @@ async function hydrateMediaImages(root) {
   );
 }
 
+function editorVisible() {
+  return state.screen === "create" && ["record", "draw", "review"].includes(createDraft.step);
+}
+
+function editorGeometry() {
+  const preview = draftPreview(createDraft);
+  return { line: preview.routeLine, stops: preview.places.map((p, i) => ({ ...p, id: `stop-${i + 1}`, order: i + 1, title: p.name })) };
+}
+
+function syncEditor() {
+  const show = editorVisible();
+  if (editorHost) editorHost.hidden = !show;
+  if (!show) {
+    if (editorMounted) {
+      editor.unmount();
+      editorMounted = false;
+    }
+    stopGpsWatch();
+    return;
+  }
+  if (!editorMounted) {
+    editor.mount(document.querySelector("#route-editor"));
+    editorMounted = true;
+    editor.setClick((lat, lng) => {
+      if (createDraft.step !== "draw") return;
+      if (createDraft.draw.mode === "stops") {
+        createDraft = { ...createDraft, draw: reduceDrawState(createDraft.draw, { type: "ADD_STOP", lat, lng }) };
+      } else {
+        createDraft = { ...createDraft, draw: reduceDrawState(createDraft.draw, { type: "ADD_VERTEX", lat, lng }) };
+      }
+      refreshEditor();
+      paint();
+    });
+    editor.setStopDrag((id, lat, lng) => {
+      createDraft = { ...createDraft, draw: reduceDrawState(createDraft.draw, { type: "MOVE_STOP", id, lat, lng }) };
+      refreshEditor();
+    });
+  }
+  refreshEditor();
+}
+
+function refreshEditor() {
+  if (!editorMounted) return;
+  const { line, stops } = editorGeometry();
+  editor.setLine(line);
+  editor.setStops(stops, createDraft.step === "draw");
+  editor.setVertices(createDraft.draw?.vertices || [], createDraft.step === "draw");
+  editor.fit(line, stops);
+}
+
+function stopGpsWatch() {
+  if (recordWatchId != null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(recordWatchId);
+    recordWatchId = null;
+  }
+}
+
+function startGpsWatch() {
+  stopGpsWatch();
+  const geo = typeof navigator !== "undefined" ? navigator.geolocation : null;
+  if (!geo) {
+    createError = "이 기기에서 위치를 쓸 수 없습니다.";
+    paint();
+    return;
+  }
+  recordWatchId = geo.watchPosition(
+    (pos) => {
+      createDraft = {
+        ...createDraft,
+        gps: reduceGpsSession(createDraft.gps, {
+          type: "SAMPLE",
+          reading: { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy },
+        }),
+      };
+      if (editorMounted) {
+        editor.setLine(gpsSessionToLine(createDraft.gps));
+        editor.setPlayer(pos.coords.latitude, pos.coords.longitude);
+        editor.setStops(createDraft.gps.stops, false);
+      }
+    },
+    () => {
+      createDraft = { ...createDraft, gps: { ...createDraft.gps, lastRejected: "gps-error" } };
+    },
+    { enableHighAccuracy: true, maximumAge: 1000, timeout: 12000 },
+  );
+}
+
 function paint() {
   ui.innerHTML = render({
     ...state,
@@ -462,18 +529,12 @@ function paint() {
   });
   bindUi();
   bindAssemble();
+  syncEditor();
   void hydrateMediaImages(ui);
 }
 
 function bindUi() {
   ui.onclick = (event) => {
-    const naver = event.target.closest("a.tour-naver");
-    if (naver) {
-      event.preventDefault();
-      event.stopPropagation();
-      openNaverMap(naver.getAttribute("href"), naver.getAttribute("data-web"));
-      return;
-    }
     const simBtn = event.target.closest("[data-sim]");
     if (simBtn) {
       handleSim(simBtn.dataset.sim, simBtn.dataset.value);
@@ -484,71 +545,89 @@ function bindUi() {
   };
   ui.onchange = (event) => {
     const input = event.target;
-    if (!(input instanceof HTMLInputElement)) return;
-    if (input.name === "placeCount") {
-      const n = Number(input.value);
-      createDraft = { ...createDraft, placeCount: n, rows: padRows(createDraft.rows, n) };
-      paint();
-      return;
-    }
     if (input.name === "jigsawSource") {
       createDraft = { ...createDraft, jigsawSource: input.value };
       paint();
       return;
     }
     if (input.name === "jigsawFile" && input.files?.[0]) {
-      const file = input.files[0];
       const reader = new FileReader();
       reader.onload = () => {
         createDraft = { ...createDraft, imageDataUrl: reader.result };
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(input.files[0]);
     }
+    if (input.name === "gpxFile" && input.files?.[0]) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const vertices = parseGpxTrack(String(reader.result));
+          createDraft = {
+            ...createDraft,
+            method: "creator-gpx-import",
+            step: "draw",
+            gpxError: "",
+            draw: reduceDrawState(emptyDrawState(), { type: "LOAD", vertices, stops: [] }),
+          };
+        } catch (error) {
+          createDraft = { ...createDraft, gpxError: error.message || "GPX를 읽지 못했습니다." };
+        }
+        paint();
+      };
+      reader.readAsText(input.files[0]);
+    }
+    if (input.name === "ownership") createDraft = { ...createDraft, ownershipConfirmed: input.checked };
+    if (input.name === "public-stop") {
+      const i = Number(input.dataset.index);
+      patchReviewPlace(i, { publicStopConfirmed: input.checked });
+    }
+    if (input.name === "check-walked") patchCheck("walked", input.checked);
+    if (input.name === "check-public") patchCheck("public", input.checked);
+    if (input.name === "check-private") patchCheck("noPrivate", input.checked);
+    if (input.name === "check-alley") patchCheck("noAlley", input.checked);
+    if (input.name === "check-purchase") patchCheck("noPurchase", input.checked);
   };
   ui.oninput = (event) => {
     const input = event.target;
-    if (!(input instanceof HTMLInputElement)) return;
     if (input.name === "title") createDraft = { ...createDraft, title: input.value };
+    if (input.name === "aiJson") createDraft = { ...createDraft, aiText: input.value };
+    if (input.name === "stop-title") patchDrawStop(input.dataset.id, { title: input.value });
+    if (input.name === "stop-directions") patchDrawStop(input.dataset.id, { directions: input.value });
+    if (input.name === "review-name") patchReviewPlace(Number(input.dataset.index), { name: input.value });
+    if (input.name === "review-blurb") patchReviewPlace(Number(input.dataset.index), { blurb: input.value });
   };
-  ui.querySelectorAll("input[name='place-url']").forEach((input) => {
-    const run = () => onPlaceUrl(Number(input.dataset.index), input.value.trim());
-    input.addEventListener("change", run);
-    input.addEventListener("paste", () => queueMicrotask(run));
-  });
   const arrive = ui.querySelector('[data-action="arrive"]');
   if (arrive && !state.canAutoArrive) arrive.disabled = true;
 }
 
-function padRows(rows, n) {
-  const next = rows.slice(0, n);
-  while (next.length < n) next.push({ url: "", resolved: null, resolving: false });
-  return next;
+function patchCheck(key, value) {
+  createDraft = { ...createDraft, checklist: { ...createDraft.checklist, [key]: value } };
 }
 
-async function onPlaceUrl(index, url) {
-  if (!url) return;
-  const rows = [...createDraft.rows];
-  if (rows[index]?.url === url && (rows[index].resolving || rows[index].resolved?.ok)) return;
-  rows[index] = { ...rows[index], url, resolving: true, resolved: null };
-  createDraft = { ...createDraft, rows };
-  paint();
-  try {
-    const resolved = await resolvePlace(url);
-    if (createDraft.rows[index]?.url !== url) return;
-    createDraft = {
-      ...createDraft,
-      rows: createDraft.rows.map((row, i) => (i === index ? { url, resolved, resolving: false } : row)),
-    };
-  } catch {
-    if (createDraft.rows[index]?.url !== url) return;
-    createDraft = {
-      ...createDraft,
-      rows: createDraft.rows.map((row, i) =>
-        i === index ? { url, resolved: { ok: false, error: createCopy.needServer }, resolving: false } : row,
+function patchDrawStop(id, patch) {
+  createDraft = { ...createDraft, draw: reduceDrawState(createDraft.draw, { type: "UPDATE_STOP", id, patch }) };
+}
+
+function patchReviewPlace(index, patch) {
+  if (createDraft.method === "creator-gps-recording") {
+    const stops = (createDraft.gps.stops || []).map((s, i) => (i === index ? { ...s, title: patch.name ?? s.title, directions: patch.blurb ?? s.directions, publicStopConfirmed: patch.publicStopConfirmed ?? s.publicStopConfirmed } : s));
+    createDraft = { ...createDraft, gps: { ...createDraft.gps, stops } };
+    return;
+  }
+  if (createDraft.method === "ai-assisted-draft" && createDraft.aiResult?.draft?.stops) {
+    const draftJson = {
+      ...createDraft.aiResult.draft,
+      stops: createDraft.aiResult.draft.stops.map((s, i) =>
+        i === index ? { ...s, title: patch.name ?? s.title, directions: patch.blurb ?? s.directions } : s,
       ),
     };
+    createDraft = { ...createDraft, aiResult: { ...createDraft.aiResult, draft: draftJson } };
+    return;
   }
-  paint();
+  const stops = (createDraft.draw.stops || []).map((s, i) =>
+    i === index ? { ...s, title: patch.name ?? s.title, directions: patch.blurb ?? s.directions, publicStopConfirmed: patch.publicStopConfirmed ?? s.publicStopConfirmed } : s,
+  );
+  createDraft = { ...createDraft, draw: { ...createDraft.draw, stops } };
 }
 
 function bindAssemble() {
@@ -618,6 +697,109 @@ async function handleAction(action, dataset) {
       createError = "";
       dispatch({ type: "OPEN_CREATE" });
       break;
+    case "create-landing":
+      stopGpsWatch();
+      createDraft = { ...createDraft, step: "landing" };
+      paint();
+      break;
+    case "create-method-gps":
+      createDraft = { ...createDraft, method: "creator-gps-recording", step: "record", gps: emptyGpsSession() };
+      paint();
+      break;
+    case "create-method-osm":
+      createDraft = { ...createDraft, method: "openstreetmap-assisted-drawing", step: "draw", draw: emptyDrawState() };
+      paint();
+      break;
+    case "create-method-ai":
+      createDraft = { ...createDraft, method: "ai-assisted-draft", step: "ai", aiResult: null };
+      paint();
+      break;
+    case "gps-start":
+      createDraft = { ...createDraft, gps: reduceGpsSession(createDraft.gps, { type: "START" }) };
+      startGpsWatch();
+      paint();
+      break;
+    case "gps-pause":
+      createDraft = { ...createDraft, gps: reduceGpsSession(createDraft.gps, { type: "PAUSE" }) };
+      paint();
+      break;
+    case "gps-resume":
+      createDraft = { ...createDraft, gps: reduceGpsSession(createDraft.gps, { type: "RESUME" }) };
+      paint();
+      break;
+    case "gps-add-stop":
+      createDraft = { ...createDraft, gps: reduceGpsSession(createDraft.gps, { type: "ADD_STOP", title: "", publicStopConfirmed: false }) };
+      paint();
+      break;
+    case "gps-cancel":
+      stopGpsWatch();
+      createDraft = { ...createDraft, gps: emptyGpsSession(), step: "landing" };
+      paint();
+      break;
+    case "gps-finish":
+      stopGpsWatch();
+      createDraft = { ...createDraft, step: "review" };
+      paint();
+      break;
+    case "draw-mode-stops":
+      createDraft = { ...createDraft, draw: reduceDrawState(createDraft.draw, { type: "SET_MODE", mode: "stops" }) };
+      paint();
+      break;
+    case "draw-mode-path":
+      createDraft = { ...createDraft, draw: reduceDrawState(createDraft.draw, { type: "SET_MODE", mode: "path" }) };
+      paint();
+      break;
+    case "draw-undo":
+      createDraft = { ...createDraft, draw: reduceDrawState(createDraft.draw, { type: "UNDO_VERTEX" }) };
+      paint();
+      break;
+    case "draw-finish":
+      createDraft = { ...createDraft, step: "review" };
+      paint();
+      break;
+    case "create-back-method":
+      createDraft = {
+        ...createDraft,
+        step: createDraft.method === "creator-gps-recording" ? "record" : createDraft.method === "ai-assisted-draft" ? "ai" : "draw",
+      };
+      paint();
+      break;
+    case "copy-ai-prompt":
+      try {
+        await navigator.clipboard.writeText(AI_ROUTE_PROMPT);
+      } catch {
+        createError = "프롬프트를 복사하지 못했습니다.";
+      }
+      paint();
+      break;
+    case "validate-ai": {
+      const result = await validateAiJson(createDraft.aiText || "");
+      createDraft = { ...createDraft, aiResult: result };
+      if (!result.ok) createError = result.errors?.[0] || "JSON을 확인하세요.";
+      else createError = "";
+      paint();
+      break;
+    }
+    case "ai-to-editor": {
+      const draftJson = createDraft.aiResult?.draft;
+      const stops = (draftJson?.stops || []).map((s) => ({
+        id: s.id,
+        order: s.order,
+        lat: s.coordinates.lat,
+        lng: s.coordinates.lng,
+        title: s.title,
+        directions: s.directions,
+        publicStopConfirmed: true,
+        coordinateSource: "ai-assisted-open-data",
+      }));
+      createDraft = {
+        ...createDraft,
+        step: "draw",
+        draw: reduceDrawState(emptyDrawState(), { type: "LOAD", stops, vertices: draftJson?.route?.geometry?.coordinates || [] }),
+      };
+      paint();
+      break;
+    }
     case "edit-game":
       try {
         const game = await getGame(dataset.id);
@@ -642,6 +824,10 @@ async function handleAction(action, dataset) {
     case "select-game":
       try {
         const game = await getGame(dataset.id);
+        if (game.quarantined || game.playable === false) {
+          dispatch({ type: "GAMES_ERROR", error: "quarantined" });
+          break;
+        }
         persist.clear();
         mapReady = false;
         approachAdded = false;
@@ -750,23 +936,40 @@ async function submitCreate() {
   createBusy = true;
   createError = "";
   paint();
-  const places = (createDraft.rows || []).slice(0, createDraft.placeCount).map((row) => ({
-    naverUrl: row.url,
-    name: row.resolved?.name,
-    lat: row.resolved?.lat,
-    lng: row.resolved?.lng,
-    address: row.resolved?.address,
-    photoUrl: row.resolved?.photoUrl,
-    blurb: row.resolved?.blurb,
+  const preview = draftPreview(createDraft);
+  const checks = createDraft.checklist || {};
+  const checklistComplete = Boolean(checks.walked && checks.public && checks.noPrivate && checks.noAlley && checks.noPurchase);
+  const places = preview.places.map((p) => ({
+    name: p.name,
+    lat: p.lat,
+    lng: p.lng,
+    blurb: p.blurb,
+    publicStopConfirmed: p.publicStopConfirmed,
+    photoUrl: p.photoUrl || "",
+    coordinateSource: p.coordinateSource,
+    arrivalRadiusMeters: p.arrivalRadiusMeters || 60,
+    directions: p.blurb,
   }));
   try {
     const payload = {
       title: createDraft.title,
-      placeCount: createDraft.placeCount,
+      placeCount: 4,
       places,
+      routeLine: preview.routeLine,
+      checklistComplete,
+      warnings: preview.warnings || [],
+      sources: preview.sources || [],
+      source: {
+        method: preview.method,
+        proprietaryProviderDerived: false,
+        mapDataAttribution: "© OpenStreetMap contributors",
+        mapDataLicense: "ODbL-1.0",
+        generatedBy: preview.method === "ai-assisted-draft" ? "ChatGPT" : null,
+      },
       jigsaw: {
-        source: createDraft.jigsawSource,
+        source: createDraft.jigsawSource === "upload" ? "upload" : "system",
         imageDataUrl: createDraft.imageDataUrl,
+        ownershipConfirmed: Boolean(createDraft.ownershipConfirmed),
         systemImageId: createDraft.systemImageId || pickRandomImage(),
       },
     };

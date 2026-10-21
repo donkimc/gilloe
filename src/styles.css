@@ -263,14 +263,16 @@ body {
   margin: 0.6rem 0;
 }
 
-.map-host {
+.map-host,
+.editor-host {
   position: sticky;
   bottom: 0;
   height: 38vh;
   min-height: 180px;
   border-top: 1px solid #2a3148;
 }
-.map-host[hidden] {
+.map-host[hidden],
+.editor-host[hidden] {
   display: none !important;
 }
 #app.is-tour {
@@ -418,7 +420,18 @@ body {
   pointer-events: none;
   transition: transform 0.55s ease, opacity 0.55s ease;
 }
-#map { height: calc(100% - 1.4rem); }
+#map,
+#route-editor { height: calc(100% - 1.4rem); }
+.method-grid { display: grid; gap: 0.6rem; margin: 1rem 0; }
+.prompt-block { white-space: pre-wrap; font-size: 0.72rem; background: #14222c; padding: 0.8rem; border-radius: 12px; max-height: 12rem; overflow: auto; }
+.status-chip { display: inline-block; margin-top: 0.4rem; font-size: 0.72rem; color: #d5bd91; }
+.status-chip--ok { color: #9ad7a8; }
+.status-chip--bad { color: #e8a0a0; }
+.osm-credit { font-size: 0.7rem; color: var(--muted); }
+.create-screen[data-create-step="record"],
+.create-screen[data-create-step="draw"],
+.create-screen[data-create-step="review"] { padding-bottom: 2rem; }
+.choice:disabled { opacity: 0.55; }
 .osm {
   margin: 0;
   padding: 0.2rem 0.6rem;

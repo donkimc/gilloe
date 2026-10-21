@@ -71,11 +71,12 @@ describe("puzzle images", () => {
 });
 
 describe("photo pieces", () => {
-  it("clips Naver photos to a jigsaw piece", async () => {
+  it("clips uploaded photos to a jigsaw piece", async () => {
     const { pieceMarkup } = await import("./assemble.js");
-    const html = pieceMarkup("piece-2", "mark-tile--large", { imageUrl: "https://ldb-phinf.pstatic.net/a.jpg" }, 2);
+    const html = pieceMarkup("piece-2", "mark-tile--large", { imageUrl: "/uploads/a.jpg" }, 2);
     expect(html).toContain("<image");
-    expect(html).toContain("/api/media?u=");
+    expect(html).toContain("/uploads/a.jpg");
+    expect(html).not.toContain("/api/media");
     expect(html).toContain("clipPath");
     expect(html).toContain("mark-num");
     expect(html).toContain("2");
