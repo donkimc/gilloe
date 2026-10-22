@@ -5,7 +5,7 @@ REQUEST
 - City/area: [Cheonho-dong, Gangdong-gu, Seoul]
 - Start area: [Cheonho Station]
 - Desired duration: [30 minutes]
-- Number of stops: [4]
+- Number of stops: [4]  (exactly four; never six)
 - Approximate walking distance: [600–900 metres]
 - Theme: [easy fictional neighborhood mystery]
 - Time of use: [daytime]
@@ -20,6 +20,10 @@ SOURCE RULES
 5. Include a direct source URL, licence name, licence URL, and list of fields supported by every source.
 6. If you cannot verify a required coordinate from an allowed source, do not guess. Return status "needs_source_data", use empty route coordinates and stops, and explain the missing information in warnings.
 7. Do not include remote image URLs.
+8. Do not use Nominatim.
+9. Do not stop at an OSM search results page. Those pages have names but no coordinates.
+10. To read coordinates, open an OSM node or way permalink or the OSM API JSON. Examples: https://www.openstreetmap.org/node/5801572034 (HTML includes "Location: lat, lon") and https://api.openstreetmap.org/api/0.6/node/5801572034.json .
+11. If Overpass is blocked, still use those OSM node/way URLs. Only return needs_source_data after those URLs fail. If they succeed, return status "draft" with exactly four stops.
 
 ROUTE RULES
 1. This is an unverified planning draft, not navigation or safety advice.

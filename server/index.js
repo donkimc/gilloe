@@ -3,7 +3,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatWalkLabel, migrateGameRecord, placesMoved, validateGamePayload, walkingStatsFromLine } from "../src/routeSchema.js";
-import { validateAiDraft, publicationBlockedReason } from "../src/routeSchema.js";
+import { publicationBlockedReason } from "../src/routeSchema.js";
+import { lookupOsmPlace } from "../src/osmPlace.js";
+import { lookupOsmWalkRoute } from "../src/osmWalkRoute.js";
+import { createPartyRecord, getParty, joinByCode, partyAction, sweepParties } from "./parties.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SEED_FILE = path.join(__dirname, "data", "games.json");
@@ -245,6 +248,7 @@ async function assembleSavedGame(check, previous = null) {
     quarantined: false,
     quarantineReason: null,
     playable: true,
+    puzzleCount: 9,
     publicationBlocked: fieldStatus !== "field-verified",
     warnings,
     createdAt: previous?.createdAt || Date.now(),
@@ -257,7 +261,7 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(204, {
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
-      "access-control-allow-headers": "content-type",
+      "access-control-allow-headers": "content-type, x-party-token",
     });
     res.end();
     return;
@@ -280,11 +284,82 @@ const server = http.createServer(async (req, res) => {
       return gone(res, "이 기능은 제거되었습니다. OpenStreetMap 또는 GPS로 경로를 만드세요.");
     }
 
-    if (req.method === "POST" && url.pathname === "/api/ai/validate") {
+    sweepParties();
+    const clientKey = String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "local").split(",")[0].trim();
+    const partyToken = String(req.headers["x-party-token"] || "");
+
+    if (req.method === "POST" && url.pathname === "/api/parties") {
       const body = await readBody(req);
-      const result = validateAiDraft(String(body.json || ""));
-      send(res, result.ok ? 200 : 400, result);
-      return;
+      const gameId = String(body.gameId || "");
+      const games = await readGames();
+      const game = games.find((g) => g.id === gameId && g.playable !== false && !g.quarantined);
+      if (!game) {
+        return send(res, 400, { error: "함께 걸을 게임을 고르세요." });
+      }
+      const result = createPartyRecord(gameId, clientKey, game.placeCount);
+      return send(res, result.ok ? 201 : result.status || 400, result);
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/parties/join") {
+      const body = await readBody(req);
+      const result = joinByCode(body.code, clientKey);
+      return send(res, result.ok ? 200 : result.status || 400, result);
+    }
+
+    if (url.pathname.startsWith("/api/parties/")) {
+      const parts = url.pathname.split("/").filter(Boolean);
+      const partyId = parts[2];
+      const actionName = parts[3] || "";
+      if (!partyId) return notFound(res);
+      if (req.method === "GET" && !actionName) {
+        const result = getParty(partyId, partyToken, Number(url.searchParams.get("afterVersion") || 0));
+        return send(res, result.ok ? 200 : result.status || 400, result);
+      }
+      if (req.method === "POST") {
+        const body = await readBody(req);
+        const kind =
+          actionName === "ready"
+            ? "ready"
+            : actionName === "leave"
+              ? "leave"
+              : actionName === "convert-to-solo"
+                ? "solo"
+                : actionName === "complete-ready"
+                  ? "complete-ready"
+                  : actionName === "place"
+                    ? "place"
+                    : actionName === "collect"
+                      ? "collect"
+                      : actionName === "arrive"
+                        ? "checkpoint"
+                        : "";
+        if (!kind) return notFound(res);
+        const result = partyAction(partyId, partyToken, kind, body);
+        return send(res, result.ok ? 200 : result.status || 400, result);
+      }
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/ai/validate") {
+      return gone(res, "AI JSON 가져오기는 더 이상 지원하지 않습니다.");
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/osm/place") {
+      try {
+        const place = await lookupOsmPlace(url.searchParams.get("lat"), url.searchParams.get("lng"));
+        return send(res, 200, place);
+      } catch (error) {
+        return send(res, 400, { error: error.message || "OpenStreetMap 장소를 찾지 못했습니다." });
+      }
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/osm/walk-route") {
+      try {
+        const body = await readBody(req);
+        const route = await lookupOsmWalkRoute(body.stops);
+        return send(res, 200, route);
+      } catch (error) {
+        return send(res, 400, { error: error.message || "보행 경로를 만들지 못했습니다." });
+      }
     }
 
     if (req.method === "GET" && url.pathname === "/api/games") {

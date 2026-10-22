@@ -20,6 +20,8 @@ describe("state transitions", () => {
   it("opens a game at the safety screen", () => {
     let state = createInitialState();
     state = reduce(state, { type: "SELECT_GAME", game: sampleGame });
+    expect(state.screen).toBe("mode");
+    state = reduce(state, { type: "CHOOSE_SOLO" });
     expect(state.screen).toBe("safety");
     expect(state.gameId).toBe("cheonho-pieces");
     state = reduce(state, { type: "ACCEPT_SAFETY" });
@@ -65,9 +67,9 @@ describe("state transitions", () => {
       game: sampleGame,
       screen: "place",
       currentStop: 4,
-      collectedPieceIds: ["piece-1", "piece-2", "piece-3"],
+      collectedPieceIds: ["piece-1", "piece-2", "piece-3", "piece-4", "piece-6", "piece-7"],
     };
-    state = reduce(state, { type: "COLLECT_PIECE", pieceId: "piece-4" });
+    state = reduce(state, { type: "COLLECT_PIECE" });
     expect(state.screen).toBe("assemble");
   });
 

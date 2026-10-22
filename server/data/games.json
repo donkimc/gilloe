@@ -1,6 +1,387 @@
 [
   {
+    "id": "game-mvjhgqln",
+    "schemaVersion": 1,
+    "title": "천호 둔촌 2탄",
+    "type": "puzzle",
+    "placeCount": 4,
+    "places": [
+      {
+        "order": 1,
+        "name": "현대",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요.",
+        "lat": 37.538834664285716,
+        "lng": 127.12446465357141,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 2,
+        "name": "청춘극장",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요.",
+        "lat": 37.538811,
+        "lng": 127.126929,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 3,
+        "name": "고고정",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요.",
+        "lat": 37.5359552,
+        "lng": 127.1379611,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 4,
+        "name": "맥도날드 서울둔촌DT점 앞",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요.",
+        "lat": 37.5293884,
+        "lng": 127.1371841,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      }
+    ],
+    "jigsaw": {
+      "source": "system",
+      "imageUrl": "",
+      "systemImageId": "station",
+      "ownershipConfirmed": false
+    },
+    "stats": {
+      "walkingMeters": 2639,
+      "durationMinutes": 47
+    },
+    "walkLabel": "약 2.6km · 약 47분",
+    "routeLine": [
+      [
+        127.12446465357141,
+        37.538834664285716
+      ],
+      [
+        127.1240533,
+        37.5385857
+      ],
+      [
+        127.1248551,
+        37.5383177
+      ],
+      [
+        127.1252318,
+        37.5393413
+      ],
+      [
+        127.1264549,
+        37.5392136
+      ],
+      [
+        127.1267545,
+        37.5390633
+      ],
+      [
+        127.1267152,
+        37.5387402
+      ],
+      [
+        127.126929,
+        37.538811
+      ],
+      [
+        127.1267152,
+        37.5387402
+      ],
+      [
+        127.1267545,
+        37.5390633
+      ],
+      [
+        127.12746,
+        37.53898
+      ],
+      [
+        127.1284934,
+        37.5384788
+      ],
+      [
+        127.129278,
+        37.5383603
+      ],
+      [
+        127.1296749,
+        37.5390083
+      ],
+      [
+        127.1300018,
+        37.5388713
+      ],
+      [
+        127.1303988,
+        37.5388121
+      ],
+      [
+        127.1304717,
+        37.5388984
+      ],
+      [
+        127.133179,
+        37.5375747
+      ],
+      [
+        127.13477,
+        37.53694
+      ],
+      [
+        127.1379524,
+        37.5354809
+      ],
+      [
+        127.1381309,
+        37.5356786
+      ],
+      [
+        127.1379611,
+        37.5359552
+      ],
+      [
+        127.1381309,
+        37.5356786
+      ],
+      [
+        127.1379524,
+        37.5354809
+      ],
+      [
+        127.1389576,
+        37.5350877
+      ],
+      [
+        127.1378506,
+        37.5320848
+      ],
+      [
+        127.1380533,
+        37.5320151
+      ],
+      [
+        127.1376246,
+        37.5309031
+      ],
+      [
+        127.138243,
+        37.5307588
+      ],
+      [
+        127.137725,
+        37.5293683
+      ],
+      [
+        127.1371841,
+        37.5293884
+      ]
+    ],
+    "source": {
+      "method": "openstreetmap-assisted-drawing",
+      "proprietaryProviderDerived": false,
+      "mapDataAttribution": "© OpenStreetMap contributors",
+      "mapDataLicense": "ODbL-1.0"
+    },
+    "sources": [],
+    "fieldVerified": false,
+    "fieldStatus": "verification-required",
+    "quarantined": false,
+    "quarantineReason": null,
+    "playable": true,
+    "puzzleCount": 9,
+    "publicationBlocked": true,
+    "warnings": [
+      "현장 검증 전 임시 경로"
+    ],
+    "createdAt": 1792670054315,
+    "updatedAt": 1792670054315
+  },
+  {
+    "id": "game-mvjh11wn",
+    "schemaVersion": 1,
+    "title": "천호 to 둔촌",
+    "type": "puzzle",
+    "placeCount": 6,
+    "places": [
+      {
+        "order": 1,
+        "name": "명동찌개마을",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요.",
+        "lat": 37.5390384,
+        "lng": 127.1278437,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 2,
+        "name": "프레드피자 강동점",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요.",
+        "lat": 37.5378746,
+        "lng": 127.1335604,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 3,
+        "name": "해녀집",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요.",
+        "lat": 37.5355462,
+        "lng": 127.1367164,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 4,
+        "name": "타마이",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요.",
+        "lat": 37.5355782,
+        "lng": 127.1400798,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 5,
+        "name": "끌로에",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요.",
+        "lat": 37.5289739,
+        "lng": 127.1388149,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 6,
+        "name": "맥도날드 서울둔촌DT점 앞",
+        "address": "",
+        "blurb": "공개된 보행 공간에서 멈춰 조각을 받으세요.",
+        "lat": 37.5293884,
+        "lng": 127.1371841,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      }
+    ],
+    "jigsaw": {
+      "source": "system",
+      "imageUrl": "",
+      "systemImageId": "market",
+      "ownershipConfirmed": false
+    },
+    "stats": {
+      "walkingMeters": 2091,
+      "durationMinutes": 43
+    },
+    "walkLabel": "약 2.1km · 약 43분",
+    "routeLine": [
+      [
+        127.1278437,
+        37.5390384
+      ],
+      [
+        127.1335604,
+        37.5378746
+      ],
+      [
+        127.1367164,
+        37.5355462
+      ],
+      [
+        127.1400798,
+        37.5355782
+      ],
+      [
+        127.1388149,
+        37.5289739
+      ],
+      [
+        127.1371841,
+        37.5293884
+      ]
+    ],
+    "source": {
+      "method": "openstreetmap-assisted-drawing",
+      "proprietaryProviderDerived": false,
+      "mapDataAttribution": "© OpenStreetMap contributors",
+      "mapDataLicense": "ODbL-1.0"
+    },
+    "sources": [],
+    "fieldVerified": false,
+    "fieldStatus": "verification-required",
+    "quarantined": false,
+    "quarantineReason": null,
+    "playable": true,
+    "puzzleCount": 9,
+    "publicationBlocked": true,
+    "warnings": [
+      "현장 검증 전 임시 경로"
+    ],
+    "createdAt": 1792669322471,
+    "updatedAt": 1792669322471
+  },
+  {
     "id": "design-sample-walk",
+    "schemaVersion": 1,
     "title": "천호, 네 조각의 작은 발견",
     "type": "puzzle",
     "placeCount": 4,
@@ -17,7 +398,7 @@
         "coordinateSource": "openstreetmap-assisted-drawing",
         "fieldVerified": false,
         "publicStopConfirmed": true,
-        "directions": "공개 인도에서만 이동하세요.",
+        "directions": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
         "safeStandingNote": "requires physical verification"
       },
       {
@@ -28,11 +409,11 @@
         "lat": 37.53891,
         "lng": 127.12755,
         "photoUrl": "",
-        "arrivalRadiusMeters": 55,
+        "arrivalRadiusMeters": 60,
         "coordinateSource": "openstreetmap-assisted-drawing",
         "fieldVerified": false,
         "publicStopConfirmed": true,
-        "directions": "공개 인도에서만 이동하세요.",
+        "directions": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
         "safeStandingNote": "requires physical verification"
       },
       {
@@ -47,7 +428,7 @@
         "coordinateSource": "openstreetmap-assisted-drawing",
         "fieldVerified": false,
         "publicStopConfirmed": true,
-        "directions": "공개 인도에서만 이동하세요.",
+        "directions": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
         "safeStandingNote": "requires physical verification"
       },
       {
@@ -62,17 +443,18 @@
         "coordinateSource": "openstreetmap-assisted-drawing",
         "fieldVerified": false,
         "publicStopConfirmed": true,
-        "directions": "공개 인도에서만 이동하세요.",
+        "directions": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
         "safeStandingNote": "requires physical verification"
       }
     ],
     "jigsaw": {
       "source": "system",
       "imageUrl": "",
-      "systemImageId": "market"
+      "systemImageId": "market",
+      "ownershipConfirmed": false
     },
     "stats": {
-      "walkingMeters": 1100,
+      "walkingMeters": 1146,
       "durationMinutes": 25
     },
     "walkLabel": "약 1.1km · 약 25분",
@@ -298,35 +680,25 @@
         37.54239
       ]
     ],
-    "fieldVerified": false,
-    "createdAt": 1792567541482,
-    "updatedAt": 1789185923715,
-    "schemaVersion": 1,
     "source": {
       "method": "openstreetmap-assisted-drawing",
       "proprietaryProviderDerived": false,
       "mapDataAttribution": "© OpenStreetMap contributors",
       "mapDataLicense": "ODbL-1.0"
     },
+    "sources": [],
+    "fieldVerified": false,
     "fieldStatus": "verification-required",
     "quarantined": false,
     "quarantineReason": null,
     "playable": true,
+    "puzzleCount": 9,
+    "publicationBlocked": true,
     "warnings": [
       "현장 검증 전 임시 경로"
     ],
-    "sources": [
-      {
-        "name": "OpenStreetMap",
-        "url": "https://www.openstreetmap.org/#map=16/37.53865/127.12385",
-        "licence": "ODbL",
-        "licenceUrl": "https://opendatacommons.org/licenses/odbl/",
-        "supports": [
-          "routeLine",
-          "stops"
-        ]
-      }
-    ]
+    "createdAt": 1792567541482,
+    "updatedAt": 1792660130602
   },
   {
     "id": "game-mtx2nyie",
@@ -594,10 +966,12 @@
     "playable": false,
     "warnings": [
       "제한된 지도 출처 데이터가 있어 다시 작성해야 합니다."
-    ]
+    ],
+    "puzzleCount": 9
   },
   {
     "id": "cheonho-pieces",
+    "schemaVersion": 1,
     "title": "천호에서 길로 마크 모으기",
     "type": "puzzle",
     "placeCount": 4,
@@ -614,7 +988,7 @@
         "coordinateSource": "openstreetmap-assisted-drawing",
         "fieldVerified": false,
         "publicStopConfirmed": true,
-        "directions": "공개 인도에서만 이동하세요.",
+        "directions": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
         "safeStandingNote": "requires physical verification"
       },
       {
@@ -625,11 +999,11 @@
         "lat": 37.53891,
         "lng": 127.12755,
         "photoUrl": "",
-        "arrivalRadiusMeters": 55,
+        "arrivalRadiusMeters": 60,
         "coordinateSource": "openstreetmap-assisted-drawing",
         "fieldVerified": false,
         "publicStopConfirmed": true,
-        "directions": "공개 인도에서만 이동하세요.",
+        "directions": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
         "safeStandingNote": "requires physical verification"
       },
       {
@@ -644,7 +1018,7 @@
         "coordinateSource": "openstreetmap-assisted-drawing",
         "fieldVerified": false,
         "publicStopConfirmed": true,
-        "directions": "공개 인도에서만 이동하세요.",
+        "directions": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
         "safeStandingNote": "requires physical verification"
       },
       {
@@ -659,17 +1033,18 @@
         "coordinateSource": "openstreetmap-assisted-drawing",
         "fieldVerified": false,
         "publicStopConfirmed": true,
-        "directions": "공개 인도에서만 이동하세요.",
+        "directions": "공개된 보행 공간에서 멈춰 조각을 받으세요. 현장 확인이 필요합니다.",
         "safeStandingNote": "requires physical verification"
       }
     ],
     "jigsaw": {
       "source": "system",
       "imageUrl": "",
-      "systemImageId": "station"
+      "systemImageId": "station",
+      "ownershipConfirmed": false
     },
     "stats": {
-      "walkingMeters": 1100,
+      "walkingMeters": 1146,
       "durationMinutes": 25
     },
     "walkLabel": "약 1.1km · 약 25분",
@@ -895,34 +1270,24 @@
         37.54239
       ]
     ],
-    "fieldVerified": false,
-    "createdAt": 1789185923715,
-    "updatedAt": 1789185923715,
-    "schemaVersion": 1,
     "source": {
       "method": "openstreetmap-assisted-drawing",
       "proprietaryProviderDerived": false,
       "mapDataAttribution": "© OpenStreetMap contributors",
       "mapDataLicense": "ODbL-1.0"
     },
+    "sources": [],
+    "fieldVerified": false,
     "fieldStatus": "verification-required",
     "quarantined": false,
     "quarantineReason": null,
     "playable": true,
+    "puzzleCount": 9,
+    "publicationBlocked": true,
     "warnings": [
       "현장 검증 전 임시 경로"
     ],
-    "sources": [
-      {
-        "name": "OpenStreetMap",
-        "url": "https://www.openstreetmap.org/#map=16/37.53865/127.12385",
-        "licence": "ODbL",
-        "licenceUrl": "https://opendatacommons.org/licenses/odbl/",
-        "supports": [
-          "routeLine",
-          "stops"
-        ]
-      }
-    ]
+    "createdAt": 1789185923715,
+    "updatedAt": 1792660123675
   }
 ]

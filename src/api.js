@@ -39,11 +39,20 @@ export async function deleteGame(id) {
   return data;
 }
 
-export async function validateAiJson(json) {
-  const res = await fetch("/api/ai/validate", {
+export async function lookupOsmPlace(lat, lng) {
+  const res = await fetch(`/api/osm/place?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "OpenStreetMap 장소를 찾지 못했습니다.");
+  return data;
+}
+
+export async function lookupOsmWalkRoute(stops) {
+  const res = await fetch("/api/osm/walk-route", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ json }),
+    body: JSON.stringify({ stops }),
   });
-  return res.json();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "보행 경로를 만들지 못했습니다.");
+  return data;
 }

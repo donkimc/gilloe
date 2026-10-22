@@ -4,9 +4,9 @@ export { imageById, pickRandomImage, PUZZLE_IMAGES } from "./puzzleImages.js";
 
 export const SNAP_PX = 44;
 
-export function gridSizeForCount(placeCount) {
-  const n = Math.sqrt(placeCount);
-  return Number.isInteger(n) ? n : 2;
+export function gridSizeForCount(count) {
+  const n = Math.sqrt(count);
+  return Number.isInteger(n) && n > 0 ? n : 3;
 }
 
 export function piecesForGrid(n) {

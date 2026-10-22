@@ -96,10 +96,9 @@ export const previewCopy = {
 export const createCopy = {
   title: "퍼즐 게임 만들기",
   name: "게임 제목",
-  landingLead: "외부 지도 링크는 쓰지 않습니다. GPS로 걷거나, OpenStreetMap에서 그리거나, 허용된 공개 자료로 만든 AI 초안을 가져오세요.",
+  landingLead: "외부 지도 링크는 쓰지 않습니다. GPS로 걷거나 OpenStreetMap에서 그리세요.",
   methodGps: "GPS로 걸으며 기록",
   methodOsm: "OpenStreetMap에서 그리기",
-  methodAi: "AI 경로 초안 가져오기",
   methodGpx: "GPX 가져오기 (선택)",
   startRecord: "기록 시작",
   pause: "일시정지",
@@ -113,6 +112,8 @@ export const createCopy = {
   copyPrompt: "프롬프트 복사",
   pasteJson: "JSON 붙여넣기",
   validateJson: "검사하기",
+  needsSourceData: "이 JSON은 경로가 아닙니다. 허용된 공개 자료로 정류장 4곳을 확인하지 못해, 좌표를 비워 두었습니다.",
+  tryGpsOrOsm: "GPS 기록 또는 OpenStreetMap 그리기로 만드세요.",
   jigsaw: "퍼즐 그림",
   jigsawUpload: "사진 올리기",
   jigsawSystem: "시스템 그림",
@@ -149,6 +150,8 @@ export const routeMeta = {
 export const screens = [
   "library",
   "create",
+  "mode",
+  "party",
   "safety",
   "preview",
   "navigating",
@@ -156,6 +159,31 @@ export const screens = [
   "assemble",
   "resolution",
 ];
+
+export const coopCopy = {
+  title: "어떻게 걸을까요?",
+  solo: "혼자 걷기",
+  coop: "두 명이 함께 걷기",
+  coopHint: "두 대의 휴대전화가 필요하고, 잠깐 인터넷으로 조각을 맞춥니다. 상대 위치는 서로 보이지 않습니다.",
+  createParty: "새 파티 만들기",
+  joinParty: "파티 코드 입력",
+  share: "링크 공유하기",
+  copyCode: "코드 복사하기",
+  waiting: "상대방을 기다리는 중",
+  code: "참여 코드",
+  enterCode: "6자리 코드",
+  join: "참여하기",
+  ready: "준비됐어요",
+  nearStart: "시작 지점 도착",
+  waitPartner: "상대방을 기다리는 중",
+  collectMine: "내 조각 받기",
+  disconnected: "연결을 다시 기다리는 중",
+  keepWaiting: "계속 기다리기",
+  goSolo: "혼자 계속하기",
+  finishTogether: "함께 완성하기",
+  inPerson: "직접 확인 코드",
+  confirmPerson: "만남 코드 확인",
+};
 
 export function osmPlaceUrl(place) {
   const { lat, lng } = place;

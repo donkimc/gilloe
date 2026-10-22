@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState, reduce } from "./state.js";
 import { serializeProgress } from "./storage.js";
-import { render } from "./ui/screens.js";
+import { defaultDraft, render } from "./ui/screens.js";
 
 const sampleGame = {
   id: "cheonho-pieces",
@@ -23,6 +23,41 @@ const sampleGame = {
 };
 
 describe("rendered flow", () => {
+  it("asks solo or two-player after selecting a game", () => {
+    const state = reduce(createInitialState(), { type: "SELECT_GAME", game: sampleGame });
+    const html = render(state);
+    expect(state.screen).toBe("mode");
+    expect(html).toContain("혼자 걷기");
+    expect(html).toContain("두 명이 함께 걷기");
+  });
+
+  it("offers two-player mode for games with more than four stops", () => {
+    const state = reduce(createInitialState(), { type: "SELECT_GAME", game: { ...sampleGame, placeCount: 6 } });
+    const html = render(state);
+    expect(html).toContain("두 명이 함께 걷기");
+    expect(html).not.toContain("정류장 4곳 게임만");
+  });
+
+  it("does not offer AI JSON import on create", () => {
+    const html = render({
+      ...createInitialState(),
+      screen: "create",
+      createDraft: defaultDraft(),
+    });
+    expect(html).not.toContain("AI 경로");
+    expect(html).toContain("OpenStreetMap에서 그리기");
+  });
+
+  it("lets the creator choose how many OSM stops to place", () => {
+    const html = render({
+      ...createInitialState(),
+      screen: "create",
+      createDraft: { ...defaultDraft(), step: "draw", method: "openstreetmap-assisted-drawing" },
+    });
+    expect(html).toContain('name="stop-target"');
+    expect(html).toContain("정류장 수");
+  });
+
   it("shows edit and delete on library cards", () => {
     const html = render({
       ...createInitialState(),
@@ -88,6 +123,8 @@ describe("rendered flow", () => {
     const html = render(createInitialState());
     expect(html).toContain("Gilloe");
     expect(html).toContain("오늘은 어디로? 길로");
+    expect(html).toContain("hero-walker");
+    expect(html).toContain("점선 길");
   });
 
   it("keeps the preview map after the tour with a back control", () => {

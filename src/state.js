@@ -1,6 +1,7 @@
 import { screens as SCREEN_LIST } from "./content.js";
 import { emptyPlacement, gridSizeForCount, isAssembled, piecesForGrid, shufflePieceOrder } from "./assemble.js";
 import { SCHEMA_VERSION } from "./storage.js";
+import { GRID_N, PERSONAL_TOTAL, PUZZLE_COUNT, piecesForStop } from "./coopPieces.js";
 
 export const SCREENS = SCREEN_LIST;
 
@@ -27,7 +28,10 @@ export function createInitialState() {
     canAutoArrive: false,
     manualAvailable: false,
     mapStatus: "idle",
-    assemblePlacement: emptyPlacement(2),
+    playMode: "solo",
+    party: null,
+    partyWait: null,
+    assemblePlacement: emptyPlacement(GRID_N),
     assembleOrder: [],
     assembleSelected: null,
     assembleComplete: false,
@@ -40,7 +44,7 @@ export function createInitialState() {
 }
 
 export function needsLiveLocation(screen) {
-  return screen === "preview" || screen === "navigating";
+  return screen === "preview" || screen === "navigating" || screen === "party";
 }
 
 export function needsCamera() {
@@ -48,15 +52,19 @@ export function needsCamera() {
 }
 
 export function trayAllowed(screen) {
-  return !["library", "create", "safety"].includes(screen);
+  return !["library", "create", "safety", "mode", "party"].includes(screen);
 }
 
 export function placeCount(state) {
   return state.game?.placeCount || 4;
 }
 
+export function puzzleCount(state) {
+  return Number(state.game?.puzzleCount) || PUZZLE_COUNT;
+}
+
 export function gridN(state) {
-  return gridSizeForCount(placeCount(state));
+  return gridSizeForCount(puzzleCount(state));
 }
 
 export function ensureAssembleKit(state) {
@@ -126,21 +134,36 @@ export function reduce(state, action) {
       };
     case "SELECT_GAME": {
       const game = action.game;
-      const n = gridSizeForCount(game.placeCount);
+      const n = gridSizeForCount(game.puzzleCount || PUZZLE_COUNT);
       const ids = piecesForGrid(n).map((p) => p.id);
       return {
         ...createInitialState(),
         games: state.games,
         game,
         gameId: game.id,
-        screen: "safety",
+        screen: "mode",
         startedAt: Date.now(),
         assemblePlacement: emptyPlacement(n),
         assembleOrder: shufflePieceOrder(ids),
       };
     }
+    case "CHOOSE_SOLO":
+      return { ...state, playMode: "solo", party: null, screen: "safety" };
+    case "CHOOSE_COOP":
+      return { ...state, playMode: "coop", screen: "party" };
+    case "PARTY":
+      return {
+        ...state,
+        playMode: "coop",
+        party: action.party,
+        partyWait: action.wait !== undefined ? action.wait : state.partyWait,
+        screen: action.screen || state.screen,
+        collectedPieceIds: action.collectedPieceIds || state.collectedPieceIds,
+        currentStop: action.currentStop || state.currentStop,
+        assemblePlacement: action.placement || state.assemblePlacement,
+      };
     case "ACCEPT_SAFETY":
-      return { ...state, safetyAccepted: true, screen: "preview" };
+      return { ...state, safetyAccepted: true, screen: state.playMode === "coop" ? "party" : "preview" };
     case "CONTINUE": {
       const next = nextAfter(state.screen);
       return { ...state, screen: next, overlay: null, stoppedWalking: false };
@@ -191,9 +214,10 @@ export function reduce(state, action) {
     case "STOP_WALKING":
       return { ...state, stoppedWalking: true };
     case "COLLECT_PIECE": {
-      const collectedPieceIds = unique(state.collectedPieceIds, action.pieceId);
-      const total = placeCount(state);
-      const done = collectedPieceIds.length >= total;
+      const role = state.playMode === "coop" && state.party?.you?.role ? state.party.you.role : "solo";
+      const ids = action.pieceIds || (action.pieceId ? [action.pieceId] : piecesForStop(state.currentStop, role, placeCount(state)));
+      const collectedPieceIds = uniqueMany(state.collectedPieceIds, ids);
+      const done = collectedPieceIds.length >= PERSONAL_TOTAL;
       return ensureAssembleKit({
         ...state,
         collectedPieceIds,
@@ -230,9 +254,11 @@ function nextAfter(screen) {
   return screen;
 }
 
-function unique(list, value) {
+function uniqueMany(list, ids) {
   const next = Array.isArray(list) ? [...list] : [];
-  if (!next.includes(value)) next.push(value);
+  for (const id of ids || []) {
+    if (id && !next.includes(id)) next.push(id);
+  }
   return next;
 }
 

@@ -1,7 +1,16 @@
 import { distanceMeters, lineLength } from "./geo.js";
 
 export const SCHEMA_VERSION = 1;
-export const MVP_STOP_COUNT = 4;
+export const MIN_STOP_COUNT = 2;
+export const MAX_STOP_COUNT = 8;
+export const DEFAULT_STOP_COUNT = 4;
+export const MVP_STOP_COUNT = DEFAULT_STOP_COUNT;
+
+export function clampStopCount(value, fallback = DEFAULT_STOP_COUNT) {
+  const n = Number(value);
+  if (!Number.isInteger(n)) return fallback;
+  return Math.min(MAX_STOP_COUNT, Math.max(MIN_STOP_COUNT, n));
+}
 export const WALK_METERS_PER_MIN = 67;
 export const MINUTES_PER_STOP = 2;
 export const MAX_AI_JSON_BYTES = 80_000;
@@ -143,7 +152,28 @@ export function gpsSessionToLine(session) {
 }
 
 export function emptyDrawState() {
-  return { mode: "stops", stops: [], vertices: [], selected: null };
+  return {
+    mode: "stops",
+    stops: [],
+    vertices: [],
+    selected: null,
+    stopTarget: DEFAULT_STOP_COUNT,
+    autoRouted: false,
+    routing: false,
+    routingError: "",
+  };
+}
+
+export function routeVerticesFromStops(stops) {
+  return (stops || []).map((s) => [s.lng, s.lat]);
+}
+
+function withAutoRoute(state) {
+  const target = clampStopCount(state.stopTarget);
+  if ((state.stops || []).length === target && target >= MIN_STOP_COUNT) {
+    return { ...state, stopTarget: target, mode: "path", autoRouted: true, routing: true, routingError: "" };
+  }
+  return { ...state, stopTarget: target, autoRouted: false, routing: false };
 }
 
 export function reduceDrawState(state, action) {
@@ -151,8 +181,17 @@ export function reduceDrawState(state, action) {
   switch (action.type) {
     case "SET_MODE":
       return { ...next, mode: action.mode };
+    case "SET_STOP_TARGET": {
+      const stopTarget = clampStopCount(action.stopTarget, next.stopTarget || DEFAULT_STOP_COUNT);
+      next.stopTarget = stopTarget;
+      if (next.stops.length > stopTarget) {
+        next.stops = next.stops.slice(0, stopTarget).map((s, i) => ({ ...s, id: `stop-${i + 1}`, order: i + 1 }));
+      }
+      return withAutoRoute(next);
+    }
     case "ADD_STOP": {
-      if (next.stops.length >= MVP_STOP_COUNT) return state;
+      const target = clampStopCount(next.stopTarget);
+      if (next.stops.length >= target) return state;
       const stop = {
         id: `stop-${next.stops.length + 1}`,
         order: next.stops.length + 1,
@@ -166,19 +205,33 @@ export function reduceDrawState(state, action) {
         coordinateSource: "openstreetmap-assisted-drawing",
       };
       next.stops.push(stop);
-      return next;
+      return withAutoRoute(next);
     }
     case "MOVE_STOP": {
       const stop = next.stops.find((s) => s.id === action.id);
       if (!stop) return state;
       stop.lat = action.lat;
       stop.lng = action.lng;
+      if (next.autoRouted) {
+        next.routing = true;
+        next.routingError = "";
+      }
+      return next;
+    }
+    case "SET_WALK_VERTICES": {
+      next.vertices = (action.vertices || []).map((v) => [v[0], v[1]]);
+      next.routing = false;
+      next.routingError = action.error || "";
+      if (next.vertices.length >= 2) {
+        next.mode = "path";
+        next.autoRouted = action.autoRouted !== false;
+      }
       return next;
     }
     case "DELETE_STOP": {
       next.stops = next.stops.filter((s) => s.id !== action.id).map((s, i) => ({ ...s, id: `stop-${i + 1}`, order: i + 1 }));
       next.selected = null;
-      return next;
+      return withAutoRoute(next);
     }
     case "REORDER_STOPS": {
       const from = next.stops.findIndex((s) => s.id === action.id);
@@ -196,6 +249,7 @@ export function reduceDrawState(state, action) {
     }
     case "ADD_VERTEX":
       next.vertices.push([action.lng, action.lat]);
+      next.autoRouted = false;
       return next;
     case "MOVE_VERTEX":
       if (!next.vertices[action.index]) return state;
@@ -209,19 +263,27 @@ export function reduceDrawState(state, action) {
       return next;
     case "CLEAR":
       return emptyDrawState();
-    case "LOAD":
+    case "LOAD": {
+      const stops = (action.stops || []).map((s, i) => ({ ...s, id: s.id || `stop-${i + 1}`, order: i + 1 }));
+      const stopTarget = clampStopCount(action.stopTarget || stops.length || DEFAULT_STOP_COUNT);
       return {
-        mode: "stops",
-        stops: (action.stops || []).map((s, i) => ({ ...s, id: s.id || `stop-${i + 1}`, order: i + 1 })),
+        mode: stops.length >= stopTarget ? "path" : "stops",
+        stops,
         vertices: (action.vertices || []).map((v) => [v[0], v[1]]),
         selected: null,
+        stopTarget,
+        autoRouted: Boolean(action.autoRouted),
+        routing: false,
+        routingError: "",
       };
+    }
     default:
       return state;
   }
 }
 
 const SOURCE_KEYS = ["name", "url", "licence", "licenceUrl", "supports"];
+const SOURCE_EXTRA_KEYS = ["attribution", "limitations", "notes", "note", "description", "accessedAt", "retrievedAt", "licenceName", "fieldsSupported"];
 const ROOT_KEYS = [
   "schemaVersion",
   "status",
@@ -255,18 +317,44 @@ function requireString(value, max) {
   return typeof value === "string" && value.trim().length > 0 && value.length <= max;
 }
 
+function normalizeAiSource(src) {
+  const next = { ...(src || {}) };
+  if (!next.licence && next.licenceName) next.licence = next.licenceName;
+  if (!Array.isArray(next.supports) && Array.isArray(next.fieldsSupported)) next.supports = next.fieldsSupported;
+  if (!next.notes && next.note) next.notes = next.note;
+  if (!requireString(next.name, 180) && next.url) {
+    try {
+      next.name = new URL(String(next.url).replace(/\\:/g, ":")).hostname || "Open data source";
+    } catch {
+      next.name = "Open data source";
+    }
+  }
+  if (typeof next.url === "string") next.url = next.url.replace(/\\:/g, ":").replace(/\\\./g, ".");
+  if (typeof next.licenceUrl === "string") next.licenceUrl = next.licenceUrl.replace(/\\:/g, ":").replace(/\\\./g, ".");
+  return next;
+}
+
+export function sanitizeAiJsonText(raw) {
+  let text = String(raw || "").trim();
+  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  text = text.replace(/\\:/g, ":").replace(/\\\./g, ".");
+  text = text.replace(/[\u201C\u201D\u201E\u201F]/g, '"').replace(/[\u2018\u2019]/g, "'");
+  return text;
+}
+
 export function validateAiDraft(raw, { maxBytes = MAX_AI_JSON_BYTES } = {}) {
   const errors = [];
   const warnings = [];
   if (typeof raw !== "string") return { ok: false, errors: ["JSON 텍스트가 필요합니다."], warnings, draft: null };
-  const bytes = new TextEncoder().encode(raw).length;
+  const text = sanitizeAiJsonText(raw);
+  const bytes = new TextEncoder().encode(text).length;
   if (bytes > maxBytes) return { ok: false, errors: ["입력이 너무 큽니다."], warnings, draft: null };
-  if (/<script|javascript:|onerror=/i.test(raw)) {
+  if (/<script|javascript:|onerror=/i.test(text)) {
     return { ok: false, errors: ["실행 가능한 내용이 포함되어 있습니다."], warnings, draft: null };
   }
   let data;
   try {
-    data = JSON.parse(raw);
+    data = JSON.parse(text);
   } catch {
     return { ok: false, errors: ["올바른 JSON이 아닙니다."], warnings, draft: null };
   }
@@ -283,9 +371,11 @@ export function validateAiDraft(raw, { maxBytes = MAX_AI_JSON_BYTES } = {}) {
   if (!Array.isArray(data.sources) || (data.status === "draft" && data.sources.length < 1)) {
     errors.push("sources가 필요합니다.");
   }
+  data.sources = (data.sources || []).map(normalizeAiSource);
   (data.sources || []).forEach((src, i) => {
-    if (unknownKeys(src, SOURCE_KEYS).length) errors.push(`sources[${i}]에 알 수 없는 필드가 있습니다.`);
-    if (!requireString(src?.name, 120) || !requireString(src?.url, 400) || !requireString(src?.licence, 120) || !requireString(src?.licenceUrl, 400)) {
+    const extraSource = unknownKeys(src, [...SOURCE_KEYS, ...SOURCE_EXTRA_KEYS]);
+    if (extraSource.length) errors.push(`sources[${i}]에 알 수 없는 필드가 있습니다.`);
+    if (!requireString(src?.name, 180) || !requireString(src?.url, 400) || !requireString(src?.licence, 180) || !requireString(src?.licenceUrl, 400)) {
       errors.push(`sources[${i}] 라이선스 정보가 부족합니다.`);
     }
     if (!Array.isArray(src?.supports) || !src.supports.length) errors.push(`sources[${i}] supports가 필요합니다.`);
@@ -301,7 +391,18 @@ export function validateAiDraft(raw, { maxBytes = MAX_AI_JSON_BYTES } = {}) {
   if (data.status === "needs_source_data") {
     if (Array.isArray(coords) && coords.length) errors.push("자료 부족 초안은 경로 좌표가 비어 있어야 합니다.");
     if (Array.isArray(stops) && stops.length) errors.push("자료 부족 초안은 정류장이 비어 있어야 합니다.");
-    return { ok: errors.length === 0, errors, warnings, draft: data, playable: false };
+    const info = [
+      "공개 자료만으로는 정류장 4곳과 경로를 확정하지 못했습니다. 좌표를 추측하지 않은 정상적인 결과입니다.",
+      "GPS로 걸으며 기록하거나, OpenStreetMap에서 직접 그리세요.",
+    ];
+    return {
+      ok: errors.length === 0,
+      errors,
+      warnings: [...info, ...warnings, ...(Array.isArray(data.warnings) ? data.warnings : [])],
+      draft: data,
+      playable: false,
+      needsSourceData: true,
+    };
   }
 
   if (data.route?.geometry?.type !== "LineString" || !Array.isArray(coords) || coords.length < 2) {
@@ -367,15 +468,18 @@ export function validateGamePayload(body) {
   const title = String(body?.title || "").trim();
   if (!title) return { ok: false, error: "제목을 입력하세요." };
   if (title.length > MAX_TITLE) return { ok: false, error: "제목이 너무 깁니다." };
-  const placeCount = Number(body?.placeCount) || MVP_STOP_COUNT;
-  if (placeCount !== MVP_STOP_COUNT) return { ok: false, error: "이 MVP는 정류장 4곳만 지원합니다." };
+  const rawCount = Number(body?.placeCount);
+  const placeCount = Number.isInteger(rawCount) ? rawCount : DEFAULT_STOP_COUNT;
+  if (placeCount < MIN_STOP_COUNT || placeCount > MAX_STOP_COUNT) {
+    return { ok: false, error: `정류장은 ${MIN_STOP_COUNT}~${MAX_STOP_COUNT}곳이어야 합니다.` };
+  }
   const method = body?.source?.method;
   if (!METHODS.includes(method)) return { ok: false, error: "경로 작성 방법을 고르세요." };
   if (body?.source?.proprietaryProviderDerived !== false) {
     return { ok: false, error: "제한된 지도 출처는 저장할 수 없습니다." };
   }
   const places = Array.isArray(body?.places) ? body.places : [];
-  if (places.length !== placeCount) return { ok: false, error: "정류장 4곳이 필요합니다." };
+  if (places.length !== placeCount) return { ok: false, error: `정류장 ${placeCount}곳이 필요합니다.` };
   const routeLine = Array.isArray(body?.routeLine) ? body.routeLine : [];
   if (routeLine.length < 2) return { ok: false, error: "경로 선이 필요합니다." };
   for (const pair of routeLine) {
@@ -459,13 +563,22 @@ export function migrateGameRecord(game) {
     fieldStatus: restricted ? "draft" : fieldStatus,
     quarantined: Boolean(restricted || game.quarantined),
     quarantineReason: restricted ? "restricted-source-migration-required" : game.quarantineReason || null,
+    puzzleCount: 9,
     playable: !restricted && game.playable !== false,
     warnings: game.warnings || ["현장 검증 전 임시 경로"],
   };
 }
 
 export function isPlayableGame(game) {
-  return Boolean(game && game.playable !== false && !game.quarantined && (game.places || []).length === MVP_STOP_COUNT);
+  const count = (game.places || []).length;
+  return Boolean(
+    game &&
+      game.playable !== false &&
+      !game.quarantined &&
+      count === (game.placeCount || count) &&
+      count >= MIN_STOP_COUNT &&
+      count <= MAX_STOP_COUNT,
+  );
 }
 
 export function publicationBlockedReason(game) {

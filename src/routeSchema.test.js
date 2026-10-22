@@ -6,6 +6,8 @@ import {
   parseGpxTrack,
   reduceGpsSession,
   emptyGpsSession,
+  emptyDrawState,
+  reduceDrawState,
   validateAiDraft,
   validateGamePayload,
 } from "./routeSchema.js";
@@ -160,6 +162,91 @@ describe("ai json import", () => {
     expect(validateAiDraft(JSON.stringify(verified)).ok).toBe(false);
   });
 
+  it("accepts a needs_source_data draft with licenceName aliases and empty geometry", () => {
+    const raw = {
+      schemaVersion: 1,
+      status: "needs_source_data",
+      title: "The Missing Snack Ledger",
+      area: { countryCode: "KR", label: "길동·천호" },
+      requestedDurationMinutes: 60,
+      source: { method: "ai-assisted-draft", generatedBy: "ChatGPT", proprietaryProviderDerived: false },
+      sources: [
+        {
+          name: "OpenStreetMap: Gildong Station Gate 3",
+          url: "https://www.openstreetmap.org/node/3401488919",
+          licenceName: "Open Database License 1.0 (ODbL)",
+          licenceUrl: "https://opendatacommons.org/licenses/odbl/1-0/",
+          attribution: "Map data from OpenStreetMap contributors",
+          fieldsSupported: ["entrance coordinates"],
+          limitations: ["Not enough stops"],
+        },
+      ],
+      route: {
+        type: "Feature",
+        properties: { fieldVerified: false, estimatedDistanceMeters: 0 },
+        geometry: { type: "LineString", coordinates: [] },
+      },
+      stops: [],
+      warnings: ["No coordinates guessed."],
+    };
+    const result = validateAiDraft(JSON.stringify(raw));
+    expect(result.ok).toBe(true);
+    expect(result.playable).toBe(false);
+    expect(result.needsSourceData).toBe(true);
+  });
+
+  it("parses needs_source_data JSON whose OSM urls were backslash-escaped", () => {
+    const messy = `{
+      "schemaVersion": 1,
+      "status": "needs_source_data",
+      "title": "The Case of the Missing Snack Token",
+      "area": { "countryCode": "KR", "label": "Cheonho-dong" },
+      "requestedDurationMinutes": 30,
+      "source": { "method": "ai-assisted-draft", "generatedBy": "ChatGPT", "proprietaryProviderDerived": false },
+      "sources": [{
+        "name": "OpenStreetMap: Cheonho Station node",
+        "url": "https\\://www\\.openstreetmap.org/node/5801572034",
+        "licenceName": "Open Database License 1.0 (ODbL)",
+        "licenceUrl": "https\\://opendatacommons.org/licenses/odbl/1-0/",
+        "fieldsSupported": ["OpenStreetMap node identifier"],
+        "limitations": ["The direct feature data could not be retrieved."]
+      }],
+      "route": { "type": "Feature", "properties": { "fieldVerified": false, "estimatedDistanceMeters": 0 }, "geometry": { "type": "LineString", "coordinates": [] } },
+      "stops": [],
+      "warnings": ["Exactly four stops are requested."]
+    }`;
+    const result = validateAiDraft(messy);
+    expect(result.ok).toBe(true);
+    expect(result.playable).toBe(false);
+    expect(result.needsSourceData).toBe(true);
+  });
+
+  it("accepts a Claude needs_source_data paste with curly quotes, note, and no source name", () => {
+    const messy = `{
+      “schemaVersion”: 1,
+      “status”: “needs_source_data”,
+      “title”: “The Case of the Missing Snack Map”,
+      “area”: { “countryCode”: “KR”, “label”: “Cheonho-dong” },
+      “requestedDurationMinutes”: 30,
+      “source”: { “method”: “ai-assisted-draft”, “generatedBy”: “Claude”, “proprietaryProviderDerived”: false },
+      “sources”: [{
+        “url”: “https://www.openstreetmap.org/”,
+        “licenceName”: “Open Database Licence 1.0”,
+        “licenceUrl”: “https://opendatacommons.org/licenses/odbl/1-0/”,
+        “fieldsSupported”: [“node IDs”],
+        “note”: “OSM way pages listed node IDs but no coordinates.”
+      }],
+      “route”: { “type”: “Feature”, “properties”: { “fieldVerified”: false, “estimatedDistanceMeters”: 0 }, “geometry”: { “type”: “LineString”, “coordinates”: [] } },
+      “stops”: [],
+      “warnings”: [“No coordinates guessed.”]
+    }`;
+    const result = validateAiDraft(messy);
+    expect(result.ok).toBe(true);
+    expect(result.playable).toBe(false);
+    expect(result.needsSourceData).toBe(true);
+    expect(result.draft.sources[0].name).toBe("www.openstreetmap.org");
+  });
+
   it("rejects reversed coordinates and executable content", () => {
     const reversed = aiDraft();
     reversed.stops[0].coordinates = { lat: 127.12385, lng: 37.53865 };
@@ -178,6 +265,30 @@ describe("game payload", () => {
     expect(validateGamePayload(payload({ places: stops.map((s, i) => (i ? s : { ...s, photoUrl: "https://ldb-phinf.pstatic.net/a.jpg" })) })).ok).toBe(false);
     expect(validateGamePayload(payload({ fieldVerified: true })).ok).toBe(false);
     expect(validateGamePayload(payload({ placeCount: 9, places: stops })).ok).toBe(false);
+    expect(validateGamePayload(payload({ placeCount: 3, places: stops.slice(0, 3) })).ok).toBe(true);
+  });
+});
+
+describe("osm draw", () => {
+  it("auto-draws a path after the chosen number of stops", () => {
+    let draw = emptyDrawState();
+    draw = reduceDrawState(draw, { type: "SET_STOP_TARGET", stopTarget: 2 });
+    draw = reduceDrawState(draw, { type: "ADD_STOP", lat: 37.538, lng: 127.123, title: "A" });
+    expect(draw.mode).toBe("stops");
+    draw = reduceDrawState(draw, { type: "ADD_STOP", lat: 37.539, lng: 127.124, title: "B" });
+    expect(draw.mode).toBe("path");
+    expect(draw.autoRouted).toBe(true);
+    expect(draw.routing).toBe(true);
+    draw = reduceDrawState(draw, {
+      type: "SET_WALK_VERTICES",
+      vertices: [
+        [127.123, 37.538],
+        [127.1235, 37.5384],
+        [127.124, 37.539],
+      ],
+    });
+    expect(draw.routing).toBe(false);
+    expect(draw.vertices).toHaveLength(3);
   });
 });
 

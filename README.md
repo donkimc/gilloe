@@ -57,6 +57,7 @@ Vanilla Vite app. Game progress is an explicit state machine in `src/state.js`. 
 | --- | --- |
 | `server/index.js` | Games API, local uploads, AI JSON validation |
 | `src/routeSchema.js` | Provenance, GPS sampling, AI import, save validation |
+| `src/partyLogic.js` | Invite-only two-player party rules (in-memory on the server) |
 | `src/content.js` | Korean UI copy |
 | `src/state.js` | State machine |
 | `src/storage.js` | Minimal `localStorage` progress (no coordinates) |

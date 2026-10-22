@@ -1,6 +1,7 @@
 import {
   assembleCopy,
   brand,
+  coopCopy,
   copy,
   createCopy,
   ending,
@@ -16,9 +17,9 @@ import {
 import { gridSizeForCount, assembledPreview, pieceMarkup, piecesForGrid, displayImageUrl } from "../assemble.js";
 import { formatApproxDistance } from "../geo.js";
 import { currentPlace, gridN, placeCount, trayAllowed } from "../state.js";
-import { AI_ROUTE_PROMPT } from "../aiPrompt.js";
+import { TEAM_PIECE, piecesForStop } from "../coopPieces.js";
 import { OSM_ATTRIBUTION_TEXT } from "../mapConfig.js";
-import { formatWalkLabel, walkingStatsFromLine } from "../routeSchema.js";
+import { DEFAULT_STOP_COUNT, MAX_STOP_COUNT, MIN_STOP_COUNT, formatWalkLabel, walkingStatsFromLine } from "../routeSchema.js";
 
 const locationIcons = {
   idle: "📍",
@@ -101,6 +102,10 @@ function view(state) {
       return libraryView(state);
     case "create":
       return createView(state);
+    case "mode":
+      return modeView(state);
+    case "party":
+      return partyView(state);
     case "safety":
       return safetyView();
     case "preview":
@@ -116,6 +121,41 @@ function view(state) {
     default:
       return libraryView(state);
   }
+}
+
+const HERO_ROUTE = "M55 330Q140 350 155 260T270 240T380 150T485 110";
+
+function heroWalkArt() {
+  return `
+      <div class="walk-art" role="img" aria-label="점선 길을 따라 정류장을 지나가는 산책 일러스트. 실제 경로가 아닙니다.">
+        <span class="art-label">오늘의 작은 발견</span>
+        <svg viewBox="0 0 560 420" aria-hidden="true">
+          <defs>
+            <pattern id="street-grid" width="56" height="56" patternUnits="userSpaceOnUse"><path d="M56 0H0V56" fill="none" stroke="#d2c9b6" stroke-width="1"/></pattern>
+          </defs>
+          <rect width="560" height="420" fill="#e9e3d4"/>
+          <rect width="560" height="420" fill="url(#street-grid)"/>
+          <path d="M-20 300L140 210 245 240 380 140 590 180" stroke="#f8f5ec" stroke-width="48" fill="none"/>
+          <path d="M130 -20L180 140 140 210 190 450M390 -20L380 140 440 300 600 360" stroke="#f8f5ec" stroke-width="30" fill="none"/>
+          <path class="hero-route-dots" d="${HERO_ROUTE}" fill="none" stroke="#b47b29" stroke-width="5" stroke-dasharray="2 11" stroke-linecap="round"/>
+          <path class="hero-route-progress" d="${HERO_ROUTE}" fill="none" stroke="#d4a054" stroke-width="6" stroke-linecap="round" pathLength="1"/>
+          <g fill="#b9c8ad"><rect x="28" y="55" width="88" height="102" rx="24"/><rect x="424" y="248" width="100" height="80" rx="25"/></g>
+          <g fill="#d7c9af"><rect x="229" y="43" width="80" height="100" rx="9"/><rect x="236" y="315" width="108" height="65" rx="9"/></g>
+          <g class="hero-stop hero-stop--1" fill="#142839" stroke="#f7f0df" stroke-width="5"><circle cx="55" cy="330" r="23"/></g>
+          <g class="hero-stop hero-stop--2" fill="#142839" stroke="#f7f0df" stroke-width="5"><circle cx="169" cy="220" r="23"/></g>
+          <g class="hero-stop hero-stop--3" fill="#142839" stroke="#f7f0df" stroke-width="5"><circle cx="342" cy="192" r="23"/></g>
+          <g fill="#f5f0e5" font-size="17" font-family="sans-serif" text-anchor="middle"><text x="55" y="336">1</text><text x="169" y="226">2</text><text x="342" y="198">3</text></g>
+          <g class="hero-stop hero-stop--4">
+            <circle cx="485" cy="110" r="30" fill="#d9a54b" stroke="#f7f0df" stroke-width="5"/>
+            <path d="M475 110l7 7 13-15" stroke="#142839" stroke-width="3" fill="none"/>
+          </g>
+          <g class="hero-walker">
+            <circle r="11" fill="#4aa3ff" stroke="#f8f5ec" stroke-width="3"/>
+            <circle r="3.5" fill="#f8f5ec"/>
+          </g>
+        </svg>
+        <span class="art-ticket"><span>발걸음이 모이면</span><strong>하나의 그림이 되는 산책</strong><span class="ticket-arrow" aria-hidden="true">↗</span></span>
+      </div>`;
 }
 
 function statusChip(g) {
@@ -135,11 +175,8 @@ function libraryView(state) {
       <p class="lead">동네를 걷고, 장소마다 숨은 조각을 모으세요.<br>한 걸음씩 나만의 그림이 완성됩니다.</p>
       ${btn("open-create", `${copy.create} <span aria-hidden="true">↗</span>`, "hero-cta")}
       <p class="hero-footnote">GPS 또는 OpenStreetMap으로 나만의 산책 만들기</p></div>
-      <div class="walk-art" role="img" aria-label="네 곳을 잇는 산책길 일러스트. 실제 경로가 아닙니다.">
-        <span class="art-label">오늘의 작은 발견</span>
-        <svg viewBox="0 0 560 420" aria-hidden="true"><defs><pattern id="street-grid" width="56" height="56" patternUnits="userSpaceOnUse"><path d="M56 0H0V56" fill="none" stroke="#d2c9b6" stroke-width="1"/></pattern></defs><rect width="560" height="420" fill="#e9e3d4"/><rect width="560" height="420" fill="url(#street-grid)"/><path d="M-20 300L140 210 245 240 380 140 590 180" stroke="#f8f5ec" stroke-width="48" fill="none"/><path d="M130 -20L180 140 140 210 190 450M390 -20L380 140 440 300 600 360" stroke="#f8f5ec" stroke-width="30" fill="none"/><path d="M55 330Q140 350 155 260T270 240T380 150T485 110" stroke="#b47b29" stroke-width="5" stroke-dasharray="2 11" stroke-linecap="round" fill="none"/><g fill="#b9c8ad"><rect x="28" y="55" width="88" height="102" rx="24"/><rect x="424" y="248" width="100" height="80" rx="25"/></g><g fill="#d7c9af"><rect x="229" y="43" width="80" height="100" rx="9"/><rect x="236" y="315" width="108" height="65" rx="9"/></g><g fill="#142839" stroke="#f7f0df" stroke-width="5"><circle cx="55" cy="330" r="23"/><circle cx="169" cy="220" r="23"/><circle cx="342" cy="192" r="23"/></g><g fill="#f5f0e5" font-size="17" font-family="sans-serif" text-anchor="middle"><text x="55" y="336">1</text><text x="169" y="226">2</text><text x="342" y="198">3</text></g><circle cx="485" cy="110" r="30" fill="#d9a54b" stroke="#f7f0df" stroke-width="5"/><path d="M475 110l7 7 13-15" stroke="#142839" stroke-width="3" fill="none"/></svg>
-        <span class="art-ticket"><span>발걸음이 모이면</span><strong>하나의 그림이 되는 산책</strong><span class="ticket-arrow" aria-hidden="true">↗</span></span>
-      </div></div>
+      ${heroWalkArt()}
+      </div>
       <div class="how-strip" aria-label="플레이 방법"><span><b>01</b> 걷고 싶은 게임 고르기</span><span><b>02</b> 장소마다 조각 모으기</span><span><b>03</b> 나만의 그림 완성하기</span></div>
       <div class="section-heading"><div><p class="kicker">당신의 다음 산책</p><h2>어디부터 걸어볼까요?</h2></div><span class="collection-count">${games.length}개의 게임</span></div>
       <p class="warn">${ico("🚧", brand.notPublicReady)}</p>
@@ -180,9 +217,8 @@ export function defaultDraft() {
     imageDataUrl: null,
     ownershipConfirmed: false,
     gps: { recording: false, paused: false, points: [], stops: [], lastRejected: null },
-    draw: { mode: "stops", stops: [], vertices: [] },
-    aiText: "",
-    aiResult: null,
+    draw: { mode: "stops", stops: [], vertices: [], stopTarget: DEFAULT_STOP_COUNT, autoRouted: false, routing: false, routingError: "" },
+    osmPick: null,
     gpxError: "",
     checklist: {},
     warnings: [],
@@ -200,7 +236,6 @@ function createView(state) {
       ${step === "landing" ? landingStep(draft) : ""}
       ${step === "record" ? recordStep(draft) : ""}
       ${step === "draw" ? drawStep(draft) : ""}
-      ${step === "ai" ? aiStep(draft) : ""}
       ${step === "review" ? reviewStep(state, draft) : ""}
       ${state.createError ? `<p class="warn">${state.createError}</p>` : ""}
     </main>
@@ -217,7 +252,6 @@ function landingStep(draft) {
     <div class="method-grid">
       ${btn("create-method-gps", `📍 ${createCopy.methodGps}`)}
       ${btn("create-method-osm", `🗺️ ${createCopy.methodOsm}`)}
-      ${btn("create-method-ai", `✨ ${createCopy.methodAi}`)}
     </div>
     <label class="field">
       <span>${createCopy.methodGpx}</span>
@@ -245,16 +279,24 @@ function recordStep(draft) {
 }
 
 function drawStep(draft) {
-  const draw = draft.draw || { mode: "stops", stops: [], vertices: [] };
+  const draw = draft.draw || { mode: "stops", stops: [], vertices: [], stopTarget: DEFAULT_STOP_COUNT };
+  const target = Number(draw.stopTarget) || DEFAULT_STOP_COUNT;
+  const ready = (draw.stops?.length || 0) === target && (draw.vertices?.length || 0) >= 2 && !draw.routing;
+  const pick = draft.osmPick;
   return `
     ${btn("create-landing", "방법 다시 고르기", "btn--ghost")}
-    <p class="note">지도를 눌러 정류장 4곳과 보행 경로를 직접 그립니다. 자동 경로는 만들지 않습니다.</p>
+    <p class="note">정류장 수를 고른 뒤 지도를 누르세요. 이름과 설명을 확인하고 정하면, 마지막 정류장에서 걸을 수 있는 길을 따라 경로가 그려집니다.</p>
+    <label class="field">
+      <span>정류장 수 (${MIN_STOP_COUNT}~${MAX_STOP_COUNT})</span>
+      <input type="number" name="stop-target" min="${MIN_STOP_COUNT}" max="${MAX_STOP_COUNT}" step="1" value="${target}" />
+    </label>
     <div class="row-actions">
       ${btn("draw-mode-stops", createCopy.drawStops, draw.mode === "stops" ? "" : "btn--ghost")}
       ${btn("draw-mode-path", createCopy.drawPath, draw.mode === "path" ? "" : "btn--ghost")}
       ${btn("draw-undo", createCopy.undo, "btn--ghost")}
     </div>
-    <p>정류장 ${draw.stops?.length || 0}/4 · 경로 점 ${draw.vertices?.length || 0}개</p>
+    <p>정류장 ${draw.stops?.length || 0}/${target} · 경로 점 ${draw.vertices?.length || 0}개${draw.routing ? " · 길을 따라 그리는 중…" : ""}</p>
+    ${draw.routingError ? `<p class="warn">${escapeHtml(draw.routingError)}</p>` : ""}
     ${(draw.stops || [])
       .map(
         (s) => `
@@ -268,29 +310,27 @@ function drawStep(draft) {
       </label>`,
       )
       .join("")}
-    ${draw.stops?.length === 4 && (draw.vertices?.length || 0) >= 2 ? btn("draw-finish", "검토하기") : `<p class="muted">정류장 4곳과 경로 점 2개 이상이 필요합니다.</p>`}
+    ${ready ? btn("draw-finish", "검토하기") : `<p class="muted">${draw.routing ? "OpenStreetMap 보행 길을 따라 경로를 그리는 중입니다." : `정류장 ${target}곳을 정하면 걸을 수 있는 길을 따라 경로가 그려집니다.`}</p>`}
     <p class="osm-credit">${OSM_ATTRIBUTION_TEXT}</p>
-  `;
-}
-
-function aiStep(draft) {
-  const result = draft.aiResult;
-  return `
-    ${btn("create-landing", "방법 다시 고르기", "btn--ghost")}
-    <p class="note">ChatGPT 등 웹 검색이 되는 도구에 아래 프롬프트를 넣고, 나온 JSON만 붙여 넣으세요. 현장 확인 전 초안입니다.</p>
-    ${btn("copy-ai-prompt", createCopy.copyPrompt, "btn--ghost")}
-    <pre class="prompt-block">${escapeHtml(AI_ROUTE_PROMPT)}</pre>
-    <label class="field">
-      <span>${createCopy.pasteJson}</span>
-      <textarea name="aiJson" rows="10">${escapeHtml(draft.aiText || "")}</textarea>
-    </label>
-    ${btn("validate-ai", createCopy.validateJson)}
     ${
-      result
-        ? `<div class="ai-result">
-            ${(result.errors || []).map((e) => `<p class="warn">${escapeHtml(e)}</p>`).join("")}
-            ${(result.warnings || []).map((e) => `<p class="note">${escapeHtml(e)}</p>`).join("")}
-            ${result.playable ? btn("ai-to-editor", "지도에서 검토하기") : ""}
+      pick
+        ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="osm-pick-title">
+            <div class="overlay-card">
+              <h2 id="osm-pick-title">이 장소로 할까요?</h2>
+              ${pick.loading ? `<p class="note">OpenStreetMap에서 이름과 설명을 찾는 중…</p>` : ""}
+              ${pick.error ? `<p class="warn">${escapeHtml(pick.error)}</p>` : ""}
+              ${
+                !pick.loading
+                  ? `
+                <p class="muted">${pick.found ? "OpenStreetMap 이름·설명입니다. 고친 뒤 정하세요." : "가까운 이름 있는 지점을 찾지 못했습니다. 직접 적어 정하세요."}</p>
+                <label class="field"><span>이름</span><input type="text" name="osm-pick-name" value="${escapeHtml(pick.name || "")}" maxlength="80" /></label>
+                <label class="field"><span>설명</span><textarea name="osm-pick-description" rows="3" maxlength="200">${escapeHtml(pick.description || "")}</textarea></label>
+                ${btn("osm-pick-confirm", "이 위치로 정하기")}
+              `
+                  : ""
+              }
+              ${btn("osm-pick-cancel", "취소", "btn--ghost")}
+            </div>
           </div>`
         : ""
     }
@@ -309,7 +349,7 @@ function reviewStep(state, draft) {
       <input type="text" name="title" value="${escapeHtml(draft.title)}" maxlength="80" />
     </label>
     <p class="note">${formatWalkLabel(stats)} · 방법: ${method || ""}</p>
-    <p class="status-chip">${gpsReady ? "GPS 기록 · 체크리스트 후 현장 확인 가능" : "지도/AI 초안 · 현장 확인 걷기 필요"}</p>
+    <p class="status-chip">${gpsReady ? "GPS 기록 · 체크리스트 후 현장 확인 가능" : "OpenStreetMap 초안 · 현장 확인 걷기 필요"}</p>
     <ol class="order">
       ${places
         .map(
@@ -343,24 +383,6 @@ function reviewStep(state, draft) {
 
 export function draftPreview(draft) {
   const method = draft.method;
-  if (method !== "creator-gps-recording" && (draft.draw?.stops || []).length === 4 && (draft.draw?.vertices || []).length >= 2) {
-    const stops = draft.draw.stops;
-    return {
-      method: method || "openstreetmap-assisted-drawing",
-      places: stops.map((s) => ({
-        name: s.title,
-        lat: s.lat,
-        lng: s.lng,
-        blurb: s.directions,
-        publicStopConfirmed: s.publicStopConfirmed,
-        photoUrl: s.photoDataUrl || "",
-        coordinateSource: s.coordinateSource || method,
-      })),
-      routeLine: draft.draw.vertices,
-      sources: draft.aiResult?.draft?.sources || [],
-      warnings: draft.aiResult?.draft?.warnings || [],
-    };
-  }
   if (method === "creator-gps-recording") {
     const stops = draft.gps?.stops || [];
     return {
@@ -393,23 +415,66 @@ export function draftPreview(draft) {
       routeLine: draft.draw?.vertices || [],
     };
   }
-  const draftJson = draft.aiResult?.draft;
-  const stops = draftJson?.stops || [];
-  return {
-    method: "ai-assisted-draft",
-    places: stops.map((s) => ({
-      name: s.title,
-      lat: s.coordinates?.lat,
-      lng: s.coordinates?.lng,
-      blurb: s.directions,
-      publicStopConfirmed: true,
-      arrivalRadiusMeters: s.arrivalRadiusMeters,
-      coordinateSource: "ai-assisted-open-data",
-    })),
-    routeLine: draftJson?.route?.geometry?.coordinates || [],
-    sources: draftJson?.sources || [],
-    warnings: draftJson?.warnings || [],
-  };
+  return { method: method || "openstreetmap-assisted-drawing", places: [], routeLine: [] };
+}
+
+function modeView(state) {
+  return `
+    <main id="main" class="screen card-screen">
+      ${btn("back-library", copy.backLibrary, "btn--ghost")}
+      <h1>${coopCopy.title}</h1>
+      <p class="lead">${escapeHtml(state.game?.title || "")}</p>
+      <p class="note">${coopCopy.coopHint}</p>
+      ${btn("choose-solo", `🚶 ${coopCopy.solo}`)}
+      ${btn("choose-coop", `🤝 ${coopCopy.coop}`)}
+    </main>
+  `;
+}
+
+function partyView(state) {
+  const party = state.party;
+  const wait = state.partyWait || {};
+  if (!party && !wait.joinMode) {
+    return `
+      <main id="main" class="screen card-screen">
+        ${btn("back-library", copy.backLibrary, "btn--ghost")}
+        <h1>${coopCopy.coop}</h1>
+        ${btn("party-create", coopCopy.createParty)}
+        ${btn("party-join-form", coopCopy.joinParty, "btn--ghost")}
+        ${state.partyError ? `<p class="warn">${escapeHtml(state.partyError)}</p>` : ""}
+      </main>
+    `;
+  }
+  if (wait.joinMode && !party) {
+    return `
+      <main id="main" class="screen card-screen">
+        ${btn("back-library", copy.backLibrary, "btn--ghost")}
+        <label class="field"><span>${coopCopy.enterCode}</span><input type="text" name="party-code" maxlength="8" value="${escapeHtml(wait.code || "")}" /></label>
+        ${btn("party-join", coopCopy.join)}
+        ${state.partyError ? `<p class="warn">${escapeHtml(state.partyError)}</p>` : ""}
+      </main>
+    `;
+  }
+  const members = party.members || [];
+  const you = party.you;
+  const partner = members.find((m) => m.role !== you?.role);
+  return `
+    <main id="main" class="screen card-screen">
+      <h1>${coopCopy.coop}</h1>
+      ${wait.inviteCode ? `<p class="note">${coopCopy.code}: <strong>${escapeHtml(wait.inviteCode)}</strong></p>
+        ${btn("party-copy", coopCopy.copyCode, "btn--ghost")}
+        ${btn("party-share", coopCopy.share, "btn--ghost")}
+        ${wait.inPersonCode ? `<p class="note">${coopCopy.inPerson}: <strong>${escapeHtml(wait.inPersonCode)}</strong></p>` : ""}` : ""}
+      <ul class="order">
+        ${members.map((m) => `<li>${escapeHtml(m.label)} · ${m.arrivedStops?.includes(1) ? coopCopy.nearStart : coopCopy.waiting} · ${escapeHtml(m.presence || "")}</li>`).join("")}
+      </ul>
+      ${partner?.presence === "연결 끊김" ? `<p class="warn">${coopCopy.disconnected}</p>${btn("party-solo", coopCopy.goSolo, "btn--ghost")}` : ""}
+      ${party.status === "waiting" || party.status === "ready" ? `${btn("party-near", `📍 ${coopCopy.nearStart}`)}${btn("party-ready", coopCopy.ready)}` : ""}
+      ${state.partyError ? `<p class="warn">${escapeHtml(state.partyError)}</p>` : ""}
+      ${btn("party-leave", gps.exit, "btn--ghost")}
+      <p class="muted">상대방의 정확한 위치는 저장하거나 보여 주지 않습니다.</p>
+    </main>
+  `;
 }
 
 function safetyView() {
@@ -521,7 +586,9 @@ function navView(state) {
 
 function placeView(state) {
   const place = currentPlace(state);
-  const pieceId = `piece-${place.order}`;
+  const role = state.playMode === "coop" ? state.party?.you?.role || "A" : "solo";
+  const ids = piecesForStop(place.order, role, placeCount(state));
+  const haveAll = ids.every((id) => (state.collectedPieceIds || []).includes(id));
   const photo = displayImageUrl(place.photoUrl);
   return `
     <main id="main" class="screen card-screen">
@@ -532,11 +599,21 @@ function placeView(state) {
         ${place.address ? `<p class="note">${place.address}</p>` : ""}
         <p>${place.blurb || ""}</p>
         <a class="ext" href="${osmPlaceUrl(place)}" target="_blank" rel="noopener noreferrer">${createCopy.osmLink}</a>
-        <div class="piece-award">${tile(state, pieceId, "mark-tile--large")}</div>
-        ${btn("collect-piece", `🧩 ${pieceCopy.collect}`)}
+        ${
+          ids.length
+            ? `<div class="piece-award">${ids.map((id) => tile(state, id, "mark-tile--large")).join("")}</div>
+        ${haveAll ? `<p class="ok">${coopCopy.waitPartner}</p>` : btn("collect-piece", `🧩 ${state.playMode === "coop" ? coopCopy.collectMine : pieceCopy.collect}`)}`
+            : `<p class="muted">이 정류장에서 받을 내 조각은 없습니다.</p>${btn("collect-piece", "다음으로")}`
+        }
       `}
     </main>
   `;
+}
+
+function canMovePiece(state, owned, id, personalSeated) {
+  if (id === TEAM_PIECE && personalSeated < 8 && !(state.collectedPieceIds || []).includes(TEAM_PIECE)) return false;
+  if (owned && !owned.has(id)) return false;
+  return true;
 }
 
 function assembleView(state) {
@@ -547,6 +624,10 @@ function assembleView(state) {
   const seated = new Set(Object.entries(placement).filter(([, cell]) => cell).map(([id]) => id));
   const order = state.assembleOrder?.length ? state.assembleOrder : pieces.map((p) => p.id);
   const tray = order.filter((id) => !seated.has(id));
+  const ownedIds = [...(state.party?.you?.ownedPieceIds || [])];
+  if ((state.collectedPieceIds || []).includes(TEAM_PIECE)) ownedIds.push(TEAM_PIECE);
+  const owned = state.playMode === "coop" ? new Set(ownedIds) : null;
+  const personalSeated = Object.entries(placement).filter(([id, cell]) => cell && id !== TEAM_PIECE).length;
   return `
     <main id="main" class="screen card-screen">
       ${chrome(state, { showExit: true, showTray: true })}
@@ -573,12 +654,13 @@ function assembleView(state) {
         ${tray
           .map(
             (id) => `
-          <button type="button" class="assemble-piece${state.assembleSelected === id ? " is-selected" : ""}" data-action="select-piece" data-piece="${id}" aria-label="${id}">
+          <button type="button" class="assemble-piece${state.assembleSelected === id ? " is-selected" : ""}${!canMovePiece(state, owned, id, personalSeated) ? " is-disabled" : ""}" data-action="select-piece" data-piece="${id}" aria-label="${id}" ${!canMovePiece(state, owned, id, personalSeated) ? "disabled" : ""}>
             ${tile(state, id)}
           </button>`,
           )
           .join("")}
       </div>
+      ${state.playMode === "coop" && personalSeated >= 8 && !state.collectedPieceIds?.includes(TEAM_PIECE) ? btn("party-complete-ready", coopCopy.finishTogether) : ""}
       ${state.assembleComplete ? `<p class="ok">${pieceCopy.done}</p>${btn("continue", assembleCopy.continue)}` : ""}
     </main>
   `;

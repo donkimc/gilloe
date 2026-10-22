@@ -1,7 +1,7 @@
 import "./styles.css";
 import { brand, createCopy } from "./content.js";
 import { createStorage, STORAGE_KEY } from "./storage.js";
-import { SCREENS, createInitialState, currentPlace, ensureAssembleKit, gridN, needsLiveLocation, reduce } from "./state.js";
+import { SCREENS, createInitialState, currentPlace, ensureAssembleKit, gridN, needsLiveLocation, placeCount, reduce } from "./state.js";
 import { placeProgresses } from "./geo.js";
 import { createLocationService } from "./location.js";
 import { createMapService } from "./map.js";
@@ -9,10 +9,11 @@ import { placeOnCell, snapPlacement } from "./assemble.js";
 import { pickRandomImage } from "./puzzleImages.js";
 import { render } from "./ui/screens.js";
 import { createSimulatedGeolocation, parseSim } from "./simulate.js";
-import { createGame, deleteGame, getGame, listGames, updateGame, validateAiJson } from "./api.js";
+import { createGame, deleteGame, getGame, listGames, lookupOsmPlace, lookupOsmWalkRoute, updateGame } from "./api.js";
+import { createParty, fetchParty, joinParty, partyAction } from "./partyApi.js";
+import { TEAM_PIECE, piecesForStop } from "./coopPieces.js";
 import { createRouteEditor } from "./routeEditor.js";
 import { defaultDraft, draftPreview } from "./ui/screens.js";
-import { AI_ROUTE_PROMPT } from "./aiPrompt.js";
 import {
   emptyDrawState,
   emptyGpsSession,
@@ -20,6 +21,7 @@ import {
   parseGpxTrack,
   reduceDrawState,
   reduceGpsSession,
+  routeVerticesFromStops,
 } from "./routeSchema.js";
 
 const ui = document.querySelector("#ui");
@@ -34,6 +36,10 @@ let mapFail = sim.map === "fail";
 let createDraft = blankDraft();
 let createBusy = false;
 let createError = "";
+let partyError = "";
+let partyWait = null;
+let memberToken = "";
+let partyPollId = 0;
 let previewPlaying = false;
 let previewRaf = 0;
 let previewTour = false;
@@ -42,6 +48,8 @@ let previewCard = false;
 let previewDone = false;
 let previewStops = [];
 let tourToken = 0;
+let walkRouteToken = 0;
+let walkRouteTimer = 0;
 let mapReady = false;
 let approachAdded = false;
 
@@ -71,7 +79,7 @@ function draftFromGame(game) {
     jigsawSource: game.jigsaw?.source === "upload" ? "upload" : "system",
     systemImageId: game.jigsaw?.systemImageId || null,
     imageDataUrl: null,
-    draw: { mode: "stops", stops, vertices },
+    draw: { mode: "stops", stops, vertices, stopTarget: Math.max(stops.length, 2), autoRouted: false },
     gps: { ...emptyGpsSession(), stops, points: vertices.map(([lng, lat]) => ({ lat, lng })) },
   };
 }
@@ -430,6 +438,96 @@ function editorVisible() {
   return state.screen === "create" && ["record", "draw", "review"].includes(createDraft.step);
 }
 
+function scheduleWalkRoute() {
+  clearTimeout(walkRouteTimer);
+  walkRouteTimer = setTimeout(() => {
+    void applyOsmWalkRoute();
+  }, 400);
+}
+
+async function applyOsmWalkRoute() {
+  const draw = createDraft.draw;
+  if (createDraft.step !== "draw" || !draw?.autoRouted) return;
+  const stops = draw.stops || [];
+  if (stops.length < 2) return;
+  const token = ++walkRouteToken;
+  createDraft = { ...createDraft, draw: { ...draw, routing: true, routingError: "" } };
+  paint();
+  try {
+    const result = await lookupOsmWalkRoute(stops);
+    if (token !== walkRouteToken) return;
+    createDraft = {
+      ...createDraft,
+      draw: reduceDrawState(createDraft.draw, {
+        type: "SET_WALK_VERTICES",
+        vertices: result.vertices,
+        autoRouted: true,
+        error: result.usedStreets ? "" : "일부 구간은 보행 길을 찾지 못해 직선으로 이었습니다.",
+      }),
+    };
+  } catch (error) {
+    if (token !== walkRouteToken) return;
+    createDraft = {
+      ...createDraft,
+      draw: reduceDrawState(createDraft.draw, {
+        type: "SET_WALK_VERTICES",
+        vertices: routeVerticesFromStops(createDraft.draw.stops),
+        autoRouted: true,
+        error: error.message || "보행 경로를 만들지 못했습니다.",
+      }),
+    };
+  }
+  refreshEditor();
+  paint();
+}
+
+async function onEditorClick(lat, lng) {
+  if (createDraft.step !== "draw") return;
+  if (createDraft.osmPick) return;
+  if (createDraft.draw.routing) return;
+  if (createDraft.draw.mode === "path") {
+    walkRouteToken += 1;
+    createDraft = { ...createDraft, draw: reduceDrawState(createDraft.draw, { type: "ADD_VERTEX", lat, lng }) };
+    refreshEditor();
+    paint();
+    return;
+  }
+  const target = createDraft.draw.stopTarget || 4;
+  if ((createDraft.draw.stops || []).length >= target) return;
+  createDraft = { ...createDraft, osmPick: { loading: true, lat, lng, name: "", description: "", found: false } };
+  paint();
+  try {
+    const place = await lookupOsmPlace(lat, lng);
+    if (!createDraft.osmPick?.loading) return;
+    createDraft = {
+      ...createDraft,
+      osmPick: {
+        loading: false,
+        lat: Number.isFinite(place.lat) ? place.lat : lat,
+        lng: Number.isFinite(place.lng) ? place.lng : lng,
+        name: place.name || "",
+        description: place.description || "",
+        found: Boolean(place.found),
+      },
+    };
+  } catch (error) {
+    if (!createDraft.osmPick?.loading) return;
+    createDraft = {
+      ...createDraft,
+      osmPick: {
+        loading: false,
+        lat,
+        lng,
+        name: "",
+        description: "",
+        found: false,
+        error: error.message || "장소를 찾지 못했습니다.",
+      },
+    };
+  }
+  paint();
+}
+
 function editorGeometry() {
   const preview = draftPreview(createDraft);
   return { line: preview.routeLine, stops: preview.places.map((p, i) => ({ ...p, id: `stop-${i + 1}`, order: i + 1, title: p.name })) };
@@ -450,18 +548,12 @@ function syncEditor() {
     editor.mount(document.querySelector("#route-editor"));
     editorMounted = true;
     editor.setClick((lat, lng) => {
-      if (createDraft.step !== "draw") return;
-      if (createDraft.draw.mode === "stops") {
-        createDraft = { ...createDraft, draw: reduceDrawState(createDraft.draw, { type: "ADD_STOP", lat, lng }) };
-      } else {
-        createDraft = { ...createDraft, draw: reduceDrawState(createDraft.draw, { type: "ADD_VERTEX", lat, lng }) };
-      }
-      refreshEditor();
-      paint();
+      void onEditorClick(lat, lng);
     });
     editor.setStopDrag((id, lat, lng) => {
       createDraft = { ...createDraft, draw: reduceDrawState(createDraft.draw, { type: "MOVE_STOP", id, lat, lng }) };
       refreshEditor();
+      if (createDraft.draw.autoRouted) scheduleWalkRoute();
     });
   }
   refreshEditor();
@@ -519,6 +611,8 @@ function paint() {
     createDraft,
     createBusy,
     createError,
+    partyError,
+    partyWait: partyWait || state.partyWait,
     previewPlaying,
     previewTour,
     previewStopIndex,
@@ -531,6 +625,83 @@ function paint() {
   bindAssemble();
   syncEditor();
   void hydrateMediaImages(ui);
+  if (state.playMode === "coop" && memberToken && state.party?.id) startPartyPoll();
+  else stopPartyPoll();
+}
+
+function storePartySession(session) {
+  try {
+    sessionStorage.setItem("gilloe.party", JSON.stringify(session));
+  } catch {
+    /* ignore */
+  }
+}
+
+function loadPartySession() {
+  try {
+    return JSON.parse(sessionStorage.getItem("gilloe.party") || "null");
+  } catch {
+    return null;
+  }
+}
+
+function clearPartySession() {
+  try {
+    sessionStorage.removeItem("gilloe.party");
+  } catch {
+    /* ignore */
+  }
+  memberToken = "";
+  partyWait = null;
+  stopPartyPoll();
+}
+
+function stopPartyPoll() {
+  if (partyPollId) window.clearInterval(partyPollId);
+  partyPollId = 0;
+}
+
+function startPartyPoll() {
+  if (partyPollId) return;
+  const tick = async () => {
+    if (!memberToken || !state.party?.id) return;
+    try {
+      const data = await fetchParty(state.party.id, memberToken, state.party.version || 0);
+      if (data.unchanged) return;
+      if (data.party) applyParty(data.party);
+    } catch (error) {
+      partyError = error.message || "연결을 확인하세요.";
+      paint();
+    }
+  };
+  partyPollId = window.setInterval(tick, document.hidden ? 8000 : 2000);
+  void tick();
+}
+
+function applyParty(party, extra = {}) {
+  const me = party.members?.find((m) => m.role === party.you?.role);
+  const collected = me?.collectedPieceIds || state.collectedPieceIds;
+  let screen = extra.screen || state.screen;
+  if (party.status === "waiting" || party.status === "ready") screen = state.safetyAccepted ? "party" : state.screen === "safety" ? "safety" : "party";
+  if (party.status === "active" && ["party", "safety", "mode"].includes(screen)) screen = "preview";
+  if (party.status === "assembling") screen = "assemble";
+  if (party.status === "complete") screen = "resolution";
+  const placement = { ...state.assemblePlacement, ...(party.board || {}) };
+  dispatch({
+    type: "PARTY",
+    party,
+    wait: extra.wait !== undefined ? extra.wait : partyWait,
+    screen,
+    collectedPieceIds: collected,
+    currentStop: party.currentStop,
+    placement,
+  });
+}
+
+async function withParty(path, body) {
+  const data = await partyAction(state.party.id, memberToken, path, body);
+  if (data.party) applyParty(data.party);
+  return data;
 }
 
 function bindUi() {
@@ -586,11 +757,23 @@ function bindUi() {
     if (input.name === "check-private") patchCheck("noPrivate", input.checked);
     if (input.name === "check-alley") patchCheck("noAlley", input.checked);
     if (input.name === "check-purchase") patchCheck("noPurchase", input.checked);
+    if (input.name === "stop-target") {
+      createDraft = { ...createDraft, draw: reduceDrawState(createDraft.draw, { type: "SET_STOP_TARGET", stopTarget: Number(input.value) }) };
+      refreshEditor();
+      paint();
+      if (createDraft.draw.autoRouted) scheduleWalkRoute();
+    }
   };
   ui.oninput = (event) => {
     const input = event.target;
     if (input.name === "title") createDraft = { ...createDraft, title: input.value };
-    if (input.name === "aiJson") createDraft = { ...createDraft, aiText: input.value };
+    if (input.name === "party-code") partyWait = { ...(partyWait || {}), joinMode: true, code: input.value };
+    if (input.name === "osm-pick-name" && createDraft.osmPick) {
+      createDraft = { ...createDraft, osmPick: { ...createDraft.osmPick, name: input.value } };
+    }
+    if (input.name === "osm-pick-description" && createDraft.osmPick) {
+      createDraft = { ...createDraft, osmPick: { ...createDraft.osmPick, description: input.value } };
+    }
     if (input.name === "stop-title") patchDrawStop(input.dataset.id, { title: input.value });
     if (input.name === "stop-directions") patchDrawStop(input.dataset.id, { directions: input.value });
     if (input.name === "review-name") patchReviewPlace(Number(input.dataset.index), { name: input.value });
@@ -612,16 +795,6 @@ function patchReviewPlace(index, patch) {
   if (createDraft.method === "creator-gps-recording") {
     const stops = (createDraft.gps.stops || []).map((s, i) => (i === index ? { ...s, title: patch.name ?? s.title, directions: patch.blurb ?? s.directions, publicStopConfirmed: patch.publicStopConfirmed ?? s.publicStopConfirmed } : s));
     createDraft = { ...createDraft, gps: { ...createDraft.gps, stops } };
-    return;
-  }
-  if (createDraft.method === "ai-assisted-draft" && createDraft.aiResult?.draft?.stops) {
-    const draftJson = {
-      ...createDraft.aiResult.draft,
-      stops: createDraft.aiResult.draft.stops.map((s, i) =>
-        i === index ? { ...s, title: patch.name ?? s.title, directions: patch.blurb ?? s.directions } : s,
-      ),
-    };
-    createDraft = { ...createDraft, aiResult: { ...createDraft.aiResult, draft: draftJson } };
     return;
   }
   const stops = (createDraft.draw.stops || []).map((s, i) =>
@@ -697,6 +870,112 @@ async function handleAction(action, dataset) {
       createError = "";
       dispatch({ type: "OPEN_CREATE" });
       break;
+    case "choose-solo":
+      dispatch({ type: "CHOOSE_SOLO" });
+      break;
+    case "choose-coop":
+      dispatch({ type: "CHOOSE_COOP" });
+      break;
+    case "party-create":
+      try {
+        partyError = "";
+        const created = await createParty(state.gameId);
+        memberToken = created.memberToken;
+        partyWait = { inviteCode: created.inviteCode, inPersonCode: created.inPersonCode, invitePath: created.invitePath };
+        storePartySession({ partyId: created.party.id, memberToken, gameId: state.gameId, ...partyWait });
+        applyParty(created.party, { wait: partyWait, screen: "safety" });
+      } catch (error) {
+        partyError = error.message || "파티를 만들지 못했습니다.";
+        paint();
+      }
+      break;
+    case "party-join-form":
+      partyWait = { joinMode: true, code: "" };
+      dispatch({ type: "PARTY", party: null, wait: partyWait, screen: "party" });
+      break;
+    case "party-join":
+      try {
+        partyError = "";
+        const joined = await joinParty(partyWait?.code || "");
+        memberToken = joined.memberToken;
+        partyWait = {};
+        storePartySession({ partyId: joined.party.id, memberToken, gameId: joined.party.gameId });
+        if (!state.game || state.gameId !== joined.party.gameId) {
+          const game = await getGame(joined.party.gameId);
+          dispatch({ type: "SELECT_GAME", game });
+        }
+        applyParty(joined.party, { wait: {}, screen: "safety" });
+      } catch (error) {
+        partyError = error.message || "참여하지 못했습니다.";
+        paint();
+      }
+      break;
+    case "party-copy":
+      try {
+        await navigator.clipboard.writeText(partyWait?.inviteCode || "");
+      } catch {
+        partyError = "코드를 복사하지 못했습니다.";
+      }
+      paint();
+      break;
+    case "party-share": {
+      const url = `${window.location.origin}/?party=${encodeURIComponent(partyWait?.inviteCode || "")}`;
+      try {
+        if (navigator.share) await navigator.share({ title: "Gilloe", url });
+        else await navigator.clipboard.writeText(url);
+      } catch {
+        /* cancelled */
+      }
+      break;
+    }
+    case "party-near":
+      dispatch({ type: "LOCATION_ASKED" });
+      try {
+        partyError = "";
+        await withParty("arrive", {
+          stop: state.party?.currentStop || 1,
+          near: Boolean(state.canAutoArrive),
+          accuracyBand: state.locationStatus === "good" ? "good" : state.locationStatus === "low-accuracy" ? "weak" : "unavailable",
+        });
+      } catch (error) {
+        partyError = error.message || "도착 상태를 보내지 못했습니다.";
+        paint();
+      }
+      break;
+    case "party-ready":
+      try {
+        partyError = "";
+        await withParty("ready");
+      } catch (error) {
+        partyError = error.message || "아직 시작할 수 없습니다.";
+        paint();
+      }
+      break;
+    case "party-leave":
+      try {
+        if (state.party?.id && memberToken) await withParty("leave");
+      } catch {
+        /* still leave locally */
+      }
+      clearPartySession();
+      dispatch({ type: "RESET" });
+      break;
+    case "party-solo":
+      try {
+        await withParty("convert-to-solo");
+      } catch (error) {
+        partyError = error.message || "혼자 계속할 수 없습니다.";
+        paint();
+      }
+      break;
+    case "party-complete-ready":
+      try {
+        await withParty("complete-ready");
+      } catch (error) {
+        partyError = error.message || "아직 가운데 조각을 열 수 없습니다.";
+        paint();
+      }
+      break;
     case "create-landing":
       stopGpsWatch();
       createDraft = { ...createDraft, step: "landing" };
@@ -710,10 +989,29 @@ async function handleAction(action, dataset) {
       createDraft = { ...createDraft, method: "openstreetmap-assisted-drawing", step: "draw", draw: emptyDrawState() };
       paint();
       break;
-    case "create-method-ai":
-      createDraft = { ...createDraft, method: "ai-assisted-draft", step: "ai", aiResult: null };
+    case "osm-pick-cancel":
+      createDraft = { ...createDraft, osmPick: null };
       paint();
       break;
+    case "osm-pick-confirm": {
+      const pick = createDraft.osmPick;
+      if (!pick || pick.loading) break;
+      createDraft = {
+        ...createDraft,
+        osmPick: null,
+        draw: reduceDrawState(createDraft.draw, {
+          type: "ADD_STOP",
+          lat: pick.lat,
+          lng: pick.lng,
+          title: pick.name,
+          directions: pick.description,
+        }),
+      };
+      refreshEditor();
+      paint();
+      if (createDraft.draw.autoRouted) void applyOsmWalkRoute();
+      break;
+    }
     case "gps-start":
       createDraft = { ...createDraft, gps: reduceGpsSession(createDraft.gps, { type: "START" }) };
       startGpsWatch();
@@ -760,46 +1058,10 @@ async function handleAction(action, dataset) {
     case "create-back-method":
       createDraft = {
         ...createDraft,
-        step: createDraft.method === "creator-gps-recording" ? "record" : createDraft.method === "ai-assisted-draft" ? "ai" : "draw",
+        step: createDraft.method === "creator-gps-recording" ? "record" : "draw",
       };
       paint();
       break;
-    case "copy-ai-prompt":
-      try {
-        await navigator.clipboard.writeText(AI_ROUTE_PROMPT);
-      } catch {
-        createError = "프롬프트를 복사하지 못했습니다.";
-      }
-      paint();
-      break;
-    case "validate-ai": {
-      const result = await validateAiJson(createDraft.aiText || "");
-      createDraft = { ...createDraft, aiResult: result };
-      if (!result.ok) createError = result.errors?.[0] || "JSON을 확인하세요.";
-      else createError = "";
-      paint();
-      break;
-    }
-    case "ai-to-editor": {
-      const draftJson = createDraft.aiResult?.draft;
-      const stops = (draftJson?.stops || []).map((s) => ({
-        id: s.id,
-        order: s.order,
-        lat: s.coordinates.lat,
-        lng: s.coordinates.lng,
-        title: s.title,
-        directions: s.directions,
-        publicStopConfirmed: true,
-        coordinateSource: "ai-assisted-open-data",
-      }));
-      createDraft = {
-        ...createDraft,
-        step: "draw",
-        draw: reduceDrawState(emptyDrawState(), { type: "LOAD", stops, vertices: draftJson?.route?.geometry?.coordinates || [] }),
-      };
-      paint();
-      break;
-    }
     case "edit-game":
       try {
         const game = await getGame(dataset.id);
@@ -889,12 +1151,29 @@ async function handleAction(action, dataset) {
       dispatch({ type: "LOCATION_ASKED" });
       break;
     case "arrive":
-      if (state.canAutoArrive) dispatch({ type: "ARRIVE", manual: false });
+      if (!state.canAutoArrive) break;
+      if (state.playMode === "coop") {
+        try {
+          await withParty("arrive", { stop: state.currentStop, near: true, accuracyBand: "good" });
+        } catch {
+          /* still allow local place card if GPS already gated */
+        }
+      }
+      dispatch({ type: "ARRIVE", manual: false });
       break;
     case "manual":
       dispatch({ type: "OPEN_MANUAL" });
       break;
     case "confirm-manual":
+      if (state.playMode === "coop") {
+        try {
+          await withParty("arrive", { stop: state.currentStop, near: false, manualConfirmed: true, accuracyBand: "unavailable" });
+        } catch (error) {
+          partyError = error.message || "도착을 확인하지 못했습니다.";
+          paint();
+          break;
+        }
+      }
       dispatch({ type: "ARRIVE", manual: true });
       break;
     case "stopped":
@@ -911,16 +1190,35 @@ async function handleAction(action, dataset) {
       break;
     case "place-cell": {
       if (!state.assembleSelected) break;
-      const placement = placeOnCell(state.assemblePlacement, state.assembleSelected, dataset.cell, gridN(state));
+      const pieceId = state.assembleSelected;
+      const placement = placeOnCell(state.assemblePlacement, pieceId, dataset.cell, gridN(state));
       dispatch({ type: "PLACE_PIECE", placement });
+      if (state.playMode === "coop" && placement[pieceId]) {
+        try {
+          await withParty("place", { pieceId, cell: placement[pieceId], correct: true });
+        } catch {
+          /* keep local snap; poll restores */
+        }
+      }
       break;
     }
     case "collect-piece":
-      flyPieceThen(() => dispatch({ type: "COLLECT_PIECE", pieceId: `piece-${state.currentStop}` }));
+      flyPieceThen(() => {
+        if (state.playMode === "coop") {
+          const ids = piecesForStop(state.currentStop, state.party?.you?.role || "A", placeCount(state));
+          void (async () => {
+            if (!ids.length) await withParty("collect", { stop: state.currentStop, pieceId: "" });
+            for (const pieceId of ids) await withParty("collect", { stop: state.currentStop, pieceId });
+          })();
+          return;
+        }
+        dispatch({ type: "COLLECT_PIECE" });
+      });
       break;
     case "reset":
       location.stop();
       persist.clear();
+      clearPartySession();
       mapReady = false;
       approachAdded = false;
       stopPreviewTour();
@@ -953,7 +1251,7 @@ async function submitCreate() {
   try {
     const payload = {
       title: createDraft.title,
-      placeCount: 4,
+      placeCount: preview.places.length,
       places,
       routeLine: preview.routeLine,
       checklistComplete,
@@ -964,7 +1262,7 @@ async function submitCreate() {
         proprietaryProviderDerived: false,
         mapDataAttribution: "© OpenStreetMap contributors",
         mapDataLicense: "ODbL-1.0",
-        generatedBy: preview.method === "ai-assisted-draft" ? "ChatGPT" : null,
+        generatedBy: null,
       },
       jigsaw: {
         source: createDraft.jigsawSource === "upload" ? "upload" : "system",
@@ -1020,6 +1318,27 @@ async function bootLibrary() {
     }
   } catch {
     state = reduce(state, { type: "GAMES_ERROR", error: "list" });
+  }
+  const invite = new URLSearchParams(window.location.search).get("party");
+  const savedParty = loadPartySession();
+  if (invite) {
+    partyWait = { joinMode: true, code: invite };
+    dispatch({ type: "PARTY", party: null, wait: partyWait, screen: "party" });
+  } else if (savedParty?.partyId && savedParty.memberToken) {
+    memberToken = savedParty.memberToken;
+    partyWait = { inviteCode: savedParty.inviteCode, inPersonCode: savedParty.inPersonCode };
+    try {
+      const data = await fetchParty(savedParty.partyId, memberToken, 0);
+      if (data.party) {
+        if (!state.game || state.gameId !== data.party.gameId) {
+          const game = await getGame(data.party.gameId);
+          dispatch({ type: "SELECT_GAME", game });
+        }
+        applyParty(data.party, { wait: partyWait });
+      }
+    } catch {
+      clearPartySession();
+    }
   }
   paint();
   mapHost.hidden = !needsLiveLocation(state.screen) || mapFail || !state.game;
