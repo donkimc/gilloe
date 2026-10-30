@@ -280,3 +280,35 @@ export async function lookupOsmWalkRoute(stopsInput) {
   if (!vertices || vertices.length < 2) throw new Error("보행 경로를 만들지 못했습니다.");
   return { vertices, usedStreets };
 }
+
+export const GPS_STREET_GAP_M = 45;
+
+export async function fillGpsPointsWithStreets(points, routeLookup = lookupOsmWalkRoute) {
+  const list = Array.isArray(points) ? points : [];
+  if (list.length < 2) return list;
+  const out = [list[0]];
+  for (let i = 1; i < list.length; i += 1) {
+    const prev = list[i - 1];
+    const cur = list[i];
+    const gap = distanceMeters(prev, cur);
+    if (!prev.filled && !cur.filled && Number.isFinite(gap) && gap >= GPS_STREET_GAP_M) {
+      try {
+        const result = await routeLookup([prev, cur]);
+        const vertices = result?.vertices || [];
+        if (result?.usedStreets && vertices.length >= 3) {
+          const mid = vertices.slice(1, -1).map(([lng, lat]) => ({
+            lat,
+            lng,
+            at: prev.at,
+            filled: true,
+          }));
+          out.push(...mid);
+        }
+      } catch {
+        /* keep the GPS endpoints if streets cannot be read */
+      }
+    }
+    out.push(cur);
+  }
+  return out;
+}

@@ -1,16 +1,18 @@
 # Gilloe AI Route Draft Prompt
 
-**Purpose:** Generate an unverified route proposal that can be imported into Gilloe and reviewed on an OpenStreetMap-based editor.
+**Status (2026-10-30):** Archival. The in-app **AI 경로 초안 가져오기** screen was removed. Do not restore it unless asked. GPS recording and OSM street draw are the live creation methods.
 
-**Important:** This prompt does not create a verified or publishable walking route. The resulting JSON must pass Gilloe validation, be reviewed by a person, and be physically walked before publication.
+**Purpose:** Schema for an unverified route JSON if AI import is ever turned back on.
 
-## How to use
+**Important:** This prompt does not create a verified or publishable walking route.
 
-1. Copy the prompt below into Gemini, Claude Sonnet 4.6, or Grok 4.7, and also open an OSM node URL such as https://www.openstreetmap.org/node/5801572034 .
+## How to use (if the importer returns)
+
+1. Copy the prompt below into an LLM with web access, and also open an OSM node URL such as https://www.openstreetmap.org/node/5801572034 .
 2. Replace every value inside `[square brackets]`.
 3. Add optional requirements under `EXTRA REQUESTS`.
-4. Paste ChatGPT's JSON response into Gilloe's **AI 경로 초안 가져오기** screen.
-5. Review and edit the route, then complete a physical verification walk.
+4. Validate JSON against `src/routeSchema.js` — never evaluate it.
+5. Review on the OSM editor and walk the route before publication.
 
 ## Copyable prompt
 

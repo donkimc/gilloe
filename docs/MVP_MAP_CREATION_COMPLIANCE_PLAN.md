@@ -1,50 +1,41 @@
 # Gilloe MVP Map Creation Plan
 
-**Status:** Implemented in the app — remaining work is phone GPS recording and physical field verification of seed/OSM/AI routes  
-**Decision:** Replace the Naver URL import workflow with three controlled route-creation methods: record a GPS walk, draw on an OpenStreetMap-based editor, or import an AI-generated draft JSON  
-**Goal:** Make an MVP map in the simplest practical way without copying proprietary map pages, coordinates, routes, descriptions, or images
+**Status (2026-10-30):** GPS recording, OSM street auto-draw (2–8 stops), and GPX import are in the app. Place names and walk lines go through Gilloe `/api/osm/*` (OSM `map.json`), not public Nominatim or OSRM. The **AI 경로 초안 가져오기** screen was removed; `docs/AI_ROUTE_JSON_PROMPT.md` is unused. Remaining work: real-phone GPS (including screen-off street fill) and physical field verification.  
+**Decision:** Never ingest Naver/Kakao/Google/Apple pages, coordinates, photos, or public OSRM.  
+**Goal:** Make an MVP map without copying proprietary map pages, coordinates, routes, descriptions, or images.
 
 ## TL;DR
 
-The creator chooses one of three methods. GPS recording and open-map drawing are primary choices. AI JSON import is an advanced experimental choice.
+The creator chooses GPS recording or OSM drawing. GPX is a supporting import. AI JSON import is **not** in the UI.
 
 ### Method A — Record the walk
 
 1. Tap **경로 기록 시작**.
-2. Walk the intended route.
-3. Tap **정류장 추가** at each of four safe locations.
+2. Walk the intended route (GPS create stays four stops unless changed).
+3. Tap **정류장 추가** at each safe location.
 4. Add a short original note and, optionally, a photo taken by the creator.
-5. Tap **기록 완료**.
-6. Gilloe saves the creator's GPS track and stops as GeoJSON.
-7. AI generates the game story, clue text, icons, and instructions from that creator-owned material.
-8. The creator previews the game and confirms the field-safety checklist.
+5. Tap **기록 완료**. Gaps after pause or screen-off are filled along OSM streets, not as a straight line.
+6. Gilloe saves the GPS track and stops as GeoJSON (`creator-gps-recording`).
+7. The creator previews the game and confirms the field-safety checklist.
 
 ### Method B — Draw on an open map
 
 1. Tap **지도에서 경로 만들기**.
-2. Pan and zoom an attributed OpenStreetMap basemap.
-3. Tap four safe-looking public locations to add stops.
-4. Draw the walking line by tapping along the intended streets; drag points to correct it.
-5. Add original stop names, notes, and creator-owned images.
-6. Save the user-created points and line as GeoJSON.
-7. Walk the route before publishing and mark it field verified only after the physical check.
+2. Set stop count (2–8) and pan an attributed OpenStreetMap basemap.
+3. Tap stops; enter original name and description; confirm.
+4. After the last stop, Gilloe auto-routes along OSM pedestrian ways (`POST /api/osm/walk-route`).
+5. Save as GeoJSON with ODbL provenance (`openstreetmap-assisted-drawing`, `fieldVerified: false`).
+6. Walk the route before treating it as field verified.
 
-### Method C — Generate an AI route draft
+### Method C — AI route draft (archived)
 
-1. Open **AI 경로 초안 가져오기** under Advanced.
-2. Copy Gilloe's controlled prompt from `docs/AI_ROUTE_JSON_PROMPT.md`.
-3. Add the desired area, duration, number of stops, theme, accessibility needs, and other constraints.
-4. Ask ChatGPT with web access to return JSON only.
-5. Paste the result into Gilloe.
-6. Gilloe validates the schema, provenance, coordinates, geometry, distance, and restrictions.
-7. Open the accepted draft in the OpenStreetMap editor and review every stop and route segment.
-8. Walk the complete route and record field verification before publication.
+The in-app importer was removed. Do not restore it unless explicitly asked. The schema prompt remains in `docs/AI_ROUTE_JSON_PROMPT.md`.
 
 The player map displays the resulting route over an attributed OpenStreetMap basemap. Gilloe does not accept Naver, Kakao, or Google consumer-map URLs as a source of map data. It does not scrape map pages, proxy listing photographs, copy proprietary provider route geometry, or ask AI to invent coordinates.
 
-## 1. Why the current process must change
+## 1. Why the old process had to change
 
-The current prototype accepts Naver Map URLs and contains code that can:
+The former prototype accepted Naver Map URLs and contained code that could:
 
 - follow Naver redirect URLs;
 - fetch Naver Place HTML;

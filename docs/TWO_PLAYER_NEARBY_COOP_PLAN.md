@@ -1,8 +1,8 @@
 # Gilloe Two-Player Nearby Co-op Plan
 
-**Status:** First client/server MVP implemented — still needs two-phone field testing  
+**Status (2026-10-30):** Invite-only client/server MVP is in the app (`server/parties.js`, `src/partyLogic.js`, `src/coopPieces.js`). Parties are in-memory (lost on restart). Still needs two-phone field testing.  
 **Scope:** Two people, two phones, one shared route session  
-**Recommended puzzle:** Nine-piece 3×3 puzzle across four physical locations
+**Puzzle:** Nine-piece 3×3. Eight personal pieces are spread across the game’s stop count (2–8). Shared center `piece-5` unlocks when both finish. Stops with no assigned tile show **다음으로**.
 
 ## TL;DR
 
@@ -11,16 +11,13 @@ Two players can walk the same game together without exposing themselves to nearb
 1. Player A opens a game and chooses **두 명이 함께 걷기**.
 2. Gilloe creates a temporary party and an invite link or short code.
 3. Player B opens the link or enters the code.
-4. Both phones confirm that their users are near the same starting checkpoint.
+4. Both phones confirm they are near the same starting checkpoint (or use manual confirm). The server stores `near` / accuracy band, not lat/lng.
 5. Both tap **준비됐어요**.
-6. At each of four stops, each player collects one different puzzle piece.
-7. Four stops × two personal pieces = eight pieces.
-8. When both players finish all four stops, Gilloe unlocks one shared center piece.
-9. The players assemble a synchronized 3×3 puzzle together.
+6. At each stop, `piecesForStop(stop, role, stopCount)` may give A and/or B a tile, or none.
+7. Eight personal pieces in total, plus one shared center after both complete the route.
+8. The players assemble a synchronized 3×3 puzzle. Each places their own tiles; either may place the center.
 
-Each player owns four pieces and must place their own pieces on the shared board. Either player may place the ninth shared piece after both confirm completion.
-
-For the first multiplayer MVP, joining should happen at the route start. Joining midway can be added later after the start flow is reliable.
+Joining happens at the route start. Mid-route join is out of scope.
 
 ## 1. Product decision
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isWalkableWay, walkVerticesForStops } from "./osmWalkRoute.js";
+import { fillGpsPointsWithStreets, isWalkableWay, walkVerticesForStops } from "./osmWalkRoute.js";
 
 describe("osm walk route", () => {
   it("keeps motorways out of the walking graph", () => {
@@ -44,5 +44,35 @@ describe("osm walk route", () => {
       [127.123, 37.538],
       [127.124, 37.539],
     ]);
+  });
+
+  it("stitches a GPS blackout along streets instead of a diagonal", async () => {
+    const filled = await fillGpsPointsWithStreets(
+      [
+        { lat: 37.538, lng: 127.123, at: 1 },
+        { lat: 37.539, lng: 127.124, at: 120_000 },
+      ],
+      async () => ({
+        usedStreets: true,
+        vertices: [
+          [127.123, 37.538],
+          [127.124, 37.538],
+          [127.124, 37.539],
+        ],
+      }),
+    );
+    expect(filled).toHaveLength(3);
+    expect(filled[1]).toMatchObject({ lat: 37.538, lng: 127.124, filled: true });
+  });
+
+  it("leaves close GPS samples alone", async () => {
+    const points = [
+      { lat: 37.53865, lng: 127.12385, at: 1 },
+      { lat: 37.53866, lng: 127.1239, at: 4000 },
+    ];
+    const filled = await fillGpsPointsWithStreets(points, async () => {
+      throw new Error("should not route");
+    });
+    expect(filled).toEqual(points);
   });
 });

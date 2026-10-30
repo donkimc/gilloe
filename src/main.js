@@ -2,7 +2,7 @@ import "./styles.css";
 import { brand, createCopy } from "./content.js";
 import { createStorage, STORAGE_KEY } from "./storage.js";
 import { SCREENS, createInitialState, currentPlace, ensureAssembleKit, gridN, needsLiveLocation, placeCount, reduce } from "./state.js";
-import { placeProgresses } from "./geo.js";
+import { distanceMeters, placeProgresses } from "./geo.js";
 import { createLocationService } from "./location.js";
 import { createMapService } from "./map.js";
 import { placeOnCell, snapPlacement } from "./assemble.js";
@@ -10,6 +10,7 @@ import { pickRandomImage } from "./puzzleImages.js";
 import { render } from "./ui/screens.js";
 import { createSimulatedGeolocation, parseSim } from "./simulate.js";
 import { createGame, deleteGame, getGame, listGames, lookupOsmPlace, lookupOsmWalkRoute, updateGame } from "./api.js";
+import { fillGpsPointsWithStreets, GPS_STREET_GAP_M } from "./osmWalkRoute.js";
 import { createParty, fetchParty, joinParty, partyAction } from "./partyApi.js";
 import { TEAM_PIECE, piecesForStop } from "./coopPieces.js";
 import { createRouteEditor } from "./routeEditor.js";
@@ -104,6 +105,8 @@ const map = createMapService();
 const editor = createRouteEditor();
 let editorMounted = false;
 let recordWatchId = null;
+let gpsFillToken = 0;
+let screenWakeLock = null;
 let state = restore();
 
 function restore() {
@@ -575,6 +578,44 @@ function stopGpsWatch() {
   }
 }
 
+async function holdScreenWakeLock() {
+  try {
+    if (document.hidden || !navigator.wakeLock?.request) return;
+    screenWakeLock = await navigator.wakeLock.request("screen");
+    screenWakeLock.addEventListener("release", () => {
+      screenWakeLock = null;
+    });
+  } catch {
+    screenWakeLock = null;
+  }
+}
+
+function releaseScreenWakeLock() {
+  try {
+    screenWakeLock?.release();
+  } catch {
+    /* already released */
+  }
+  screenWakeLock = null;
+}
+
+function refreshGpsEditor(lat, lng) {
+  if (!editorMounted) return;
+  editor.setLine(gpsSessionToLine(createDraft.gps));
+  if (Number.isFinite(lat) && Number.isFinite(lng)) editor.setPlayer(lat, lng);
+  editor.setStops(createDraft.gps.stops, false);
+}
+
+async function stitchGpsStreetGaps() {
+  if (createDraft.step !== "record" || !createDraft.gps?.recording) return createDraft.gps?.points || [];
+  const token = ++gpsFillToken;
+  const points = await fillGpsPointsWithStreets(createDraft.gps.points || [], lookupOsmWalkRoute);
+  if (token !== gpsFillToken || createDraft.step !== "record") return points;
+  createDraft = { ...createDraft, gps: { ...createDraft.gps, points, filling: false } };
+  refreshGpsEditor();
+  return points;
+}
+
 function startGpsWatch() {
   stopGpsWatch();
   const geo = typeof navigator !== "undefined" ? navigator.geolocation : null;
@@ -585,6 +626,7 @@ function startGpsWatch() {
   }
   recordWatchId = geo.watchPosition(
     (pos) => {
+      const previous = createDraft.gps.points?.at(-1);
       createDraft = {
         ...createDraft,
         gps: reduceGpsSession(createDraft.gps, {
@@ -592,10 +634,12 @@ function startGpsWatch() {
           reading: { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy },
         }),
       };
-      if (editorMounted) {
-        editor.setLine(gpsSessionToLine(createDraft.gps));
-        editor.setPlayer(pos.coords.latitude, pos.coords.longitude);
-        editor.setStops(createDraft.gps.stops, false);
+      refreshGpsEditor(pos.coords.latitude, pos.coords.longitude);
+      const next = createDraft.gps.points?.at(-1);
+      const gap = previous && next ? distanceMeters(previous, next) : 0;
+      if (Number.isFinite(gap) && gap >= GPS_STREET_GAP_M) {
+        createDraft = { ...createDraft, gps: { ...createDraft.gps, filling: true } };
+        void stitchGpsStreetGaps().then(() => paint());
       }
     },
     () => {
@@ -1015,14 +1059,18 @@ async function handleAction(action, dataset) {
     case "gps-start":
       createDraft = { ...createDraft, gps: reduceGpsSession(createDraft.gps, { type: "START" }) };
       startGpsWatch();
+      void holdScreenWakeLock();
       paint();
       break;
     case "gps-pause":
       createDraft = { ...createDraft, gps: reduceGpsSession(createDraft.gps, { type: "PAUSE" }) };
+      releaseScreenWakeLock();
       paint();
       break;
     case "gps-resume":
       createDraft = { ...createDraft, gps: reduceGpsSession(createDraft.gps, { type: "RESUME" }) };
+      startGpsWatch();
+      void holdScreenWakeLock();
       paint();
       break;
     case "gps-add-stop":
@@ -1031,14 +1079,28 @@ async function handleAction(action, dataset) {
       break;
     case "gps-cancel":
       stopGpsWatch();
+      releaseScreenWakeLock();
+      gpsFillToken += 1;
       createDraft = { ...createDraft, gps: emptyGpsSession(), step: "landing" };
       paint();
       break;
-    case "gps-finish":
+    case "gps-finish": {
       stopGpsWatch();
-      createDraft = { ...createDraft, step: "review" };
+      releaseScreenWakeLock();
+      createDraft = { ...createDraft, gps: { ...createDraft.gps, filling: true } };
+      paint();
+      const token = ++gpsFillToken;
+      try {
+        const points = await fillGpsPointsWithStreets(createDraft.gps.points || [], lookupOsmWalkRoute);
+        if (token !== gpsFillToken) break;
+        createDraft = { ...createDraft, gps: { ...createDraft.gps, points, filling: false }, step: "review" };
+      } catch {
+        if (token !== gpsFillToken) break;
+        createDraft = { ...createDraft, gps: { ...createDraft.gps, filling: false }, step: "review" };
+      }
       paint();
       break;
+    }
     case "draw-mode-stops":
       createDraft = { ...createDraft, draw: reduceDrawState(createDraft.draw, { type: "SET_MODE", mode: "stops" }) };
       paint();
@@ -1347,8 +1409,16 @@ async function bootLibrary() {
 }
 
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) location.stop();
-  else if (needsLiveLocation(state.screen) && state.locationPermissionAsked) startWatch();
+  if (document.hidden) {
+    location.stop();
+    return;
+  }
+  if (needsLiveLocation(state.screen) && state.locationPermissionAsked) startWatch();
+  if (createDraft.step === "record" && createDraft.gps?.recording && !createDraft.gps?.paused) {
+    startGpsWatch();
+    void holdScreenWakeLock();
+    void stitchGpsStreetGaps();
+  }
 });
 window.addEventListener("pagehide", () => location.stop());
 window.addEventListener("popstate", () => dispatch({ type: "BACK" }));

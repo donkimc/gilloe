@@ -265,14 +265,14 @@ function recordStep(draft) {
   const gpsState = draft.gps || {};
   return `
     ${btn("create-landing", "방법 다시 고르기", "btn--ghost")}
-    <p class="note">정확도 30m 이내 점만 기록합니다. 길을 멈춘 뒤에만 정류장을 추가하세요.</p>
-    <p>점 ${gpsState.points?.length || 0}개 · 정류장 ${gpsState.stops?.length || 0}/4 ${gpsState.lastRejected ? `· ${gpsState.lastRejected}` : ""}</p>
+    <p class="note">정확도 30m 이내 점만 기록합니다. 화면이 꺼지면 위치가 끊길 수 있고, 다시 켜지면 그 사이를 보행 길로 잇습니다. 정류장은 길을 멈춘 뒤에만 추가하세요.</p>
+    <p>점 ${gpsState.points?.length || 0}개 · 정류장 ${gpsState.stops?.length || 0}/4 ${gpsState.filling ? "· 보행 길을 따라 잇는 중…" : gpsState.lastRejected ? `· ${gpsState.lastRejected}` : ""}</p>
     ${!gpsState.recording ? btn("gps-start", createCopy.startRecord) : ""}
     ${gpsState.recording && !gpsState.paused ? btn("gps-pause", createCopy.pause, "btn--ghost") : ""}
     ${gpsState.paused ? btn("gps-resume", createCopy.resume) : ""}
     ${gpsState.recording ? btn("gps-add-stop", createCopy.addStop, gpsState.stops?.length >= 4 ? "is-disabled" : "") : ""}
     ${btn("gps-cancel", createCopy.cancelRecord, "btn--ghost")}
-    ${gpsState.stops?.length === 4 && (gpsState.points?.length || 0) >= 2 ? btn("gps-finish", createCopy.finishRecord) : ""}
+    ${gpsState.stops?.length === 4 && (gpsState.points?.length || 0) >= 2 && !gpsState.filling ? btn("gps-finish", createCopy.finishRecord) : ""}
     <ol class="order">${(gpsState.stops || []).map((s) => `<li>${s.order}. ${escapeHtml(s.title || "정류장")}</li>`).join("")}</ol>
     <p class="osm-credit">${OSM_ATTRIBUTION_TEXT}</p>
   `;

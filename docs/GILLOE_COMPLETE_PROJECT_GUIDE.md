@@ -5,6 +5,8 @@ description: "The complete strategy, business model, economics, marketing, safet
 
 # Gilloe Complete Project Guide
 
+> **Historical strategy (written September 2026).** The live prototype is a Cheonho-area walking jigsaw at [gilloe.com](https://www.gilloe.com/), not a Seongsu paid marketplace. Prices, user counts, and competitor notes below are planning assumptions, not current metrics. For the running app, use `README.md` and `BUILT.md`.
+
 **Part I — Strategy, Business Model, Economics, and Marketing**
 
 ## A Korea-First Real-World Adventure Platform: Strategy, Economics, and Marketing

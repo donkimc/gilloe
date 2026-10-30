@@ -1,19 +1,37 @@
 # Gilloe — 퍼즐 걷기
 
-Prototype for **creating** and **playing** walking jigsaws. It is **not** public-play ready. The banner **현장 검증 전 임시 경로** stays on.
+Korean walking jigsaw. Creators record or draw a pedestrian route. Players visit public stops, collect tiles, and assemble a 3×3 picture. **Not public-play ready.** The banner **현장 검증 전 임시 경로** stays on until a physical survey.
 
-Creators record a GPS walk, draw on an attributed OpenStreetMap editor, or import unverified AI route JSON (`docs/AI_ROUTE_JSON_PROMPT.md`). Naver/Kakao/Google/Apple ingestion, the image proxy, and public OSRM routing are removed. Review `docs/MVP_MAP_CREATION_COMPLIANCE_PLAN.md`. Routes stay provisional until a physical walk.
+Live prototype: [gilloe.com](https://www.gilloe.com/) (Railway). Source: [github.com/donkimc/gilloe](https://github.com/donkimc/gilloe).
 
-## Setup
+## Setup on a new computer
 
 ```bash
+git clone https://github.com/donkimc/gilloe.git
+cd gilloe
 npm install
+npm test
 npm run dev
 ```
 
-Vite (5173) proxies `/api` to the local Node server (8787). Open `http://127.0.0.1:5173/`. Simulator: `http://127.0.0.1:5173/?sim=1`.
+Vite (`127.0.0.1:5173`) starts the Node API (`8787`) and proxies `/api` and `/uploads`. Open [http://127.0.0.1:5173/](http://127.0.0.1:5173/). Simulator: [http://127.0.0.1:5173/?sim=1](http://127.0.0.1:5173/?sim=1).
 
-Production (`npm run build` then `npm start`) serves the built UI and the games API from one Node process on Railway. Persistent games live in `GILLOE_DATA_DIR` (volume `/data`).
+Production: `npm run build` then `npm start`. Railway serves the built UI and API from one Node process. Persistent games use `GILLOE_DATA_DIR` (volume `/data`).
+
+Continue in Cursor with the prompt in `CURSOR_PROMPT.md`.
+
+## What this repo does now
+
+| Path | What it is |
+| --- | --- |
+| Create | GPS recording (2–8 stops), OSM draw with street-following auto-route, GPX import |
+| Play | Solo or invite-only two-phone co-op, 9-piece 3×3 jigsaw |
+| Maps | Leaflet + OSM tiles; place names and walk graphs via Gilloe `/api/osm/*` (OpenStreetMap `map.json`), not public Nominatim or OSRM |
+| Host | Railway (`railway.json`) |
+
+Removed: Naver/Kakao/Google/Apple ingest, media proxy, public OSRM, **AI 경로 초안 가져오기** UI (schema and `docs/AI_ROUTE_JSON_PROMPT.md` remain unused).
+
+Not built: accounts, payments, coupons, tarot, companion characters, analytics.
 
 ## Build and test
 
@@ -23,94 +41,71 @@ npm run build
 npm run preview
 ```
 
-There is no linter configured.
+No linter. GPS and rear camera need a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts) (`localhost` or HTTPS). Desktop GPS is often unusable; use manual arrival, **카메라 없이 조각 보기**, or `?sim=1`. Query flags: `gps=denied|unavailable|timeout|inaccurate|good`, `camera=denied|unavailable`, `map=fail`.
 
-## Secure-context phone testing
-
-GPS and the rear camera only work in a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts): `localhost` or HTTPS.
-
-Practical options (no hosted production environment is included):
-
-1. **USB + Chrome inspect** — run `npm run dev` on a computer, open `http://<lan-ip>:5173` on the phone **only if the browser treats it as a secure context**. Many phones will **not** grant geolocation/camera on a raw LAN IP.
-2. **`localhost` via reverse tether / `adb reverse`** (Android) so the phone loads `http://localhost:5173`.
-3. A **temporary HTTPS tunnel** you already trust (for example a local `vite` HTTPS plugin or a short-lived tunnel). Do not add accounts, analytics, or a Gilloe server.
-
-Until you complete that phone pass, treat real GPS and camera behaviour as **unverified**.
-
-Prototype simulator (injected device states, not a field test):
-
-`http://localhost:5173/?sim=1`
-
-Optional query flags: `gps=denied|unavailable|timeout|inaccurate|good`, `camera=denied|unavailable`, `map=fail`.
-
-## Permission reset
-
-- **iOS Safari:** Settings → Safari → Camera / Location, or Site Settings for `localhost`.
-- **Chrome (Android or desktop):** Site settings → reset Camera and Location for the origin, or lock icon → Permissions.
-- **Desktop Chrome:** `chrome://settings/content/all` → remove the origin.
+**Phone:** USB + Chrome inspect, `adb reverse` so the phone loads `http://localhost:5173`, or a short HTTPS tunnel. Many phones refuse geolocation on a raw LAN IP.
 
 ## Architecture
 
-Vanilla Vite app. Game progress is an explicit state machine in `src/state.js`. Screens render from that state; they do not own progress.
+Vanilla Vite + Node. Progress is an explicit state machine in `src/state.js`. Screens render from state.
 
 | Path | Role |
 | --- | --- |
-| `server/index.js` | Games API, local uploads, AI JSON validation |
-| `src/routeSchema.js` | Provenance, GPS sampling, AI import, save validation |
-| `src/partyLogic.js` | Invite-only two-player party rules (in-memory on the server) |
+| `server/index.js` | Games, uploads, OSM place/walk-route, in-memory parties |
+| `server/parties.js` | Invite-only two-player sessions |
+| `src/routeSchema.js` | Provenance, GPS sampling, GPX/AI validation, 2–8 stops |
+| `src/osmWalkRoute.js` | Pedestrian graph (Dijkstra) + GPS street-gap fill |
+| `src/osmPlace.js` | OSM `map.json` fetch used by the server |
+| `src/partyLogic.js` / `src/coopPieces.js` | Co-op rules; 8 personal pieces spread across N stops + shared center |
 | `src/content.js` | Korean UI copy |
-| `src/state.js` | State machine |
-| `src/storage.js` | Minimal `localStorage` progress (no coordinates) |
-| `src/geo.js` | Haversine, arrival, route preview helpers |
-| `src/location.js` | Geolocation watcher |
 | `src/map.js` | Leaflet + OSM + walker preview |
-| `src/assemble.js` | NxN jigsaw snap |
+| `src/assemble.js` | 3×3 snap |
 | `src/ui/screens.js` | Screen HTML |
-| `src/simulate.js` | `?sim=1` GPS/map fakes |
+| `src/simulate.js` | `?sim=1` |
 
-Camera overlay code remains in the repo but is not used in this flow. There is no end-of-game survey.
+GeoJSON order is `[longitude, latitude]`; convert to Leaflet `[lat, lng]` only at the map boundary.
 
-Progress stores only schema, game id, screen/stop, collected pieces, hints, start time, safety/location-asked flags — never lat/lng.
+## Create and play rules
 
-## Content and route editing
+- OSM draw: creator sets stop count (2–8), taps stops, names them, then the last stop auto-routes along OSM streets.
+- GPS record: default four stops unless asked otherwise. Screen Wake Lock while recording. Gaps ≥ 45 m after pause/screen-off are filled with street vertices (`filled: true`), not a straight line.
+- Co-op: invite link or code, two phones, no stranger discovery. Empty stops skip with **다음으로**.
+- Camera overlay code exists but is unused. No end-of-game survey.
 
-1. Edit copy, radii, and overlay placement in `src/content.js`.
-2. Replace `coordinates` on each stop after a physical survey. Keep `fieldVerified: false` until that survey is done.
-3. Draw or record a pedestrian line along streets, not a straight line between pins. GeoJSON order is `[longitude, latitude]`. Seed Cheonho geometry is still unverified on site.
-4. Camera framing copy lives under `stops[1].cameraClue`. Do not point it at people or private interiors.
+## Privacy
 
-## Privacy behaviour
+Player `localStorage` holds schema, game id, screen/stop, pieces, hints, start time, safety flags — **not** lat/lng.
 
-Persisted keys: schema version, game id, mode, screen/stop, collected pieces, camera-clue / fallback flags, hint flags, start time, safety/location-asked flags.
+Creator-saved games store GeoJSON on the server. `/api/osm/place` and `/api/osm/walk-route` receive coordinates to query OSM. Co-op checkpoints send `near` / accuracy band, not raw coordinates.
 
-**Never stored or transmitted:** coordinates, location history, accuracy samples, camera frames, photos, audio, video, names, emails, device ids.
+Never log player coordinates to the console. No microphone. No QR, object, or face detection.
 
-Location is requested only after **내 위치 찾기**. Camera starts only after **카메라로 조각 찾기**. No microphone. No QR, object, or face detection. Feedback can be downloaded as JSON locally; there is no submit endpoint.
+## Field verification
 
-Camera tracks stop on collect, skip, error, screen change, overlay, page hide, reset, and completion.
+Seed Cheonho geometry and OSM drafts are **provisional**. Do not invite outside testers until stops, radii, and the walking line are walked and approved.
 
-## Field-verification status
+## Docs
 
-| Item | Status |
+| File | Use |
 | --- | --- |
-| Cheonho Station Exit 5 standing point | Provisional map point only |
-| Rodeo Street stop | Provisional |
-| Stationery/Toy Street area stop | Provisional |
-| Naengmyeon Street area stop | Provisional |
-| Pedestrian GeoJSON | OSM foot route along streets; not a walked field survey |
-| 60 m radius / 80 m accuracy ceiling | Starting values only |
-| Stop 2 camera anchor and facing direction | Placeholder copy; not night-checked |
-
-Do not invite outside testers until these are walked and approved.
+| `CURSOR_PROMPT.md` | Paste into a new Cursor chat after clone |
+| `AGENT.md` | Standing agent rules |
+| `BUILT.md` | Current product specification |
+| `docs/MVP_MAP_CREATION_COMPLIANCE_PLAN.md` | Map sources (no proprietary ingest) |
+| `docs/TWO_PLAYER_NEARBY_COOP_PLAN.md` | Invite-only co-op |
+| `docs/AI_ROUTE_JSON_PROMPT.md` | Unused AI JSON schema (UI removed) |
+| `docs/GILLOE_SAFETY_SECURITY_RISK_GUIDE.md` | Safety reference |
+| `docs/GILLOE_MVP_01_CHEONHO_MURDER_MYSTERY_PLAN.md` | Historical; crime framing was dropped |
+| `docs/GILLOE_COMPLETE_PROJECT_GUIDE.md` | Early strategy; not the live MVP |
 
 ## Known limitations
 
-- Desktop browsers often have no usable GPS or rear camera; use manual arrival and **카메라 없이 조각 보기**, or `?sim=1`.
 - OSM tiles need a network. Text directions remain if the map fails.
 - Refresh restores the last screen, not a live GPS fix.
-- Two-player mode is one shared phone; no networking.
-- Reduced-motion disables decorative motion via CSS.
+- Co-op parties are in-memory (lost on server restart).
+- Reduced-motion disables decorative motion.
+- GPS street-fill still needs a real phone screen-off test.
 
-## Test results (local)
+## Deploy
 
-See the implementation report in the conversation that added this prototype. Re-run `npm test` and `npm run build` after content or logic edits.
+Railway project `gilloe`, production environment. `railway.json` builds with `npm run build` and starts `node server/index.js`. Health check: `GET /api/games`.

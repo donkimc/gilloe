@@ -1,6 +1,6 @@
 # Gilloe MVP 01 Plan
 
-> **Content pivot:** Playable MVP is creator puzzle hunts plus a seeded Cheonho walk. See `BUILT.md`.
+> **Historical (2026-10-30).** Crime / murder-mystery framing was dropped. The live product is a Korean walking jigsaw (9-piece 3×3) with GPS/OSM/GPX creation and invite-only two-phone co-op. See `README.md` and `BUILT.md`. Do not implement this mystery unless asked.
 
 ## *Cheonho 19:42 — The Last Envelope*
 

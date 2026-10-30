@@ -5,10 +5,12 @@ description: "Practical safety, privacy, security, and operating principles for 
 
 # Gilloe Safety, Security, and Risk Guide
 
+> **Still the safety reference.** The live app is invite-only co-op (no stranger matching), stores player progress without coordinates, and keeps OSM/GPS creation unverified until a walk. Coupons, payments, and open self-publishing are not shipped.
+
 ## Building a Safer Location-Based Real-World Adventure Platform
 
 **Published:** September 10, 2026  
-**Project stage:** Concept validation and pilot planning  
+**Project stage:** Prototype on Railway; field verification incomplete  
 **Audience:** Players, creators, participating businesses, partners, and project stakeholders
 
 > A real-world game must treat the real world as part of the product.
