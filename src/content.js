@@ -144,6 +144,7 @@ export const createCopy = {
   deleteBody: "목록에서 지워지며, 이 게임의 걷기 진행도 사라집니다.",
   deleteConfirm: "삭제하기",
   deleted: "삭제했습니다.",
+  madeOn: "에 만듦",
   saved: "저장했습니다.",
   osmLink: "OpenStreetMap에서 보기",
   quarantined: "제한된 출처 · 다시 작성 필요",

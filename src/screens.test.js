@@ -69,6 +69,15 @@ describe("rendered flow", () => {
     expect(html).toContain('data-action="ask-delete-game"');
   });
 
+  it("shows the date a route was made", () => {
+    const html = render({
+      ...createInitialState(),
+      games: [{ id: "cheonho-pieces", title: "천호에서 길로 마크 모으기", placeCount: 4, walkLabel: "약 1.1km · 약 25분", createdAt: Date.UTC(2026, 10, 12, 3, 0, 0) }],
+    });
+    expect(html).toContain("2026년 11월 12일");
+    expect(html).toContain("에 만듦");
+  });
+
   it("asks before deleting a game", () => {
     const html = render({
       ...createInitialState(),

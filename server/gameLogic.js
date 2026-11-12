@@ -35,12 +35,13 @@ export function straightRouteLine(places) {
   return places.map((p) => [p.lng, p.lat]);
 }
 
-export function mergeSeedGames(existing, seed) {
+export function mergeSeedGames(existing, seed, removedIds = []) {
   const list = Array.isArray(existing) ? existing : [];
+  const removed = new Set(removedIds);
   const have = new Set(list.map((game) => game?.id).filter(Boolean));
   const missing = [];
   for (const game of seed || []) {
-    if (!game || typeof game !== "object" || !game.id || have.has(game.id)) continue;
+    if (!game || typeof game !== "object" || !game.id || have.has(game.id) || removed.has(game.id)) continue;
     missing.push(game);
     have.add(game.id);
   }

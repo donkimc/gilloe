@@ -1,5 +1,5 @@
 export async function listGames() {
-  const res = await fetch("/api/games");
+  const res = await fetch("/api/games", { cache: "no-store" });
   if (!res.ok) throw new Error("list");
   return res.json();
 }
@@ -33,7 +33,7 @@ export async function updateGame(id, payload) {
 }
 
 export async function deleteGame(id) {
-  const res = await fetch(`/api/games/${encodeURIComponent(id)}`, { method: "DELETE" });
+  const res = await fetch(`/api/games/${encodeURIComponent(id)}`, { method: "DELETE", cache: "no-store" });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "delete");
   return data;

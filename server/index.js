@@ -13,6 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SEED_FILE = path.join(__dirname, "data", "games.json");
 const DATA_DIR = process.env.GILLOE_DATA_DIR || path.join(__dirname, "data");
 const GAMES_FILE = path.join(DATA_DIR, "games.json");
+const REMOVED_FILE = path.join(DATA_DIR, "removed-games.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const DIST_DIR = path.join(__dirname, "..", "dist");
 const HOST = process.env.HOST || "0.0.0.0";
@@ -84,6 +85,18 @@ async function copyMissingFiles(fromDir, toDir) {
   }
 }
 
+async function readRemovedIds() {
+  const ids = await readJsonArray(REMOVED_FILE);
+  return ids.filter((id) => typeof id === "string" && id);
+}
+
+async function rememberRemoved(id) {
+  const ids = new Set(await readRemovedIds());
+  ids.add(id);
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(REMOVED_FILE, JSON.stringify([...ids], null, 2));
+}
+
 async function ensureGamesFile() {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.mkdir(UPLOAD_DIR, { recursive: true });
@@ -91,7 +104,7 @@ async function ensureGamesFile() {
   if (path.resolve(GAMES_FILE) === path.resolve(SEED_FILE)) return;
   const existing = await readJsonArray(GAMES_FILE);
   const seed = await readJsonArray(SEED_FILE);
-  const merged = mergeSeedGames(existing, seed);
+  const merged = mergeSeedGames(existing, seed, await readRemovedIds());
   if (merged === existing) return;
   await writeGames(merged);
 }
@@ -100,6 +113,7 @@ function send(res, status, body, headers = {}) {
   const json = JSON.stringify(body);
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
     "access-control-allow-origin": "*",
     ...headers,
   });
@@ -185,6 +199,7 @@ function listItem(g) {
     walkingMeters: g.stats?.walkingMeters,
     durationMinutes: g.stats?.durationMinutes,
     walkLabel: formatWalkLabel(g.stats || { walkingMeters: 0, durationMinutes: 0 }),
+    createdAt: Number(g.createdAt) || null,
     fieldStatus: g.fieldStatus,
     fieldVerified: Boolean(g.fieldVerified),
     quarantined: Boolean(g.quarantined),
@@ -434,6 +449,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (req.method === "DELETE") {
+        await rememberRemoved(id);
         const next = games.filter((g) => g.id !== id);
         await writeGames(next);
         send(res, 200, { ok: true, id });

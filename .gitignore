@@ -2,6 +2,7 @@ node_modules
 dist
 .DS_Store
 *.log
+server/data/removed-games.json
 server/data/uploads/*
 !server/data/uploads/.gitkeep
 !server/data/uploads/misa-*.jpg

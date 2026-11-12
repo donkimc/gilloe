@@ -52,6 +52,12 @@ describe("game payload", () => {
     expect(merged[1].title).toBe("청량리");
   });
 
+  it("does not restore a seed route that was deleted", () => {
+    const live = [{ id: "live", title: "청량리" }];
+    const merged = mergeSeedGames(live, [{ id: "misa-lake-to-course" }], ["misa-lake-to-course"]);
+    expect(merged).toBe(live);
+  });
+
   it("leaves the live file unchanged when every seed id is already stored", () => {
     const live = [{ id: "live", title: "edited" }];
     expect(mergeSeedGames(live, [{ id: "live", title: "seed" }])).toBe(live);

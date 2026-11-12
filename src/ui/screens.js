@@ -165,6 +165,18 @@ function statusChip(g) {
   return `<span class="status-chip">${createCopy.unverified}</span>`;
 }
 
+function formatMadeOn(createdAt) {
+  const time = Number(createdAt);
+  if (!Number.isFinite(time) || time <= 0) return "";
+  const label = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(time));
+  return `${label}${createCopy.madeOn}`;
+}
+
 function libraryView(state) {
   const games = state.games || [];
   return `
@@ -190,20 +202,21 @@ function libraryView(state) {
 
       <ul class="game-list">
         ${games
-          .map(
-            (g) => `
+          .map((g) => {
+            const made = formatMadeOn(g.createdAt);
+            return `
           <li class="game-item">
             <button type="button" class="choice" data-action="select-game" data-id="${escapeHtml(g.id)}" ${g.quarantined || g.playable === false ? "disabled" : ""}>
               <span class="game-card-index" aria-hidden="true">↗</span><span class="game-card-tag">${offer.sampleTag} · ${g.placeCount}곳</span><strong>${escapeHtml(g.title)}</strong>
-              <span>${g.placeCount}곳 · ${escapeHtml(g.walkLabel || "")}</span>
+              <span>${g.placeCount}곳 · ${escapeHtml(g.walkLabel || "")}${made ? ` · ${escapeHtml(made)}` : ""}</span>
               ${statusChip(g)}
             </button>
             <div class="row-actions">
               ${btn("edit-game", `✏️ ${createCopy.edit}`, "btn--ghost", `data-id="${escapeHtml(g.id)}"`)}
               ${btn("ask-delete-game", `🗑️ ${createCopy.delete}`, "btn--ghost", `data-id="${escapeHtml(g.id)}" data-title="${escapeHtml(g.title)}"`)}
             </div>
-          </li>`,
-          )
+          </li>`;
+          })
           .join("")}
       </ul>
       <footer class="home-footer"><span class="wordmark">Gilloe</span><span>${offer.price} · ${offer.priceNote}</span><p class="osm-credit">${OSM_ATTRIBUTION_TEXT}</p></footer>
@@ -526,6 +539,7 @@ function previewView(state) {
       </main>
     `;
   }
+  const made = formatMadeOn(game?.createdAt);
   const locateStuck = ["denied", "unavailable", "timeout"].includes(state.locationStatus);
   const locateWait = state.locationPermissionAsked && (state.locationStatus === "locating" || locateStuck);
   return `
@@ -533,7 +547,7 @@ function previewView(state) {
       ${chrome(state, { showExit: true })}
       <h1>${previewCopy.title}</h1>
       <p><strong>${escapeHtml(game.title)}</strong></p>
-      <p class="note">${game.walkLabel} · ${game.placeCount}곳</p>
+      <p class="note">${game.walkLabel} · ${game.placeCount}곳${made ? ` · ${escapeHtml(made)}` : ""}</p>
       ${game.fieldStatus !== "field-verified" ? `<p class="warn">${ico("⚠️", brand.prototypeBanner)}</p>` : ""}
       ${locationPanel(state)}
       ${state.locationPermissionAsked && state.locationStatus === "locating" ? `<p class="muted">${gps.locatingHint}</p>` : ""}
