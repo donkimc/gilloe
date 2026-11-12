@@ -122,7 +122,10 @@ describe("rendered flow", () => {
   it("shows the library tagline beside Gilloe", () => {
     const html = render(createInitialState());
     expect(html).toContain("Gilloe");
-    expect(html).toContain("오늘은 어디로? 길로");
+    expect(html).toContain("한 번 걷는 저녁");
+    expect(html).toContain("두 사람 29,000원");
+    expect(html).toContain("결제하지 않습니다");
+    expect(html).toContain('href="#walks"');
     expect(html).toContain("hero-walker");
     expect(html).toContain("점선 길");
   });

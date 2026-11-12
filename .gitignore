@@ -4,3 +4,4 @@ dist
 *.log
 server/data/uploads/*
 !server/data/uploads/.gitkeep
+!server/data/uploads/misa-*.jpg

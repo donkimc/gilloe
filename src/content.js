@@ -12,14 +12,31 @@ export const brand = {
 };
 
 export const copy = {
-  libraryTitle: "퍼즐 걷기",
-  libraryTagline: "오늘은 어디로? 길로",
-  libraryLead: "만든 게임을 고르거나, GPS·OpenStreetMap으로 새 퍼즐을 만드세요.",
-  create: "게임 만들기",
+  libraryTitle: "두 사람의 퍼즐 산책",
+  libraryTagline: "한 번 걷는 저녁",
+  libraryLead: "현장 확인이 끝난 코스만 팝니다. 두 대의 전화로 약 90분을 걷고, 멈춰 선 곳에서 조각을 모아 맞춥니다.",
+  create: "코스 제작",
   play: "이 게임 걷기",
   resume: "이어서 걷기",
   reset: "처음부터",
   backLibrary: "목록으로",
+};
+
+export const offer = {
+  nav: "두 사람의 90분",
+  kicker: "한 번의 저녁",
+  heading: "두 사람이 걸으면,<br>그림 하나가 남습니다.",
+  price: "두 사람 29,000원",
+  priceNote: "약 90분 · 한 코스 · 한 번",
+  notForSale: "아래 코스는 현장 확인 전 샘플입니다. 결제하지 않습니다.",
+  sampleCta: "샘플 코스 보기",
+  authorNote: "코스를 만드는 도구는 운영용입니다.",
+  how: ["두 사람이 코스 하나를 고른다", "멈춰 선 곳에서 조각을 모은다", "그림을 맞추면 저녁이 끝난다"],
+  sampleKicker: "판매 전",
+  sampleTitle: "확인 전 샘플",
+  sampleTag: "판매 전 샘플",
+  ticket: "두 사람이 모으면 끝나는 저녁",
+  modeNote: "파는 상품은 두 사람이 함께 걷는 한 번의 코스입니다. 혼자 걷기는 코스를 확인할 때 씁니다.",
 };
 
 export const safety = {

@@ -4,6 +4,7 @@ import {
   coopCopy,
   copy,
   createCopy,
+  offer,
   ending,
   gps,
   osmPlaceUrl,
@@ -154,7 +155,7 @@ function heroWalkArt() {
             <circle r="3.5" fill="#f8f5ec"/>
           </g>
         </svg>
-        <span class="art-ticket"><span>발걸음이 모이면</span><strong>하나의 그림이 되는 산책</strong><span class="ticket-arrow" aria-hidden="true">↗</span></span>
+        <span class="art-ticket"><span>두 사람의 저녁</span><strong>${offer.ticket}</strong><span class="ticket-arrow" aria-hidden="true">↗</span></span>
       </div>`;
 }
 
@@ -168,17 +169,20 @@ function libraryView(state) {
   const games = state.games || [];
   return `
     <main id="main" class="screen card-screen library-screen">
-      <nav class="home-nav" aria-label="주 메뉴"><a class="wordmark" href="/" aria-label="Gilloe 홈"><span class="brand-mark" aria-hidden="true">g.</span>Gilloe</a><span class="nav-caption">걸어서 완성하는 하루</span></nav>
-      <div class="home-hero"><div class="hero-copy"><p class="kicker">${copy.libraryTitle} · 작은 동네 모험</p>
+      <nav class="home-nav" aria-label="주 메뉴"><a class="wordmark" href="/" aria-label="Gilloe 홈"><span class="brand-mark" aria-hidden="true">g.</span>Gilloe</a><span class="nav-caption">${offer.nav}</span></nav>
+      <div class="home-hero"><div class="hero-copy"><p class="kicker">${offer.kicker}</p>
       <h1 class="home-title">${brand.name} <span class="tagline">${copy.libraryTagline}</span></h1>
-      <p class="hero-heading">익숙한 길에서,<br>새로운 조각을.</p>
-      <p class="lead">동네를 걷고, 장소마다 숨은 조각을 모으세요.<br>한 걸음씩 나만의 그림이 완성됩니다.</p>
-      ${btn("open-create", `${copy.create} <span aria-hidden="true">↗</span>`, "hero-cta")}
-      <p class="hero-footnote">GPS 또는 OpenStreetMap으로 나만의 산책 만들기</p></div>
+      <p class="hero-heading">${offer.heading}</p>
+      <p class="lead">${copy.libraryLead}</p>
+      <p class="offer-price"><strong>${offer.price}</strong> <span>${offer.priceNote}</span></p>
+      <a class="btn hero-cta" href="#walks">${offer.sampleCta} <span aria-hidden="true">↓</span></a>
+      <p class="hero-footnote">${offer.notForSale}</p>
+      ${btn("open-create", copy.create, "btn--ghost")}
+      <p class="hero-footnote">${offer.authorNote}</p></div>
       ${heroWalkArt()}
       </div>
-      <div class="how-strip" aria-label="플레이 방법"><span><b>01</b> 걷고 싶은 게임 고르기</span><span><b>02</b> 장소마다 조각 모으기</span><span><b>03</b> 나만의 그림 완성하기</span></div>
-      <div class="section-heading"><div><p class="kicker">당신의 다음 산책</p><h2>어디부터 걸어볼까요?</h2></div><span class="collection-count">${games.length}개의 게임</span></div>
+      <div class="how-strip" aria-label="이용 방법">${offer.how.map((step, i) => `<span><b>0${i + 1}</b> ${step}</span>`).join("")}</div>
+      <div class="section-heading" id="walks"><div><p class="kicker">${offer.sampleKicker}</p><h2>${offer.sampleTitle}</h2></div><span class="collection-count">${games.length}개의 샘플</span></div>
       <p class="warn">${ico("🚧", brand.notPublicReady)}</p>
       ${state.invalidSave ? `<p class="warn">저장본이 오래되어 목록부터 시작합니다.</p>` : ""}
       ${state.createNotice ? `<p class="ok">${state.createNotice}</p>` : ""}
@@ -190,7 +194,7 @@ function libraryView(state) {
             (g) => `
           <li class="game-item">
             <button type="button" class="choice" data-action="select-game" data-id="${escapeHtml(g.id)}" ${g.quarantined || g.playable === false ? "disabled" : ""}>
-              <span class="game-card-index" aria-hidden="true">↗</span><span class="game-card-tag">동네 퍼즐 산책 · ${g.placeCount}개의 발견</span><strong>${escapeHtml(g.title)}</strong>
+              <span class="game-card-index" aria-hidden="true">↗</span><span class="game-card-tag">${offer.sampleTag} · ${g.placeCount}곳</span><strong>${escapeHtml(g.title)}</strong>
               <span>${g.placeCount}곳 · ${escapeHtml(g.walkLabel || "")}</span>
               ${statusChip(g)}
             </button>
@@ -202,7 +206,7 @@ function libraryView(state) {
           )
           .join("")}
       </ul>
-      <footer class="home-footer"><span class="wordmark">Gilloe</span><span>오늘은 어디로? 길로.</span><p class="osm-credit">${OSM_ATTRIBUTION_TEXT}</p></footer>
+      <footer class="home-footer"><span class="wordmark">Gilloe</span><span>${offer.price} · ${offer.priceNote}</span><p class="osm-credit">${OSM_ATTRIBUTION_TEXT}</p></footer>
     </main>
   `;
 }
@@ -424,6 +428,7 @@ function modeView(state) {
       ${btn("back-library", copy.backLibrary, "btn--ghost")}
       <h1>${coopCopy.title}</h1>
       <p class="lead">${escapeHtml(state.game?.title || "")}</p>
+      <p class="note">${offer.modeNote}</p>
       <p class="note">${coopCopy.coopHint}</p>
       ${btn("choose-solo", `🚶 ${coopCopy.solo}`)}
       ${btn("choose-coop", `🤝 ${coopCopy.coop}`)}

@@ -2,7 +2,7 @@
 
 ## Mission
 
-Maintain the Gilloe walking-puzzle prototype: creator GPS / OSM street draw / GPX, solo play, invite-only two-phone co-op, 3×3 jigsaw. Production is [gilloe.com](https://www.gilloe.com/). Do not restore Naver/Kakao/Google/Apple ingest, media proxying, public Nominatim, or public OSRM.
+Maintain Gilloe as a paid outing for two: one field-checked self-guided puzzle walk, about 90 minutes, 29,000원 a pair, played once. The homepage sells that offer and labels current routes as unpaid samples. Authoring (GPS / OSM draw / GPX), solo play, invite-only two-phone co-op, and the 3×3 jigsaw stay as the way a route is made and checked. Production is [gilloe.com](https://www.gilloe.com/). Do not restore Naver/Kakao/Google/Apple ingest, media proxying, public Nominatim, or public OSRM. Do not add a public creator marketplace, a resident subscription, or a live-service game loop.
 
 ## Read first
 

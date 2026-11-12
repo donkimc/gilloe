@@ -6,11 +6,11 @@ If this file conflicts with `docs/MVP_MAP_CREATION_COMPLIANCE_PLAN.md` on map so
 
 ## Product
 
-Korean-language, mobile-first walking jigsaw.
+Korean-language, mobile-first outing for two.
 
-- **Create:** GPS recording, OSM-assisted drawing with street auto-route, creator GPX import.
-- **Play:** pick a saved game, walk public stops, collect tiles, assemble a 3×3 picture.
-- **Modes:** solo, or invite-only two phones (`두 명이 함께 걷기`).
+- **Offer:** one field-checked self-guided walk, about 90 minutes, **29,000원 for two people**, played once. The price is the ask. No checkout exists, and unverified routes are samples.
+- **Create:** operator tool for authoring that walk. GPS recording, OSM-assisted drawing, GPX import.
+- **Play:** sample routes until a route is field-checked. Solo is for checking a route. The sold shape is invite-only two phones (`두 명이 함께 걷기`).
 - **Stops:** OSM draw 2–8 (creator-set). GPS create defaults to 4.
 - **Puzzle:** always 9 pieces. Solo collects two tiles per stop on a 4-stop game; co-op spreads 8 personal tiles across N stops plus a shared center.
 - **Camera overlay:** unused. Static fallback copy may remain.

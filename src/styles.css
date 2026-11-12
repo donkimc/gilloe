@@ -886,8 +886,12 @@ input { accent-color:var(--amber); }
 .home-title .tagline { font-size:13px; font-weight:400; color:var(--muted); }
 .library-screen .hero-heading { font-size:clamp(32px,3.6vw,48px); font-weight:750; letter-spacing:-.065em; line-height:1.25; margin:24px 0; }
 .hero-copy .lead { font-size:15px; line-height:1.9; color:var(--muted); margin-bottom:28px; }
-.hero-cta { max-width:240px; display:flex; align-items:center; justify-content:space-between; }
+.hero-copy .btn--ghost { max-width:240px; }
+.hero-cta { max-width:240px; display:flex; align-items:center; justify-content:space-between; text-decoration:none; }
 .hero-cta span { font-size:22px; }
+.offer-price { margin:0 0 18px; font-size:15px; }
+.offer-price strong { display:block; font-size:28px; letter-spacing:-.04em; color:var(--text); }
+.offer-price span { color:var(--muted); }
 .hero-footnote { font-size:11px; color:var(--muted); margin-top:10px; }
 .walk-art { position:relative; padding:20px; background:#e9e3d4; border-radius:120px 20px 20px 20px; transform:rotate(-3deg); box-shadow:0 24px 60px #0003; overflow:hidden; }
 .walk-art svg { width:100%; height:auto; display:block; margin:20px 0 40px; }
