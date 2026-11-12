@@ -5,3 +5,9 @@ dist
 server/data/uploads/*
 !server/data/uploads/.gitkeep
 !server/data/uploads/misa-*.jpg
+!server/data/uploads/dunchon-*.jpg
+!server/data/uploads/cheonho-*.jpg
+!server/data/uploads/konkuk-*.jpg
+!server/data/uploads/kids-*.jpg
+!server/data/uploads/myeongil-*.jpg
+!server/data/uploads/gangil-*.jpg

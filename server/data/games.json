@@ -1,5 +1,1139 @@
 [
   {
+    "id": "gangil-four-stops",
+    "schemaVersion": 1,
+    "title": "강일동, 역에서 수련관",
+    "type": "puzzle",
+    "placeCount": 4,
+    "places": [
+      {
+        "order": 1,
+        "name": "강일역 앞",
+        "address": "강동구 강일동",
+        "blurb": "강일역 앞 보행로입니다. 차도에 내려가지 마세요.",
+        "lat": 37.557626,
+        "lng": 127.175987,
+        "photoUrl": "/uploads/gangil-station.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 2,
+        "name": "강일 운동공원",
+        "address": "강동구 강일동",
+        "blurb": "운동공원 옆 보도입니다. 운동장 안으로 들어가지 않아도 됩니다.",
+        "lat": 37.56311,
+        "lng": 127.179959,
+        "photoUrl": "/uploads/gangil-sports.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 3,
+        "name": "강일아름드리공원",
+        "address": "강동구 강일동",
+        "blurb": "공원 보행로입니다. 나무 그늘에서 멈추세요.",
+        "lat": 37.565311,
+        "lng": 127.173896,
+        "photoUrl": "/uploads/gangil-grove.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 4,
+        "name": "강동청소년수련관",
+        "address": "강동구 강일동",
+        "blurb": "수련관 앞 보도입니다. 건물 안으로 들어가지 않아도 됩니다.",
+        "lat": 37.566622,
+        "lng": 127.173405,
+        "photoUrl": "/uploads/gangil-youth.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      }
+    ],
+    "jigsaw": {
+      "source": "upload",
+      "imageUrl": "/uploads/gangil-puzzle.jpg",
+      "systemImageId": "",
+      "ownershipConfirmed": true
+    },
+    "stats": {
+      "walkingMeters": 1882,
+      "durationMinutes": 36
+    },
+    "walkLabel": "약 1.9km · 약 36분",
+    "routeLine": [
+      [
+        127.1759874,
+        37.5576256
+      ],
+      [
+        127.1781678,
+        37.5581005
+      ],
+      [
+        127.1797484,
+        37.558512
+      ],
+      [
+        127.1794392,
+        37.5594455
+      ],
+      [
+        127.1794302,
+        37.5596741
+      ],
+      [
+        127.179881,
+        37.5609404
+      ],
+      [
+        127.1799338,
+        37.5613247
+      ],
+      [
+        127.1800758,
+        37.5614155
+      ],
+      [
+        127.1800467,
+        37.5616611
+      ],
+      [
+        127.1796164,
+        37.5627716
+      ],
+      [
+        127.1798462,
+        37.562935
+      ],
+      [
+        127.1799588,
+        37.5631095
+      ],
+      [
+        127.1798462,
+        37.562935
+      ],
+      [
+        127.1796164,
+        37.5627716
+      ],
+      [
+        127.1792819,
+        37.562989
+      ],
+      [
+        127.1787477,
+        37.5629761
+      ],
+      [
+        127.1784142,
+        37.5628337
+      ],
+      [
+        127.1780837,
+        37.56254
+      ],
+      [
+        127.1773033,
+        37.5623213
+      ],
+      [
+        127.1769652,
+        37.5623471
+      ],
+      [
+        127.1763189,
+        37.5626005
+      ],
+      [
+        127.1759518,
+        37.5630041
+      ],
+      [
+        127.1757454,
+        37.5637021
+      ],
+      [
+        127.1751547,
+        37.5648477
+      ],
+      [
+        127.1747612,
+        37.5652409
+      ],
+      [
+        127.1743516,
+        37.5649932
+      ],
+      [
+        127.1734894,
+        37.5656544
+      ],
+      [
+        127.1732598,
+        37.5659451
+      ],
+      [
+        127.1736192,
+        37.566108
+      ],
+      [
+        127.1734045,
+        37.5666217
+      ]
+    ],
+    "source": {
+      "method": "openstreetmap-assisted-drawing",
+      "proprietaryProviderDerived": false,
+      "mapDataAttribution": "© OpenStreetMap contributors",
+      "mapDataLicense": "ODbL-1.0"
+    },
+    "sources": [],
+    "fieldVerified": false,
+    "fieldStatus": "verification-required",
+    "quarantined": false,
+    "quarantineReason": null,
+    "playable": true,
+    "puzzleCount": 9,
+    "publicationBlocked": true,
+    "warnings": [
+      "현장 검증 전 임시 경로"
+    ],
+    "createdAt": 1794493785926,
+    "updatedAt": 1794493785926
+  },
+  {
+    "id": "myeongil-four-stops",
+    "schemaVersion": 1,
+    "title": "명일동, 공원에서 주민센터",
+    "type": "puzzle",
+    "placeCount": 4,
+    "places": [
+      {
+        "order": 1,
+        "name": "까치근린공원 앞",
+        "address": "강동구 명일동",
+        "blurb": "공원 옆 보도입니다. 잔디 안으로 들어가지 않아도 됩니다.",
+        "lat": 37.556303,
+        "lng": 127.149899,
+        "photoUrl": "/uploads/myeongil-magpie.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 2,
+        "name": "원터근린공원 앞",
+        "address": "강동구 명일동",
+        "blurb": "공원 옆 보도입니다. 운동 시설을 쓰지 않아도 됩니다.",
+        "lat": 37.55339,
+        "lng": 127.14999,
+        "photoUrl": "/uploads/myeongil-park.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 3,
+        "name": "명일역 앞",
+        "address": "강동구 명일동",
+        "blurb": "명일역 앞 보도입니다. 차도에 내려가지 마세요.",
+        "lat": 37.551902,
+        "lng": 127.144075,
+        "photoUrl": "/uploads/myeongil-station.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 4,
+        "name": "명일1동 주민센터",
+        "address": "강동구 명일동",
+        "blurb": "주민센터 앞 보도입니다. 건물 안으로 들어가지 않아도 됩니다.",
+        "lat": 37.549999,
+        "lng": 127.145907,
+        "photoUrl": "/uploads/myeongil-center.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      }
+    ],
+    "jigsaw": {
+      "source": "upload",
+      "imageUrl": "/uploads/myeongil-puzzle.jpg",
+      "systemImageId": "",
+      "ownershipConfirmed": true
+    },
+    "stats": {
+      "walkingMeters": 1781,
+      "durationMinutes": 35
+    },
+    "walkLabel": "약 1.8km · 약 35분",
+    "routeLine": [
+      [
+        127.1498985,
+        37.5563029
+      ],
+      [
+        127.1496008,
+        37.5562391
+      ],
+      [
+        127.1489805,
+        37.5562686
+      ],
+      [
+        127.148977,
+        37.5562146
+      ],
+      [
+        127.1490262,
+        37.5547896
+      ],
+      [
+        127.149176,
+        37.5547884
+      ],
+      [
+        127.1491697,
+        37.5546804
+      ],
+      [
+        127.1501693,
+        37.5546599
+      ],
+      [
+        127.14999,
+        37.55339
+      ],
+      [
+        127.1501612,
+        37.5545754
+      ],
+      [
+        127.1463446,
+        37.5545431
+      ],
+      [
+        127.14464,
+        37.5545856
+      ],
+      [
+        127.144514,
+        37.5544859
+      ],
+      [
+        127.1441928,
+        37.5519574
+      ],
+      [
+        127.1440818,
+        37.5519604
+      ],
+      [
+        127.1439736,
+        37.5509492
+      ],
+      [
+        127.1459502,
+        37.5505208
+      ],
+      [
+        127.1459074,
+        37.5499987
+      ]
+    ],
+    "source": {
+      "method": "openstreetmap-assisted-drawing",
+      "proprietaryProviderDerived": false,
+      "mapDataAttribution": "© OpenStreetMap contributors",
+      "mapDataLicense": "ODbL-1.0"
+    },
+    "sources": [],
+    "fieldVerified": false,
+    "fieldStatus": "verification-required",
+    "quarantined": false,
+    "quarantineReason": null,
+    "playable": true,
+    "puzzleCount": 9,
+    "publicationBlocked": true,
+    "warnings": [
+      "현장 검증 전 임시 경로"
+    ],
+    "createdAt": 1794493785926,
+    "updatedAt": 1794493785926
+  },
+  {
+    "id": "childrens-grand-park",
+    "schemaVersion": 1,
+    "title": "어린이대공원, 놀이터에서 팔각당",
+    "type": "puzzle",
+    "placeCount": 4,
+    "places": [
+      {
+        "order": 1,
+        "name": "놀이동산 앞 보도",
+        "address": "광진구 능동",
+        "blurb": "놀이동산 옆 공개 보행로입니다. 입장권 없이 이 보도에서 멈추세요.",
+        "lat": 37.549317,
+        "lng": 127.078557,
+        "photoUrl": "/uploads/kids-gate.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 2,
+        "name": "꿈틀꿈틀놀이터",
+        "address": "광진구 능동",
+        "blurb": "놀이터 옆 보행로입니다. 놀이기구를 타지 않아도 됩니다.",
+        "lat": 37.548328,
+        "lng": 127.080208,
+        "photoUrl": "/uploads/kids-play.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 3,
+        "name": "단풍잎놀이터",
+        "address": "광진구 능동",
+        "blurb": "단풍나무 옆 놀이터 보행로입니다. 놀이터 안으로 들어가지 않아도 됩니다.",
+        "lat": 37.550351,
+        "lng": 127.08087,
+        "photoUrl": "/uploads/kids-maple.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 4,
+        "name": "팔각당",
+        "address": "광진구 능동",
+        "blurb": "팔각 정자 앞 보행로입니다. 연못에 들어가지 마세요.",
+        "lat": 37.550185,
+        "lng": 127.082615,
+        "photoUrl": "/uploads/kids-pavilion.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      }
+    ],
+    "jigsaw": {
+      "source": "upload",
+      "imageUrl": "/uploads/kids-puzzle.jpg",
+      "systemImageId": "",
+      "ownershipConfirmed": true
+    },
+    "stats": {
+      "walkingMeters": 827,
+      "durationMinutes": 20
+    },
+    "walkLabel": "약 827m · 약 20분",
+    "routeLine": [
+      [
+        127.078557,
+        37.5493171
+      ],
+      [
+        127.0789352,
+        37.5495599
+      ],
+      [
+        127.0792281,
+        37.5496308
+      ],
+      [
+        127.0798472,
+        37.5491027
+      ],
+      [
+        127.0799986,
+        37.5492699
+      ],
+      [
+        127.0803836,
+        37.5492006
+      ],
+      [
+        127.0805581,
+        37.5489893
+      ],
+      [
+        127.080507,
+        37.5485754
+      ],
+      [
+        127.0802076,
+        37.548328
+      ],
+      [
+        127.080507,
+        37.5485754
+      ],
+      [
+        127.0805444,
+        37.5488563
+      ],
+      [
+        127.0809147,
+        37.5489773
+      ],
+      [
+        127.0810149,
+        37.5496985
+      ],
+      [
+        127.0811668,
+        37.549881
+      ],
+      [
+        127.0811534,
+        37.5500405
+      ],
+      [
+        127.0808698,
+        37.5503508
+      ],
+      [
+        127.0811534,
+        37.5500405
+      ],
+      [
+        127.0811668,
+        37.549881
+      ],
+      [
+        127.0810149,
+        37.5496985
+      ],
+      [
+        127.081942,
+        37.5498981
+      ],
+      [
+        127.0826148,
+        37.5501845
+      ]
+    ],
+    "source": {
+      "method": "openstreetmap-assisted-drawing",
+      "proprietaryProviderDerived": false,
+      "mapDataAttribution": "© OpenStreetMap contributors",
+      "mapDataLicense": "ODbL-1.0"
+    },
+    "sources": [],
+    "fieldVerified": false,
+    "fieldStatus": "verification-required",
+    "quarantined": false,
+    "quarantineReason": null,
+    "playable": true,
+    "puzzleCount": 9,
+    "publicationBlocked": true,
+    "warnings": [
+      "현장 검증 전 임시 경로"
+    ],
+    "createdAt": 1794493785926,
+    "updatedAt": 1794493785926
+  },
+  {
+    "id": "konkuk-four-parks",
+    "schemaVersion": 1,
+    "title": "건대입구, 역에서 한아름공원",
+    "type": "puzzle",
+    "placeCount": 4,
+    "places": [
+      {
+        "order": 1,
+        "name": "노유산어린이공원",
+        "address": "광진구 화양동",
+        "blurb": "어린이공원 옆 보도입니다. 놀이터 안으로 들어가지 않아도 됩니다.",
+        "lat": 37.539344,
+        "lng": 127.068286,
+        "photoUrl": "/uploads/konkuk-park.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 2,
+        "name": "건대입구역 앞",
+        "address": "광진구 화양동",
+        "blurb": "건대입구역 앞 보도입니다. 차도에 내려가지 마세요.",
+        "lat": 37.540507,
+        "lng": 127.070866,
+        "photoUrl": "/uploads/konkuk-station.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 3,
+        "name": "화양공원",
+        "address": "광진구 화양동",
+        "blurb": "공원 안 보행로입니다. 벤치 옆에서 멈추세요.",
+        "lat": 37.541674,
+        "lng": 127.069627,
+        "photoUrl": "/uploads/konkuk-hwayang.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 4,
+        "name": "한아름공원",
+        "address": "광진구 화양동",
+        "blurb": "나무 그늘 보행로입니다. 공원 밖으로 나가지 않아도 됩니다.",
+        "lat": 37.544103,
+        "lng": 127.070617,
+        "photoUrl": "/uploads/konkuk-grove.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      }
+    ],
+    "jigsaw": {
+      "source": "upload",
+      "imageUrl": "/uploads/konkuk-puzzle.jpg",
+      "systemImageId": "",
+      "ownershipConfirmed": true
+    },
+    "stats": {
+      "walkingMeters": 939,
+      "durationMinutes": 22
+    },
+    "walkLabel": "약 939m · 약 22분",
+    "routeLine": [
+      [
+        127.0682856,
+        37.5393442
+      ],
+      [
+        127.0686053,
+        37.5399269
+      ],
+      [
+        127.0695538,
+        37.5396024
+      ],
+      [
+        127.0697453,
+        37.5400595
+      ],
+      [
+        127.070379,
+        37.5398328
+      ],
+      [
+        127.0707481,
+        37.5405467
+      ],
+      [
+        127.0708659,
+        37.5405067
+      ],
+      [
+        127.0692201,
+        37.5410656
+      ],
+      [
+        127.0695462,
+        37.5416981
+      ],
+      [
+        127.0696274,
+        37.5416736
+      ],
+      [
+        127.0695462,
+        37.5416981
+      ],
+      [
+        127.0704622,
+        37.5434145
+      ],
+      [
+        127.0703948,
+        37.5434896
+      ],
+      [
+        127.070907,
+        37.5438222
+      ],
+      [
+        127.0706168,
+        37.5441028
+      ]
+    ],
+    "source": {
+      "method": "openstreetmap-assisted-drawing",
+      "proprietaryProviderDerived": false,
+      "mapDataAttribution": "© OpenStreetMap contributors",
+      "mapDataLicense": "ODbL-1.0"
+    },
+    "sources": [],
+    "fieldVerified": false,
+    "fieldStatus": "verification-required",
+    "quarantined": false,
+    "quarantineReason": null,
+    "playable": true,
+    "puzzleCount": 9,
+    "publicationBlocked": true,
+    "warnings": [
+      "현장 검증 전 임시 경로"
+    ],
+    "createdAt": 1794493785926,
+    "updatedAt": 1794493785926
+  },
+  {
+    "id": "cheonho-to-mcdonald",
+    "schemaVersion": 1,
+    "title": "천호동, 공원에서 맥도날드",
+    "type": "puzzle",
+    "placeCount": 4,
+    "places": [
+      {
+        "order": 1,
+        "name": "천사 어린이공원",
+        "address": "강동구 천호동",
+        "blurb": "어린이공원 옆 보도입니다. 놀이터 안으로 들어가지 않아도 됩니다.",
+        "lat": 37.543747,
+        "lng": 127.128307,
+        "photoUrl": "/uploads/cheonho-park.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 2,
+        "name": "천호3동 주민센터",
+        "address": "강동구 천호동",
+        "blurb": "주민센터 앞 보도입니다. 건물 안으로 들어가지 않아도 됩니다.",
+        "lat": 37.539783,
+        "lng": 127.129593,
+        "photoUrl": "/uploads/cheonho-center.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 3,
+        "name": "천호역 앞",
+        "address": "강동구 천호동",
+        "blurb": "천호역 앞 보도입니다. 차도에 내려가지 마세요.",
+        "lat": 37.538582,
+        "lng": 127.123363,
+        "photoUrl": "/uploads/cheonho-station.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 4,
+        "name": "맥도날드 천호로데오점 앞",
+        "address": "강동구 천호대로 1037",
+        "blurb": "가게는 건물 위층입니다. 1층 보도에서 멈추세요. 들어가거나 주문하지 않아도 됩니다.",
+        "lat": 37.536784,
+        "lng": 127.127025,
+        "photoUrl": "/uploads/cheonho-burger.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      }
+    ],
+    "jigsaw": {
+      "source": "upload",
+      "imageUrl": "/uploads/cheonho-puzzle.jpg",
+      "systemImageId": "",
+      "ownershipConfirmed": true
+    },
+    "stats": {
+      "walkingMeters": 1888,
+      "durationMinutes": 36
+    },
+    "walkLabel": "약 1.9km · 약 36분",
+    "routeLine": [
+      [
+        127.128307,
+        37.543747
+      ],
+      [
+        127.1297975,
+        37.5433321
+      ],
+      [
+        127.1294603,
+        37.5425058
+      ],
+      [
+        127.1295254,
+        37.5420066
+      ],
+      [
+        127.1294253,
+        37.541494
+      ],
+      [
+        127.1293584,
+        37.5414249
+      ],
+      [
+        127.1298056,
+        37.5413014
+      ],
+      [
+        127.1301742,
+        37.5409609
+      ],
+      [
+        127.1299118,
+        37.540729
+      ],
+      [
+        127.1300325,
+        37.5406056
+      ],
+      [
+        127.1300752,
+        37.540444
+      ],
+      [
+        127.1299584,
+        37.5403683
+      ],
+      [
+        127.1300717,
+        37.540183
+      ],
+      [
+        127.1300771,
+        37.5398509
+      ],
+      [
+        127.1297885,
+        37.5396349
+      ],
+      [
+        127.1295933,
+        37.5397832
+      ],
+      [
+        127.1293281,
+        37.5395191
+      ],
+      [
+        127.1288119,
+        37.5398224
+      ],
+      [
+        127.1286898,
+        37.5397226
+      ],
+      [
+        127.1282615,
+        37.5396974
+      ],
+      [
+        127.1279288,
+        37.5388948
+      ],
+      [
+        127.1279424,
+        37.5387787
+      ],
+      [
+        127.12746,
+        37.53898
+      ],
+      [
+        127.1267875,
+        37.5390435
+      ],
+      [
+        127.1264549,
+        37.5392136
+      ],
+      [
+        127.1252318,
+        37.5393413
+      ],
+      [
+        127.1250731,
+        37.5392907
+      ],
+      [
+        127.1246139,
+        37.5393245
+      ],
+      [
+        127.1240818,
+        37.5394624
+      ],
+      [
+        127.1239099,
+        37.5394415
+      ],
+      [
+        127.1236377,
+        37.5393148
+      ],
+      [
+        127.123363,
+        37.5385821
+      ],
+      [
+        127.12641,
+        37.537605
+      ],
+      [
+        127.1263416,
+        37.5367153
+      ],
+      [
+        127.1266002,
+        37.5364954
+      ],
+      [
+        127.1268454,
+        37.5363825
+      ],
+      [
+        127.1269902,
+        37.5365436
+      ],
+      [
+        127.1270252,
+        37.5367843
+      ]
+    ],
+    "source": {
+      "method": "openstreetmap-assisted-drawing",
+      "proprietaryProviderDerived": false,
+      "mapDataAttribution": "© OpenStreetMap contributors",
+      "mapDataLicense": "ODbL-1.0"
+    },
+    "sources": [],
+    "fieldVerified": false,
+    "fieldStatus": "verification-required",
+    "quarantined": false,
+    "quarantineReason": null,
+    "playable": true,
+    "puzzleCount": 9,
+    "publicationBlocked": true,
+    "warnings": [
+      "현장 검증 전 임시 경로"
+    ],
+    "createdAt": 1794493785926,
+    "updatedAt": 1794493785926
+  },
+  {
+    "id": "dunchon-to-mcdonald",
+    "schemaVersion": 1,
+    "title": "둔촌동, 공원에서 맥도날드",
+    "type": "puzzle",
+    "placeCount": 4,
+    "places": [
+      {
+        "order": 1,
+        "name": "둔촌2동 주민센터",
+        "address": "강동구 둔촌동",
+        "blurb": "주민센터 앞 보도입니다. 건물 안으로 들어가지 않아도 됩니다.",
+        "lat": 37.533193,
+        "lng": 127.141855,
+        "photoUrl": "/uploads/dunchon-center.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 2,
+        "name": "둔촌 어린이공원",
+        "address": "강동구 둔촌동",
+        "blurb": "어린이공원 옆 보도입니다. 놀이터 안으로 들어가지 않아도 됩니다.",
+        "lat": 37.531316,
+        "lng": 127.142903,
+        "photoUrl": "/uploads/dunchon-park.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 3,
+        "name": "성안 놀이터",
+        "address": "강동구 둔촌동",
+        "blurb": "놀이터 옆 보도입니다. 놀이기구를 타지 않아도 됩니다.",
+        "lat": 37.531454,
+        "lng": 127.135306,
+        "photoUrl": "/uploads/dunchon-play.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 4,
+        "name": "맥도날드 서울둔촌DT점 앞",
+        "address": "강동구 양재대로 1382",
+        "blurb": "가게 앞 보도입니다. 들어가거나 주문하지 않아도 됩니다. 드라이브스루 차로에 들어가지 마세요.",
+        "lat": 37.529167,
+        "lng": 127.137646,
+        "photoUrl": "/uploads/dunchon-burger.jpg",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      }
+    ],
+    "jigsaw": {
+      "source": "upload",
+      "imageUrl": "/uploads/dunchon-puzzle.jpg",
+      "systemImageId": "",
+      "ownershipConfirmed": true
+    },
+    "stats": {
+      "walkingMeters": 1392,
+      "durationMinutes": 29
+    },
+    "walkLabel": "약 1.4km · 약 29분",
+    "routeLine": [
+      [
+        127.141855,
+        37.5331926
+      ],
+      [
+        127.1429025,
+        37.5313161
+      ],
+      [
+        127.1412106,
+        37.5306827
+      ],
+      [
+        127.1409009,
+        37.530374
+      ],
+      [
+        127.1394835,
+        37.5304694
+      ],
+      [
+        127.1353064,
+        37.5314539
+      ],
+      [
+        127.136026,
+        37.5312827
+      ],
+      [
+        127.1356648,
+        37.5303163
+      ],
+      [
+        127.1378554,
+        37.5297004
+      ],
+      [
+        127.1376461,
+        37.5291675
+      ]
+    ],
+    "source": {
+      "method": "openstreetmap-assisted-drawing",
+      "proprietaryProviderDerived": false,
+      "mapDataAttribution": "© OpenStreetMap contributors",
+      "mapDataLicense": "ODbL-1.0"
+    },
+    "sources": [],
+    "fieldVerified": false,
+    "fieldStatus": "verification-required",
+    "quarantined": false,
+    "quarantineReason": null,
+    "playable": true,
+    "puzzleCount": 9,
+    "publicationBlocked": true,
+    "warnings": [
+      "현장 검증 전 임시 경로"
+    ],
+    "createdAt": 1794493785926,
+    "updatedAt": 1794493785926
+  },
+  {
     "id": "misa-lake-to-ondol",
     "schemaVersion": 1,
     "title": "미사, 호수에서 온돌오리구이",
