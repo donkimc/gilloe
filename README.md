@@ -16,7 +16,7 @@ npm run dev
 
 Vite (`127.0.0.1:5173`) starts the Node API (`8787`) and proxies `/api` and `/uploads`. Open [http://127.0.0.1:5173/](http://127.0.0.1:5173/). Simulator: [http://127.0.0.1:5173/?sim=1](http://127.0.0.1:5173/?sim=1).
 
-Production: `npm run build` then `npm start`. Railway serves the built UI and API from one Node process. Persistent games use `GILLOE_DATA_DIR` (volume `/data`).
+Production: `npm run build` then `npm start`. Railway serves the built UI and API from one Node process. Persistent games use `GILLOE_DATA_DIR` (volume `/data`). On startup, a route in `server/data/games.json` is added to that volume when its id is not already there, and missing files in `server/data/uploads` are copied across. Existing live games are left as they are.
 
 Continue in Cursor with the prompt in `CURSOR_PROMPT.md`.
 

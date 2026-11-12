@@ -34,3 +34,15 @@ export function walkingStats(places) {
 export function straightRouteLine(places) {
   return places.map((p) => [p.lng, p.lat]);
 }
+
+export function mergeSeedGames(existing, seed) {
+  const list = Array.isArray(existing) ? existing : [];
+  const have = new Set(list.map((game) => game?.id).filter(Boolean));
+  const missing = [];
+  for (const game of seed || []) {
+    if (!game || typeof game !== "object" || !game.id || have.has(game.id)) continue;
+    missing.push(game);
+    have.add(game.id);
+  }
+  return missing.length ? [...missing, ...list] : list;
+}

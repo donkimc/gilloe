@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { placesMoved, walkingStats } from "../server/gameLogic.js";
+import { mergeSeedGames, placesMoved, walkingStats } from "../server/gameLogic.js";
 import { validateGamePayload } from "../src/routeSchema.js";
 
 describe("game payload", () => {
@@ -43,5 +43,17 @@ describe("game payload", () => {
     const stats = walkingStats(places);
     expect(stats.walkingMeters).toBeGreaterThan(400);
     expect(stats.durationMinutes).toBeGreaterThan(8);
+  });
+
+  it("adds a seed route the live file does not already have", () => {
+    const live = [{ id: "live", title: "청량리" }];
+    const merged = mergeSeedGames(live, [{ id: "misa-lake-to-course" }, { id: "live", title: "seed" }]);
+    expect(merged.map((game) => game.id)).toEqual(["misa-lake-to-course", "live"]);
+    expect(merged[1].title).toBe("청량리");
+  });
+
+  it("leaves the live file unchanged when every seed id is already stored", () => {
+    const live = [{ id: "live", title: "edited" }];
+    expect(mergeSeedGames(live, [{ id: "live", title: "seed" }])).toBe(live);
   });
 });

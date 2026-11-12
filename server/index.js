@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatWalkLabel, migrateGameRecord, placesMoved, validateGamePayload, walkingStatsFromLine } from "../src/routeSchema.js";
+import { mergeSeedGames } from "./gameLogic.js";
 import { publicationBlockedReason } from "../src/routeSchema.js";
 import { lookupOsmPlace } from "../src/osmPlace.js";
 import { lookupOsmWalkRoute } from "../src/osmWalkRoute.js";
@@ -60,14 +61,39 @@ async function writeGames(games) {
   await fs.writeFile(GAMES_FILE, JSON.stringify(games, null, 2));
 }
 
+async function copyMissingFiles(fromDir, toDir) {
+  if (path.resolve(fromDir) === path.resolve(toDir)) return;
+  let names = [];
+  try {
+    names = await fs.readdir(fromDir);
+  } catch {
+    return;
+  }
+  await fs.mkdir(toDir, { recursive: true });
+  for (const name of names) {
+    if (!name || name.startsWith(".")) continue;
+    const from = path.join(fromDir, name);
+    const to = path.join(toDir, name);
+    const stat = await fs.stat(from).catch(() => null);
+    if (!stat?.isFile()) continue;
+    try {
+      await fs.access(to);
+    } catch {
+      await fs.copyFile(from, to);
+    }
+  }
+}
+
 async function ensureGamesFile() {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.mkdir(UPLOAD_DIR, { recursive: true });
+  await copyMissingFiles(path.join(path.dirname(SEED_FILE), "uploads"), UPLOAD_DIR);
+  if (path.resolve(GAMES_FILE) === path.resolve(SEED_FILE)) return;
   const existing = await readJsonArray(GAMES_FILE);
-  if (existing.length) return;
   const seed = await readJsonArray(SEED_FILE);
-  if (!seed.length || GAMES_FILE === SEED_FILE) return;
-  await fs.writeFile(GAMES_FILE, JSON.stringify(seed, null, 2));
+  const merged = mergeSeedGames(existing, seed);
+  if (merged === existing) return;
+  await writeGames(merged);
 }
 
 function send(res, status, body, headers = {}) {
