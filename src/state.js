@@ -12,6 +12,11 @@ export function createInitialState() {
     game: null,
     games: [],
     gamesError: null,
+    libraryQuery: "",
+    librarySort: "date-desc",
+    libraryPage: 1,
+    libraryOrigin: null,
+    libraryLocate: "idle",
     screen: "library",
     currentStop: 1,
     collectedPieceIds: [],
@@ -110,8 +115,32 @@ export function reduce(state, action) {
       return {
         ...createInitialState(),
         games: state.games,
+        libraryQuery: state.libraryQuery,
+        librarySort: state.librarySort,
+        libraryPage: state.libraryPage,
+        libraryOrigin: state.libraryOrigin,
+        libraryLocate: state.libraryLocate,
         game: null,
         screen: "library",
+      };
+    case "LIBRARY_QUERY":
+      return { ...state, libraryQuery: String(action.query ?? ""), libraryPage: 1 };
+    case "LIBRARY_SORT":
+      return {
+        ...state,
+        librarySort: action.sort,
+        libraryPage: 1,
+        libraryLocate: action.sort === "near" && !state.libraryOrigin ? "locating" : action.sort === "near" ? "ready" : state.libraryLocate === "locating" ? "idle" : state.libraryLocate,
+      };
+    case "LIBRARY_PAGE":
+      return { ...state, libraryPage: Math.max(1, Number(action.page) || 1) };
+    case "LIBRARY_ORIGIN":
+      return { ...state, libraryOrigin: action.origin, libraryLocate: "ready", librarySort: "near", libraryPage: 1 };
+    case "LIBRARY_LOCATE_ERROR":
+      return {
+        ...state,
+        libraryLocate: "denied",
+        librarySort: state.libraryOrigin ? state.librarySort : "date-desc",
       };
     case "OPEN_CREATE":
       return { ...state, screen: "create", createNotice: null, overlay: null };

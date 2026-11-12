@@ -78,6 +78,36 @@ describe("rendered flow", () => {
     expect(html).toContain("에 만듦");
   });
 
+  it("shows four routes per page with search and sort", () => {
+    const titles = ["가 코스", "나 코스", "다 코스", "라 코스", "마 코스"];
+    const html = render({
+      ...createInitialState(),
+      games: titles.map((title, index) => ({
+        id: `game-${index}`,
+        title,
+        placeCount: 4,
+        walkLabel: "약 1km · 약 25분",
+        createdAt: index + 1,
+      })),
+    });
+    expect(html).toContain('name="library-query"');
+    expect(html).toContain("걷는 거리 짧은 순");
+    expect(html).toContain("내 위치에서 가까운 순");
+    expect(html).toContain("걸리는 시간 짧은 순");
+    expect(html).toContain("만든 날짜 최신순");
+    expect(html).toContain("만든 날짜 오래된 순");
+    expect(html).toContain("마 코스");
+    expect(html).not.toContain("가 코스");
+    expect(html).toContain('data-action="library-page"');
+    const searched = render({
+      ...createInitialState(),
+      libraryQuery: "마 코스",
+      games: titles.map((title, index) => ({ id: `game-${index}`, title, placeCount: 4, walkLabel: "약 1km · 약 25분" })),
+    });
+    expect(searched).toContain("마 코스");
+    expect(searched).not.toContain("가 코스");
+  });
+
   it("asks before deleting a game", () => {
     const html = render({
       ...createInitialState(),
@@ -123,16 +153,20 @@ describe("rendered flow", () => {
       locationAccuracyMeters: 22,
       distanceMeters: 40,
       lastFix: { lat: 37.5, lng: 127.1 },
+      libraryOrigin: { lat: 37.5, lng: 127.1 },
     });
     expect(JSON.stringify(saved)).not.toMatch(/127\./);
     expect(saved.lastFix).toBeUndefined();
+    expect(saved.libraryOrigin).toBeUndefined();
   });
 
   it("shows the library tagline beside Gilloe", () => {
     const html = render(createInitialState());
     expect(html).toContain("Gilloe");
     expect(html).toContain("한 번 걷는 저녁");
-    expect(html).toContain("두 사람 29,000원");
+    expect(html).toContain("1,900원부터");
+    expect(html).toContain("약 90분");
+    expect(html).not.toContain("3,900원");
     expect(html).toContain("결제하지 않습니다");
     expect(html).toContain('href="#walks"');
     expect(html).toContain("hero-walker");

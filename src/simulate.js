@@ -37,6 +37,9 @@ export function createSimulatedGeolocation(mode, { stop } = {}) {
   }
 
   return {
+    getCurrentPosition(success, error) {
+      queueMicrotask(() => applyGpsMode(mode, { success, error, stop: activeStop }));
+    },
     watchPosition(success, error) {
       listeners.success = success;
       listeners.error = error;

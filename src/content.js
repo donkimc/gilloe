@@ -26,7 +26,7 @@ export const offer = {
   nav: "두 사람의 90분",
   kicker: "한 번의 저녁",
   heading: "두 사람이 걸으면,<br>그림 하나가 남습니다.",
-  price: "두 사람 29,000원",
+  price: "1,900원부터",
   priceNote: "약 90분 · 한 코스 · 한 번",
   notForSale: "아래 코스는 현장 확인 전 샘플입니다. 결제하지 않습니다.",
   sampleCta: "샘플 코스 보기",
@@ -37,6 +37,26 @@ export const offer = {
   sampleTag: "판매 전 샘플",
   ticket: "두 사람이 모으면 끝나는 저녁",
   modeNote: "파는 상품은 두 사람이 함께 걷는 한 번의 코스입니다. 혼자 걷기는 코스를 확인할 때 씁니다.",
+};
+
+export const libraryBrowse = {
+  searchLabel: "코스 검색",
+  searchPlaceholder: "이름이나 장소",
+  sortLabel: "정렬",
+  sorts: [
+    ["date-desc", "만든 날짜 최신순"],
+    ["date-asc", "만든 날짜 오래된 순"],
+    ["distance", "걷는 거리 짧은 순"],
+    ["time", "걸리는 시간 짧은 순"],
+    ["near", "내 위치에서 가까운 순"],
+  ],
+  prev: "이전",
+  next: "다음",
+  empty: "찾는 코스가 없습니다.",
+  locating: "내 위치를 찾는 중입니다.",
+  locateDenied: "위치를 허용해야 가까운 순으로 볼 수 있습니다.",
+  pageLabel: "코스 페이지",
+  away: "여기서",
 };
 
 export const safety = {

@@ -4,6 +4,7 @@ import {
   coopCopy,
   copy,
   createCopy,
+  libraryBrowse,
   offer,
   ending,
   gps,
@@ -16,7 +17,8 @@ import {
   trayCopy,
 } from "../content.js";
 import { gridSizeForCount, assembledPreview, pieceMarkup, piecesForGrid, displayImageUrl } from "../assemble.js";
-import { formatApproxDistance } from "../geo.js";
+import { distanceMeters, formatApproxDistance } from "../geo.js";
+import { librarySelection } from "../library.js";
 import { currentPlace, gridN, placeCount, trayAllowed } from "../state.js";
 import { TEAM_PIECE, piecesForStop } from "../coopPieces.js";
 import { OSM_ATTRIBUTION_TEXT } from "../mapConfig.js";
@@ -179,6 +181,46 @@ function formatMadeOn(createdAt) {
 
 function libraryView(state) {
   const games = state.games || [];
+  const sort = state.librarySort || "date-desc";
+  const view = librarySelection(games, {
+    query: state.libraryQuery,
+    sort,
+    page: state.libraryPage,
+    origin: state.libraryOrigin,
+  });
+  const sortOptions = libraryBrowse.sorts
+    .map(([value, label]) => `<option value="${value}"${sort === value ? " selected" : ""}>${label}</option>`)
+    .join("");
+  const cards = view.items
+    .map((g) => {
+      const made = formatMadeOn(g.createdAt);
+      const away =
+        sort === "near" && state.libraryOrigin
+          ? distanceMeters(state.libraryOrigin, { lat: Number(g.startLat), lng: Number(g.startLng) })
+          : null;
+      const awayLabel = away == null ? "" : ` · ${libraryBrowse.away} ${formatApproxDistance(away)}`;
+      return `
+          <li class="game-item">
+            <button type="button" class="choice" data-action="select-game" data-id="${escapeHtml(g.id)}" ${g.quarantined || g.playable === false ? "disabled" : ""}>
+              <span class="game-card-index" aria-hidden="true">↗</span><span class="game-card-tag">${offer.sampleTag} · ${g.placeCount}곳</span><strong>${escapeHtml(g.title)}</strong>
+              <span>${g.placeCount}곳 · ${escapeHtml(g.walkLabel || "")}${made ? ` · ${escapeHtml(made)}` : ""}${escapeHtml(awayLabel)}</span>
+              ${statusChip(g)}
+            </button>
+            <div class="row-actions">
+              ${btn("edit-game", `✏️ ${createCopy.edit}`, "btn--ghost", `data-id="${escapeHtml(g.id)}"`)}
+              ${btn("ask-delete-game", `🗑️ ${createCopy.delete}`, "btn--ghost", `data-id="${escapeHtml(g.id)}" data-title="${escapeHtml(g.title)}"`)}
+            </div>
+          </li>`;
+    })
+    .join("");
+  const pager =
+    view.pages > 1
+      ? `<nav class="library-pager" aria-label="${libraryBrowse.pageLabel}">
+          <button type="button" class="btn btn--ghost" data-action="library-page" data-page="${view.page - 1}" ${view.page <= 1 ? "disabled" : ""}>${libraryBrowse.prev}</button>
+          <span>${view.page} / ${view.pages}</span>
+          <button type="button" class="btn btn--ghost" data-action="library-page" data-page="${view.page + 1}" ${view.page >= view.pages ? "disabled" : ""}>${libraryBrowse.next}</button>
+        </nav>`
+      : "";
   return `
     <main id="main" class="screen card-screen library-screen">
       <nav class="home-nav" aria-label="주 메뉴"><a class="wordmark" href="/" aria-label="Gilloe 홈"><span class="brand-mark" aria-hidden="true">g.</span>Gilloe</a><span class="nav-caption">${offer.nav}</span></nav>
@@ -194,31 +236,20 @@ function libraryView(state) {
       ${heroWalkArt()}
       </div>
       <div class="how-strip" aria-label="이용 방법">${offer.how.map((step, i) => `<span><b>0${i + 1}</b> ${step}</span>`).join("")}</div>
-      <div class="section-heading" id="walks"><div><p class="kicker">${offer.sampleKicker}</p><h2>${offer.sampleTitle}</h2></div><span class="collection-count">${games.length}개의 샘플</span></div>
+      <div class="section-heading" id="walks"><div><p class="kicker">${offer.sampleKicker}</p><h2>${offer.sampleTitle}</h2></div><span class="collection-count">${view.total}개의 샘플</span></div>
       <p class="warn">${ico("🚧", brand.notPublicReady)}</p>
       ${state.invalidSave ? `<p class="warn">저장본이 오래되어 목록부터 시작합니다.</p>` : ""}
       ${state.createNotice ? `<p class="ok">${state.createNotice}</p>` : ""}
       ${state.gamesError ? `<p class="warn">${state.gamesError === "list" ? "목록을 불러오지 못했습니다. API가 켜져 있는지 확인하세요." : state.gamesError === "quarantined" ? createCopy.notPlayable : "게임을 수정하거나 삭제하지 못했습니다."}</p>` : ""}
-
-      <ul class="game-list">
-        ${games
-          .map((g) => {
-            const made = formatMadeOn(g.createdAt);
-            return `
-          <li class="game-item">
-            <button type="button" class="choice" data-action="select-game" data-id="${escapeHtml(g.id)}" ${g.quarantined || g.playable === false ? "disabled" : ""}>
-              <span class="game-card-index" aria-hidden="true">↗</span><span class="game-card-tag">${offer.sampleTag} · ${g.placeCount}곳</span><strong>${escapeHtml(g.title)}</strong>
-              <span>${g.placeCount}곳 · ${escapeHtml(g.walkLabel || "")}${made ? ` · ${escapeHtml(made)}` : ""}</span>
-              ${statusChip(g)}
-            </button>
-            <div class="row-actions">
-              ${btn("edit-game", `✏️ ${createCopy.edit}`, "btn--ghost", `data-id="${escapeHtml(g.id)}"`)}
-              ${btn("ask-delete-game", `🗑️ ${createCopy.delete}`, "btn--ghost", `data-id="${escapeHtml(g.id)}" data-title="${escapeHtml(g.title)}"`)}
-            </div>
-          </li>`;
-          })
-          .join("")}
-      </ul>
+      <div class="library-tools">
+        <label class="field"><span>${libraryBrowse.searchLabel}</span><input type="search" name="library-query" value="${escapeHtml(state.libraryQuery || "")}" placeholder="${libraryBrowse.searchPlaceholder}" /></label>
+        <label class="field"><span>${libraryBrowse.sortLabel}</span><select name="library-sort">${sortOptions}</select></label>
+      </div>
+      ${state.libraryLocate === "locating" ? `<p class="hint">${libraryBrowse.locating}</p>` : ""}
+      ${state.libraryLocate === "denied" ? `<p class="warn">${libraryBrowse.locateDenied}</p>` : ""}
+      ${view.total ? `<p class="library-range">${view.from}–${view.to} / ${view.total}</p>` : `<p class="hint">${libraryBrowse.empty}</p>`}
+      <ul class="game-list">${cards}</ul>
+      ${pager}
       <footer class="home-footer"><span class="wordmark">Gilloe</span><span>${offer.price} · ${offer.priceNote}</span><p class="osm-credit">${OSM_ATTRIBUTION_TEXT}</p></footer>
     </main>
   `;

@@ -1,6 +1,6 @@
 # Gilloe — 퍼즐 걷기
 
-Korean outing for two. The thing for sale is one field-checked, self-guided puzzle walk: about 90 minutes, **29,000원 for two people**, played once. **Nothing is for sale yet.** Sample routes stay behind **현장 검증 전 임시 경로** until a physical survey, and the page says it does not take payment.
+Korean outing for two. The thing for sale is one field-checked, self-guided puzzle walk: about 90 minutes, **starting at 1,900원**, played once. **Nothing is for sale yet.** Sample routes stay behind **현장 검증 전 임시 경로** until a physical survey, and the page says it does not take payment.
 
 Live prototype: [gilloe.com](https://www.gilloe.com/) (Railway). Source: [github.com/donkimc/gilloe](https://github.com/donkimc/gilloe).
 
@@ -24,7 +24,7 @@ Continue in Cursor with the prompt in `CURSOR_PROMPT.md`.
 
 | Path | What it is |
 | --- | --- |
-| Offer | One finished walk for two. Asking price 29,000원 a pair, about 90 minutes, after field check |
+| Offer | One finished walk for two. Starting price 1,900원, about 90 minutes, after field check |
 | Create | Operator tool only: GPS recording, OSM draw, GPX import |
 | Play | Sample routes, solo or invite-only two phones, 9-piece 3×3 jigsaw |
 | Maps | Leaflet + OSM tiles; place names and walk graphs via Gilloe `/api/osm/*` (OpenStreetMap `map.json`), not public Nominatim or OSRM |

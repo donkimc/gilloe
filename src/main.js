@@ -760,6 +760,11 @@ function bindUi() {
   };
   ui.onchange = (event) => {
     const input = event.target;
+    if (input.name === "library-sort") {
+      dispatch({ type: "LIBRARY_SORT", sort: input.value });
+      if (input.value === "near" && !state.libraryOrigin) requestLibraryOrigin();
+      return;
+    }
     if (input.name === "jigsawSource") {
       createDraft = { ...createDraft, jigsawSource: input.value };
       paint();
@@ -810,6 +815,16 @@ function bindUi() {
   };
   ui.oninput = (event) => {
     const input = event.target;
+    if (input.name === "library-query") {
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      dispatch({ type: "LIBRARY_QUERY", query: input.value });
+      const next = ui.querySelector('[name="library-query"]');
+      if (next) {
+        next.focus();
+        if (start != null && end != null) next.setSelectionRange(start, end);
+      }
+    }
     if (input.name === "title") createDraft = { ...createDraft, title: input.value };
     if (input.name === "party-code") partyWait = { ...(partyWait || {}), joinMode: true, code: input.value };
     if (input.name === "osm-pick-name" && createDraft.osmPick) {
@@ -889,6 +904,24 @@ function bindAssemble() {
   });
 }
 
+function requestLibraryOrigin() {
+  const geo = geoApi();
+  if (!geo?.getCurrentPosition) {
+    dispatch({ type: "LIBRARY_LOCATE_ERROR" });
+    return;
+  }
+  geo.getCurrentPosition(
+    (pos) => {
+      dispatch({
+        type: "LIBRARY_ORIGIN",
+        origin: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+      });
+    },
+    () => dispatch({ type: "LIBRARY_LOCATE_ERROR" }),
+    brand.locationOptions,
+  );
+}
+
 function handleSim(kind, value) {
   if (kind === "gps") {
     gpsMode = value;
@@ -908,6 +941,9 @@ async function handleAction(action, dataset) {
     case "sim-toggle":
       simMinimized = !simMinimized;
       paint();
+      break;
+    case "library-page":
+      dispatch({ type: "LIBRARY_PAGE", page: Number(dataset.page) });
       break;
     case "open-create":
       createDraft = blankDraft();

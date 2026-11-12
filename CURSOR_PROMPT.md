@@ -14,7 +14,7 @@ You are continuing **Gilloe**, a Korean walking-jigsaw web app (Vite, vanilla JS
 
 ## Product you must preserve
 
-- Offer: one field-checked walk for two, about 90 minutes, 29,000원 a pair, played once. No checkout until a route is field-checked. Homepage samples are unpaid.
+- Offer: one field-checked walk for two, about 90 minutes, starting at 1,900원, played once. No checkout until a route is field-checked. Homepage samples are unpaid.
 - Create: operator tool. GPS walk (default 4 stops), OSM draw (2–8 stops, auto street route after last named stop), GPX import.
 - Play: 9-piece 3×3 jigsaw. Solo is for checking a route. The sold shape is invite-only two-phone co-op. Empty co-op stops: **다음으로**.
 - Maps: Leaflet OSM tiles. Place names and pedestrian routing only via Gilloe `GET /api/osm/place` and `POST /api/osm/walk-route` (server uses OpenStreetMap `map.json` + local Dijkstra). No public Nominatim, no public OSRM, no Naver/Kakao/Google/Apple ingest or image proxy.

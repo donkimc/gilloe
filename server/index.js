@@ -190,7 +190,22 @@ function gameIdFromPath(pathname) {
   return id && !id.includes("/") ? id : "";
 }
 
+function finiteOrNull(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function listKeywords(g) {
+  const parts = [g.title];
+  for (const place of g.places || []) {
+    if (place?.name) parts.push(place.name);
+    if (place?.address) parts.push(place.address);
+  }
+  return parts.filter(Boolean).join(" ");
+}
+
 function listItem(g) {
+  const start = g.places?.[0] || {};
   return {
     id: g.id,
     title: g.title,
@@ -200,6 +215,9 @@ function listItem(g) {
     durationMinutes: g.stats?.durationMinutes,
     walkLabel: formatWalkLabel(g.stats || { walkingMeters: 0, durationMinutes: 0 }),
     createdAt: Number(g.createdAt) || null,
+    startLat: finiteOrNull(start.lat),
+    startLng: finiteOrNull(start.lng),
+    keywords: listKeywords(g),
     fieldStatus: g.fieldStatus,
     fieldVerified: Boolean(g.fieldVerified),
     quarantined: Boolean(g.quarantined),

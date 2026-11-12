@@ -8,7 +8,7 @@ If this file conflicts with `docs/MVP_MAP_CREATION_COMPLIANCE_PLAN.md` on map so
 
 Korean-language, mobile-first outing for two.
 
-- **Offer:** one field-checked self-guided walk, about 90 minutes, **29,000원 for two people**, played once. The price is the ask. No checkout exists, and unverified routes are samples.
+- **Offer:** one field-checked self-guided walk, about 90 minutes, **starting at 1,900원**, played once. The price is the starting ask. No checkout exists, and unverified routes are samples.
 - **Create:** operator tool for authoring that walk. GPS recording, OSM-assisted drawing, GPX import.
 - **Play:** sample routes until a route is field-checked. Solo is for checking a route. The sold shape is invite-only two phones (`두 명이 함께 걷기`).
 - **Stops:** OSM draw 2–8 (creator-set). GPS create defaults to 4.
