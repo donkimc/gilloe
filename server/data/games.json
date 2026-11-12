@@ -1,5 +1,218 @@
 [
   {
+    "id": "misa-lake-to-ondol",
+    "schemaVersion": 1,
+    "title": "미사, 호수에서 온돌오리구이",
+    "type": "puzzle",
+    "placeCount": 4,
+    "places": [
+      {
+        "order": 1,
+        "name": "호수 소광장",
+        "address": "하남시 미사동",
+        "blurb": "호수 북쪽의 작은 광장입니다. 물가 보행로에 멈춰 서세요.",
+        "lat": 37.565034,
+        "lng": 127.188258,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 2,
+        "name": "호수 야외무대",
+        "address": "하남시 미사동",
+        "blurb": "호수 남쪽 야외무대 앞 보도입니다. 무대 안으로 들어가지 않아도 됩니다.",
+        "lat": 37.562083,
+        "lng": 127.187703,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 3,
+        "name": "장미정원",
+        "address": "하남시 미사동",
+        "blurb": "호수 남동쪽 장미정원 옆 보도입니다. 화단 안으로 들어가지 말고 보행로에서 멈추세요.",
+        "lat": 37.561891,
+        "lng": 127.189511,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      },
+      {
+        "order": 4,
+        "name": "온돌오리구이 하남미사본점",
+        "address": "하남시 미사강변남로 99",
+        "blurb": "가게 앞 보도입니다. 안으로 들어가거나 주문하지 않아도 됩니다. 차도에 내려가지 마세요.",
+        "lat": 37.560643,
+        "lng": 127.192506,
+        "photoUrl": "",
+        "arrivalRadiusMeters": 60,
+        "coordinateSource": "openstreetmap-assisted-drawing",
+        "fieldVerified": false,
+        "publicStopConfirmed": true,
+        "directions": "",
+        "safeStandingNote": "requires physical verification"
+      }
+    ],
+    "jigsaw": {
+      "source": "system",
+      "imageUrl": "",
+      "systemImageId": "park",
+      "ownershipConfirmed": false
+    },
+    "stats": {
+      "walkingMeters": 1097,
+      "durationMinutes": 24
+    },
+    "walkLabel": "약 1.1km · 약 24분",
+    "routeLine": [
+      [
+        127.1882583,
+        37.5650342
+      ],
+      [
+        127.1886652,
+        37.5648215
+      ],
+      [
+        127.1888602,
+        37.5646164
+      ],
+      [
+        127.1890787,
+        37.5642097
+      ],
+      [
+        127.1892385,
+        37.5636405
+      ],
+      [
+        127.1892664,
+        37.5629321
+      ],
+      [
+        127.1890275,
+        37.5629174
+      ],
+      [
+        127.1887527,
+        37.5625125
+      ],
+      [
+        127.188586,
+        37.5624901
+      ],
+      [
+        127.1884961,
+        37.5622967
+      ],
+      [
+        127.1882493,
+        37.5621166
+      ],
+      [
+        127.1879046,
+        37.5620031
+      ],
+      [
+        127.1877028,
+        37.5620831
+      ],
+      [
+        127.187851,
+        37.5620108
+      ],
+      [
+        127.187851,
+        37.5619287
+      ],
+      [
+        127.1883373,
+        37.5619209
+      ],
+      [
+        127.1888567,
+        37.5613974
+      ],
+      [
+        127.1895108,
+        37.561891
+      ],
+      [
+        127.1895313,
+        37.5618562
+      ],
+      [
+        127.1896376,
+        37.5619031
+      ],
+      [
+        127.1901655,
+        37.5613012
+      ],
+      [
+        127.190304,
+        37.5613403
+      ],
+      [
+        127.1905158,
+        37.5604649
+      ],
+      [
+        127.1908222,
+        37.5601568
+      ],
+      [
+        127.1909401,
+        37.5601946
+      ],
+      [
+        127.1909579,
+        37.5603064
+      ],
+      [
+        127.1913061,
+        37.5603051
+      ],
+      [
+        127.1925065,
+        37.5606432
+      ]
+    ],
+    "source": {
+      "method": "openstreetmap-assisted-drawing",
+      "proprietaryProviderDerived": false,
+      "mapDataAttribution": "© OpenStreetMap contributors",
+      "mapDataLicense": "ODbL-1.0"
+    },
+    "sources": [],
+    "fieldVerified": false,
+    "fieldStatus": "verification-required",
+    "quarantined": false,
+    "quarantineReason": null,
+    "playable": true,
+    "puzzleCount": 9,
+    "publicationBlocked": true,
+    "warnings": [
+      "현장 검증 전 임시 경로"
+    ],
+    "createdAt": 1794492135455,
+    "updatedAt": 1794492135455
+  },
+  {
     "id": "misa-lake-to-course",
     "schemaVersion": 1,
     "title": "미사, 호수에서 조정 수로",
